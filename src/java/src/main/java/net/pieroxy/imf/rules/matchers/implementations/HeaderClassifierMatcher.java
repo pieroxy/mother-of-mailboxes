@@ -106,7 +106,10 @@ public class HeaderClassifierMatcher extends Matcher {
         loadedModelMtime = currentMtime;
         loggedInactive = false; // active again: a future disappearance will be re-logged
         getLogger().info("Loaded classifier model " + modelFile + " (trained " + Instant.ofEpochMilli(currentMtime) + ")");
-      } catch (IOException e) {
+      } catch (IOException | RuntimeException e) {
+        // RuntimeException included: an incompatible model (e.g. a FeatureGenerator that moved
+        // package since training — ExtensionNotLoadedException) must degrade this matcher, not
+        // take down the whole account thread.
         getLogger().log(Level.WARNING, "Failed to load classifier model " + modelFile, e);
         categorizer = null;
       }
