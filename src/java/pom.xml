@@ -162,11 +162,33 @@
             </goals>
           </execution>
           <execution>
+            <id>generate-api-ts-stubs</id>
+            <phase>process-classes</phase>
+            <configuration>
+              <target>
+                <echo message="Generating API TS stubs." />
+                <mkdir dir="${basedir}/../webapp/src/ts/auto"/>
+                <java failonerror="true" fork="true" classname="net.pieroxy.imf.api.GenerateTsStubs">
+                  <arg value="${basedir}/../webapp/src/ts/auto/ApiEndpoints.ts"/>
+                  <classpath>
+                    <path refid="maven.runtime.classpath"/>
+                  </classpath>
+                </java>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <execution>
             <id>build-webapp</id>
             <phase>prepare-package</phase>
             <configuration>
               <target>
                 <echo message="Building webapp." />
+                <copy todir="${basedir}/../webapp/src/ts/auto/">
+                  <fileset dir="${basedir}/target/typescript-generator/"/>
+                </copy>
                 <exec executable="npm" dir="${basedir}/../webapp" failonerror="true">
                   <arg value="install"/>
                 </exec>
@@ -185,6 +207,30 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>cz.habarta.typescript-generator</groupId>
+        <artifactId>typescript-generator-maven-plugin</artifactId>
+        <version>2.35.1025</version>
+        <executions>
+          <execution>
+            <id>generate</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <phase>process-classes</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <jsonLibrary>gson</jsonLibrary>
+          <classesWithAnnotations>
+            net.pieroxy.imf.api.metadata.TypeScriptType
+          </classesWithAnnotations>
+          <outputKind>module</outputKind>
+          <outputFile>${project.build.directory}/typescript-generator/pieroxy-imf.ts</outputFile>
+          <outputFileType>implementationFile</outputFileType>
+          <mapEnum>asEnum</mapEnum>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
