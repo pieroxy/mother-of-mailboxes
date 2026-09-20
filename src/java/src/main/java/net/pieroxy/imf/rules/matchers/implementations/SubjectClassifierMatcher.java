@@ -1,7 +1,9 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.classifier.ClassifierLabel;
+import net.pieroxy.imf.detection.classifier.ClassifierLabel;
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.detection.classifier.ClassifierCorpusScanner;
+import net.pieroxy.imf.detection.classifier.SubjectClassifierTrainer;
 import net.pieroxy.imf.rules.RuleContext;
 import net.pieroxy.imf.rules.matchers.MatchResult;
 import net.pieroxy.imf.rules.matchers.Matcher;
@@ -20,8 +22,8 @@ import java.util.regex.Pattern;
 
 /**
  * Classifies the message's subject via the model trained by
- * {@link net.pieroxy.imf.classifier.SubjectClassifierTrainer} on the corpus collected by
- * {@link net.pieroxy.imf.classifier.ClassifierCorpusScanner}. Unlike other "leaf" matchers,
+ * {@link SubjectClassifierTrainer} on the corpus collected by
+ * {@link ClassifierCorpusScanner}. Unlike other "leaf" matchers,
  * there's no learning by dropping an example in imf-rules/ (there's no "key" to extract from a
  * message): learning comes from the corpus, and the config key is a probability threshold
  * (e.g. "&gt;0.9", "&lt;0.1") rather than a value to compare against.

@@ -1,5 +1,6 @@
 package net.pieroxy.imf.dkim;
 
+import net.pieroxy.imf.detection.dkim.DkimVerifier;
 import org.apache.james.jdkim.api.PublicKeyRecordRetriever;
 import org.apache.james.jdkim.exceptions.PermFailException;
 import org.apache.james.jdkim.exceptions.TempFailException;

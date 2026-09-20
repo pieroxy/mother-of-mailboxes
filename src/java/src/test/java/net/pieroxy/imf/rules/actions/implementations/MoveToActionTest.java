@@ -2,7 +2,7 @@ package net.pieroxy.imf.rules.actions.implementations;
 
 import net.pieroxy.imf.config.MailFilterRuleActionConfiguration;
 import net.pieroxy.imf.mail.GreenMailImapFixture;
-import net.pieroxy.imf.mail.ImapMailboxConnection;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 import net.pieroxy.imf.rules.actions.Action;
 import net.pieroxy.imf.rules.actions.ActionType;
 import org.junit.After;

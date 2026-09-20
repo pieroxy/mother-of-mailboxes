@@ -1,5 +1,8 @@
 package net.pieroxy.imf.classifier;
 
+import net.pieroxy.imf.detection.classifier.ClassifierExample;
+import net.pieroxy.imf.detection.classifier.ClassifierExampleExtractor;
+import net.pieroxy.imf.detection.classifier.ClassifierLabel;
 import org.junit.Test;
 
 import javax.mail.Message;

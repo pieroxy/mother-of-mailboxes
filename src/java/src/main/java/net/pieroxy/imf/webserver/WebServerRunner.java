@@ -1,7 +1,7 @@
 package net.pieroxy.imf.webserver;
 
 import net.pieroxy.imf.config.WebServerConfiguration;
-import net.pieroxy.imf.logging.OneLineLogFormatter;
+import net.pieroxy.imf.utils.logging.OneLineLogFormatter;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;

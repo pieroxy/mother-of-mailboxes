@@ -1,5 +1,6 @@
 package net.pieroxy.imf.spf;
 
+import net.pieroxy.imf.detection.spf.SpfIdentityExtractor;
 import org.junit.Test;
 
 import javax.mail.Session;

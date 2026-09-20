@@ -1,6 +1,7 @@
 package net.pieroxy.imf.logging;
 
 import net.jpountz.lz4.LZ4FrameInputStream;
+import net.pieroxy.imf.utils.logging.LogRotator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;

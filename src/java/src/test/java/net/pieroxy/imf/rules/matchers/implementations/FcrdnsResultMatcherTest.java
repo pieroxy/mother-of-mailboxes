@@ -2,7 +2,7 @@ package net.pieroxy.imf.rules.matchers.implementations;
 
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.fcrdns.FakeFcrdnsDnsResolver;
-import net.pieroxy.imf.fcrdns.FcrdnsEvaluator;
+import net.pieroxy.imf.detection.fcrdns.FcrdnsEvaluator;
 import org.junit.Test;
 
 import javax.mail.MessagingException;

@@ -1,5 +1,6 @@
 package net.pieroxy.imf.logging;
 
+import net.pieroxy.imf.utils.logging.OneLineLogFormatter;
 import org.junit.Test;
 
 import java.util.logging.Level;

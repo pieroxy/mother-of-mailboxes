@@ -1,6 +1,7 @@
 package net.pieroxy.imf.rules.actions.implementations;
 
 import net.pieroxy.imf.rules.actions.Action;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 
 import javax.mail.Flags;
 import javax.mail.Folder;
@@ -29,7 +30,7 @@ public class MoveToAction extends Action {
    * {@code key} is always "/"-separated in config, regardless of the server's actual hierarchy
    * delimiter (which can be anything — {@code .}, {@code ^}...): resolving it level by level via
    * {@code getFolder(segment)} on each already-resolved parent, like
-   * {@link net.pieroxy.imf.mail.ImapMailboxConnection#getOrCreateFolder}, is what makes that
+   * {@link ImapMailboxConnection#getOrCreateFolder}, is what makes that
    * safe. Handing the whole string to {@code store.getFolder(fullName)} instead — as this used
    * to do — has the server interpret it using its own real delimiter, so a literal "/" in it
    * either ends up part of one folder's name or gets mangled into that other character; either

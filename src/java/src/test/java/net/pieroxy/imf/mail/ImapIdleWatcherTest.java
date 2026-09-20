@@ -1,6 +1,7 @@
 package net.pieroxy.imf.mail;
 
 import net.pieroxy.imf.config.MailAccountConfiguration;
+import net.pieroxy.imf.utils.mail.ImapIdleWatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

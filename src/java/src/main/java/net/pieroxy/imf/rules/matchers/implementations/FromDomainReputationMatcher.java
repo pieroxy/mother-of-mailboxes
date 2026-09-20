@@ -1,9 +1,9 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
-import net.pieroxy.imf.reputation.ReputationMatch;
-import net.pieroxy.imf.reputation.ReputationRegistry;
-import net.pieroxy.imf.reputation.ReputationRegistryHolder;
+import net.pieroxy.imf.detection.reputation.ReputationMatch;
+import net.pieroxy.imf.detection.reputation.ReputationRegistry;
+import net.pieroxy.imf.detection.reputation.ReputationRegistryHolder;
 import net.pieroxy.imf.rules.matchers.MatchResult;
 import net.pieroxy.imf.rules.matchers.Matcher;
 

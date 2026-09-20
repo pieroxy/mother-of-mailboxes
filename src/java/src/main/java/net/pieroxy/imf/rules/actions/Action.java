@@ -1,7 +1,7 @@
 package net.pieroxy.imf.rules.actions;
 
 import net.pieroxy.imf.config.MailFilterRuleActionConfiguration;
-import net.pieroxy.imf.logging.LogLevels;
+import net.pieroxy.imf.utils.logging.LogLevels;
 import net.pieroxy.imf.rules.RuleContext;
 
 import javax.mail.Message;

@@ -1,7 +1,7 @@
 package net.pieroxy.imf.rules;
 
 import net.pieroxy.imf.config.MailFilterRuleConfiguration;
-import net.pieroxy.imf.logging.StatsLog;
+import net.pieroxy.imf.utils.logging.StatsLog;
 import net.pieroxy.imf.rules.actions.Action;
 import net.pieroxy.imf.rules.matchers.MatchResult;
 import net.pieroxy.imf.rules.matchers.Matcher;

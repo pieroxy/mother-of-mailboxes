@@ -1,5 +1,9 @@
 package net.pieroxy.imf.fcrdns;
 
+import net.pieroxy.imf.detection.fcrdns.FcrdnsDnsException;
+import net.pieroxy.imf.detection.fcrdns.FcrdnsDnsResolver;
+import net.pieroxy.imf.detection.fcrdns.FcrdnsEvaluator;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;

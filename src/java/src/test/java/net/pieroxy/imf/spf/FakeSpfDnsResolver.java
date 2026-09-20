@@ -1,5 +1,9 @@
 package net.pieroxy.imf.spf;
 
+import net.pieroxy.imf.detection.spf.SpfDnsException;
+import net.pieroxy.imf.detection.spf.SpfDnsResolver;
+import net.pieroxy.imf.detection.spf.SpfEvaluator;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;

@@ -1,13 +1,13 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.dkim.DkimVerifier;
-import net.pieroxy.imf.dmarc.DmarcEvaluator;
-import net.pieroxy.imf.dmarc.DmarcMessageEvaluator;
-import net.pieroxy.imf.dmarc.DnsJavaDmarcDnsResolver;
+import net.pieroxy.imf.detection.dkim.DkimVerifier;
+import net.pieroxy.imf.detection.dmarc.DmarcEvaluator;
+import net.pieroxy.imf.detection.dmarc.DmarcMessageEvaluator;
+import net.pieroxy.imf.detection.dmarc.DnsJavaDmarcDnsResolver;
 import net.pieroxy.imf.rules.matchers.MatchResult;
 import net.pieroxy.imf.rules.matchers.Matcher;
-import net.pieroxy.imf.spf.DnsJavaSpfDnsResolver;
-import net.pieroxy.imf.spf.SpfEvaluator;
+import net.pieroxy.imf.detection.spf.DnsJavaSpfDnsResolver;
+import net.pieroxy.imf.detection.spf.SpfEvaluator;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;

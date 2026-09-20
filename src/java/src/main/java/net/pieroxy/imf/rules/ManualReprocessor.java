@@ -1,6 +1,6 @@
 package net.pieroxy.imf.rules;
 
-import net.pieroxy.imf.mail.ImapMailbox;
+import net.pieroxy.imf.utils.mail.ImapMailbox;
 import net.pieroxy.imf.utils.MailTools;
 
 import javax.mail.Flags;

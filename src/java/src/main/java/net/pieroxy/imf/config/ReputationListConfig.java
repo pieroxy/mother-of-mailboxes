@@ -1,6 +1,6 @@
 package net.pieroxy.imf.config;
 
-import net.pieroxy.imf.reputation.ReputationListType;
+import net.pieroxy.imf.detection.reputation.ReputationListType;
 
 /**
  * An entry of {@code reputationLists} in the global config (see {@link Configuration}): a

@@ -1,6 +1,6 @@
 package net.pieroxy.imf.rules;
 
-import net.pieroxy.imf.mail.ImapMailboxConnection;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;

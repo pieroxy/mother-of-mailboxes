@@ -3,9 +3,10 @@ package net.pieroxy.imf.learning;
 import net.pieroxy.imf.config.LearningShortcutConfiguration;
 import net.pieroxy.imf.config.MailFilterRuleActionConfiguration;
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
-import net.pieroxy.imf.mail.ImapMailboxConnection;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 import net.pieroxy.imf.rules.actions.ActionType;
 import net.pieroxy.imf.rules.matchers.MatcherType;
+import net.pieroxy.imf.utils.mail.ImapMailbox;
 import org.junit.Test;
 
 import javax.mail.Folder;
@@ -17,7 +18,7 @@ import static org.junit.Assert.assertTrue;
 public class RuleLearnerDiscoveryTreeDisabledTest extends AbstractRuleLearnerTest {
 
   /**
-   * Unlike {@link net.pieroxy.imf.mail.ImapMailbox#getOrCreateFolder}, this never creates
+   * Unlike {@link ImapMailbox#getOrCreateFolder}, this never creates
    * anything — needed here since the whole point is asserting a folder was deliberately *not*
    * created.
    */

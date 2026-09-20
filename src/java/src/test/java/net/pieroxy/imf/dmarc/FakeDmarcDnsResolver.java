@@ -1,5 +1,9 @@
 package net.pieroxy.imf.dmarc;
 
+import net.pieroxy.imf.detection.dmarc.DmarcDnsException;
+import net.pieroxy.imf.detection.dmarc.DmarcDnsResolver;
+import net.pieroxy.imf.detection.dmarc.DmarcEvaluator;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

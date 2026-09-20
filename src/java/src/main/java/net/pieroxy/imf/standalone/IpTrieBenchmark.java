@@ -1,7 +1,7 @@
 package net.pieroxy.imf.standalone;
 
 import net.jpountz.lz4.LZ4FrameInputStream;
-import net.pieroxy.imf.reputation.IpTrie;
+import net.pieroxy.imf.detection.reputation.IpTrie;
 
 import java.io.File;
 import java.io.FileInputStream;

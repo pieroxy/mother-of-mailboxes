@@ -1,5 +1,8 @@
 package net.pieroxy.imf.dmarc;
 
+import net.pieroxy.imf.detection.dmarc.DmarcEvaluator;
+import net.pieroxy.imf.detection.dmarc.DmarcPolicy;
+import net.pieroxy.imf.detection.dmarc.DmarcResult;
 import org.junit.Test;
 
 import java.util.List;

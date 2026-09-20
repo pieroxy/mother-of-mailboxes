@@ -1,9 +1,11 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.classifier.BodyFeatureGenerator;
-import net.pieroxy.imf.classifier.ClassifierExample;
-import net.pieroxy.imf.classifier.ClassifierExampleExtractor;
-import net.pieroxy.imf.classifier.ClassifierLabel;
+import net.pieroxy.imf.detection.classifier.BodyClassifierTrainer;
+import net.pieroxy.imf.detection.classifier.BodyFeatureGenerator;
+import net.pieroxy.imf.detection.classifier.ClassifierCorpusScanner;
+import net.pieroxy.imf.detection.classifier.ClassifierExample;
+import net.pieroxy.imf.detection.classifier.ClassifierExampleExtractor;
+import net.pieroxy.imf.detection.classifier.ClassifierLabel;
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.rules.RuleContext;
 import net.pieroxy.imf.rules.matchers.MatchResult;
@@ -23,8 +25,8 @@ import java.util.logging.Level;
 
 /**
  * Classifies the message body's visible text via the model trained by
- * {@link net.pieroxy.imf.classifier.BodyClassifierTrainer} on the corpus collected by
- * {@link net.pieroxy.imf.classifier.ClassifierCorpusScanner}. Same contract as
+ * {@link BodyClassifierTrainer} on the corpus collected by
+ * {@link ClassifierCorpusScanner}. Same contract as
  * {@link SubjectClassifierMatcher}/{@link HeaderClassifierMatcher} otherwise: not learnable by
  * example, the config key is a probability threshold, and it's meant to run alongside the other
  * two rather than replace them.

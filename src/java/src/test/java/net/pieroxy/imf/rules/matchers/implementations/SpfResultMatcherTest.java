@@ -2,7 +2,7 @@ package net.pieroxy.imf.rules.matchers.implementations;
 
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.spf.FakeSpfDnsResolver;
-import net.pieroxy.imf.spf.SpfEvaluator;
+import net.pieroxy.imf.detection.spf.SpfEvaluator;
 import org.junit.Test;
 
 import javax.mail.MessagingException;

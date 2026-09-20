@@ -2,6 +2,7 @@ package net.pieroxy.imf.logging;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import net.pieroxy.imf.utils.logging.StatsLog;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;

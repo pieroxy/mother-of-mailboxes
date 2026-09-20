@@ -1,21 +1,21 @@
 package net.pieroxy.imf.rules;
 
-import net.pieroxy.imf.classifier.BodyClassifierTrainer;
-import net.pieroxy.imf.classifier.ClassifierCorpusScanner;
-import net.pieroxy.imf.classifier.ClassifierCorpusStore;
-import net.pieroxy.imf.classifier.ClassifierScanState;
-import net.pieroxy.imf.classifier.ClassifierScanStateStore;
-import net.pieroxy.imf.classifier.HeaderClassifierTrainer;
-import net.pieroxy.imf.classifier.SubjectClassifierTrainer;
+import net.pieroxy.imf.detection.classifier.BodyClassifierTrainer;
+import net.pieroxy.imf.detection.classifier.ClassifierCorpusScanner;
+import net.pieroxy.imf.detection.classifier.ClassifierCorpusStore;
+import net.pieroxy.imf.detection.classifier.ClassifierScanState;
+import net.pieroxy.imf.detection.classifier.ClassifierScanStateStore;
+import net.pieroxy.imf.detection.classifier.HeaderClassifierTrainer;
+import net.pieroxy.imf.detection.classifier.SubjectClassifierTrainer;
 import net.pieroxy.imf.config.Credential;
 import net.pieroxy.imf.config.MailAccountConfiguration;
 import net.pieroxy.imf.learning.LearnedRulesStore;
 import net.pieroxy.imf.learning.RuleLearner;
-import net.pieroxy.imf.mail.ImapIdleWatcher;
-import net.pieroxy.imf.mail.ImapMailbox;
-import net.pieroxy.imf.mail.ImapMailboxConnection;
-import net.pieroxy.imf.mail.ImapMailboxFactory;
-import net.pieroxy.imf.scheduling.BackoffLoop;
+import net.pieroxy.imf.utils.mail.ImapIdleWatcher;
+import net.pieroxy.imf.utils.mail.ImapMailbox;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
+import net.pieroxy.imf.utils.mail.ImapMailboxFactory;
+import net.pieroxy.imf.utils.scheduling.BackoffLoop;
 
 import javax.mail.Address;
 import javax.mail.Message;

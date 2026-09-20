@@ -1,5 +1,9 @@
 package net.pieroxy.imf.classifier;
 
+import net.pieroxy.imf.detection.classifier.ClassifierCorpusStore;
+import net.pieroxy.imf.detection.classifier.ClassifierExample;
+import net.pieroxy.imf.detection.classifier.ClassifierLabel;
+import net.pieroxy.imf.detection.classifier.SubjectClassifierTrainer;
 import opennlp.tools.doccat.DoccatModel;
 import org.junit.Rule;
 import org.junit.Test;

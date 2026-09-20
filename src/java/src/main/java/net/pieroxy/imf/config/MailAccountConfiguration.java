@@ -1,5 +1,7 @@
 package net.pieroxy.imf.config;
 
+import net.pieroxy.imf.detection.classifier.ClassifierCorpusScanner;
+
 import java.util.List;
 
 public class MailAccountConfiguration {
@@ -29,7 +31,7 @@ public class MailAccountConfiguration {
   private int classifierCorpusRetentionDays;
   /**
    * Cap on messages fetched/processed in one classifier corpus scan cycle for this account (0 or
-   * absent = {@link net.pieroxy.imf.classifier.ClassifierCorpusScanner}'s built-in default of
+   * absent = {@link ClassifierCorpusScanner}'s built-in default of
    * 500). Bounds how much of the account's IMAP connection a single cycle can monopolize when
    * catching up on a large backlog (e.g. the first scan of a folder with years of history) —
    * lower it on a slow link or server, raise it to catch up faster on a fast one.

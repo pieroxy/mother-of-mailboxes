@@ -1,9 +1,9 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.classifier.BodyClassifierTrainer;
-import net.pieroxy.imf.classifier.ClassifierCorpusStore;
-import net.pieroxy.imf.classifier.ClassifierExample;
-import net.pieroxy.imf.classifier.ClassifierLabel;
+import net.pieroxy.imf.detection.classifier.BodyClassifierTrainer;
+import net.pieroxy.imf.detection.classifier.ClassifierCorpusStore;
+import net.pieroxy.imf.detection.classifier.ClassifierExample;
+import net.pieroxy.imf.detection.classifier.ClassifierLabel;
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.rules.RuleContext;
 import net.pieroxy.imf.rules.matchers.Matcher;

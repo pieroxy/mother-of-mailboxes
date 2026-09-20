@@ -4,6 +4,8 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetupTest;
 import net.pieroxy.imf.config.Credential;
 import net.pieroxy.imf.config.MailAccountConfiguration;
+import net.pieroxy.imf.utils.mail.ImapMailbox;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 
 import javax.mail.Folder;
 import javax.mail.Message;

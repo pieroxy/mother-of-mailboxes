@@ -1,9 +1,10 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.classifier.ClassifierExample;
-import net.pieroxy.imf.classifier.ClassifierExampleExtractor;
-import net.pieroxy.imf.classifier.ClassifierLabel;
-import net.pieroxy.imf.classifier.HeaderFeatureGenerator;
+import net.pieroxy.imf.detection.classifier.ClassifierExample;
+import net.pieroxy.imf.detection.classifier.ClassifierExampleExtractor;
+import net.pieroxy.imf.detection.classifier.ClassifierLabel;
+import net.pieroxy.imf.detection.classifier.HeaderClassifierTrainer;
+import net.pieroxy.imf.detection.classifier.HeaderFeatureGenerator;
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.rules.RuleContext;
 import net.pieroxy.imf.rules.matchers.MatchResult;
@@ -22,7 +23,7 @@ import java.util.logging.Level;
 
 /**
  * Classifies a message via the model trained by
- * {@link net.pieroxy.imf.classifier.HeaderClassifierTrainer} — structured header-derived
+ * {@link HeaderClassifierTrainer} — structured header-derived
  * features (sender/recipient domains, In-Reply-To, List-Id, Precedence, Return-Path/Reply-To
  * alignment with From...), not the subject text (see {@link SubjectClassifierMatcher}, which
  * this is meant to run alongside rather than replace — see

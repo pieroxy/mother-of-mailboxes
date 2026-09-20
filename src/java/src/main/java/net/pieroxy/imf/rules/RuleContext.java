@@ -1,5 +1,7 @@
 package net.pieroxy.imf.rules;
 
+import net.pieroxy.imf.utils.logging.StatsLog;
+
 import java.io.File;
 
 /**
@@ -9,7 +11,7 @@ import java.io.File;
  * under, so this is the other half. Currently the classifier model files (used by
  * {@code SubjectClassifierMatcher}/{@code HeaderClassifierMatcher}/{@code BodyClassifierMatcher},
  * replacing what used to be a per-thread ThreadLocal) and the stats log directory (see
- * {@code Rule#apply}, {@link net.pieroxy.imf.logging.StatsLog}); expected to grow further — e.g.
+ * {@code Rule#apply}, {@link StatsLog}); expected to grow further — e.g.
  * the account's own address, once REPLY/FORWARD actions exist and need it.
  */
 public record RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir) {

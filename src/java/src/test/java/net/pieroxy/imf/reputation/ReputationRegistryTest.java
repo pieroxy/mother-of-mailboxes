@@ -1,6 +1,10 @@
 package net.pieroxy.imf.reputation;
 
 import net.pieroxy.imf.config.ReputationListConfig;
+import net.pieroxy.imf.detection.reputation.ReputationListStore;
+import net.pieroxy.imf.detection.reputation.ReputationListType;
+import net.pieroxy.imf.detection.reputation.ReputationMatch;
+import net.pieroxy.imf.detection.reputation.ReputationRegistry;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;

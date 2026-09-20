@@ -2,10 +2,10 @@ package net.pieroxy.imf.rules.matchers.implementations;
 
 import net.pieroxy.imf.rules.matchers.MatchResult;
 import net.pieroxy.imf.rules.matchers.Matcher;
-import net.pieroxy.imf.spf.DnsJavaSpfDnsResolver;
-import net.pieroxy.imf.spf.SpfEvaluator;
-import net.pieroxy.imf.spf.SpfIdentityExtractor;
-import net.pieroxy.imf.spf.SpfResult;
+import net.pieroxy.imf.detection.spf.DnsJavaSpfDnsResolver;
+import net.pieroxy.imf.detection.spf.SpfEvaluator;
+import net.pieroxy.imf.detection.spf.SpfIdentityExtractor;
+import net.pieroxy.imf.detection.spf.SpfResult;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;

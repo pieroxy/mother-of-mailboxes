@@ -1,5 +1,7 @@
 package net.pieroxy.imf.dkim;
 
+import net.pieroxy.imf.detection.dkim.DkimVerifier;
+
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;

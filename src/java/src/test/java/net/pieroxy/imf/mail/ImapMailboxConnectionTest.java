@@ -1,6 +1,7 @@
 package net.pieroxy.imf.mail;
 
 import net.pieroxy.imf.utils.MailTools;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

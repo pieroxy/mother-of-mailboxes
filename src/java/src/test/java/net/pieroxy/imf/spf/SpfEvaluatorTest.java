@@ -1,5 +1,7 @@
 package net.pieroxy.imf.spf;
 
+import net.pieroxy.imf.detection.spf.SpfEvaluator;
+import net.pieroxy.imf.detection.spf.SpfResult;
 import org.junit.Test;
 
 import java.util.logging.Logger;

@@ -1,7 +1,8 @@
 package net.pieroxy.imf.classifier;
 
+import net.pieroxy.imf.detection.classifier.*;
 import net.pieroxy.imf.mail.GreenMailImapFixture;
-import net.pieroxy.imf.mail.ImapMailboxConnection;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

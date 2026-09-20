@@ -1,7 +1,7 @@
 package net.pieroxy.imf.learning;
 
 import net.pieroxy.imf.config.MailFilterRuleConfiguration;
-import net.pieroxy.imf.mail.ImapMailboxConnection;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 import org.junit.Test;
 
 import java.util.List;

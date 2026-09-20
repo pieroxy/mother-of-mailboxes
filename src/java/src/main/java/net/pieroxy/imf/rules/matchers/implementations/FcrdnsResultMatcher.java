@@ -1,11 +1,11 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.fcrdns.DnsJavaFcrdnsDnsResolver;
-import net.pieroxy.imf.fcrdns.FcrdnsEvaluator;
-import net.pieroxy.imf.fcrdns.FcrdnsResult;
+import net.pieroxy.imf.detection.fcrdns.DnsJavaFcrdnsDnsResolver;
+import net.pieroxy.imf.detection.fcrdns.FcrdnsEvaluator;
+import net.pieroxy.imf.detection.fcrdns.FcrdnsResult;
 import net.pieroxy.imf.rules.matchers.MatchResult;
 import net.pieroxy.imf.rules.matchers.Matcher;
-import net.pieroxy.imf.spf.SpfIdentityExtractor;
+import net.pieroxy.imf.detection.spf.SpfIdentityExtractor;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;

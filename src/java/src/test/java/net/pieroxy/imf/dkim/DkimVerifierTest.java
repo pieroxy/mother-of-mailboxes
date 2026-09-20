@@ -1,5 +1,7 @@
 package net.pieroxy.imf.dkim;
 
+import net.pieroxy.imf.detection.dkim.dkim.DkimResult;
+import net.pieroxy.imf.detection.dkim.DkimVerifier;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;

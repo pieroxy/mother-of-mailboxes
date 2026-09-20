@@ -1,5 +1,7 @@
 package net.pieroxy.imf.fcrdns;
 
+import net.pieroxy.imf.detection.fcrdns.FcrdnsEvaluator;
+import net.pieroxy.imf.detection.fcrdns.FcrdnsResult;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

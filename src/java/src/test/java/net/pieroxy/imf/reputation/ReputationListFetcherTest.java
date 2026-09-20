@@ -1,6 +1,7 @@
 package net.pieroxy.imf.reputation;
 
 import com.sun.net.httpserver.HttpServer;
+import net.pieroxy.imf.detection.reputation.ReputationListFetcher;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;

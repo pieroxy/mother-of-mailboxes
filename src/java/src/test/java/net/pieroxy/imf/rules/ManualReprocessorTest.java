@@ -5,7 +5,7 @@ import net.pieroxy.imf.config.MailFilterRuleConfiguration;
 import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.learning.LearnedRulesStore;
 import net.pieroxy.imf.mail.GreenMailImapFixture;
-import net.pieroxy.imf.mail.ImapMailboxConnection;
+import net.pieroxy.imf.utils.mail.ImapMailboxConnection;
 import net.pieroxy.imf.rules.actions.ActionType;
 import net.pieroxy.imf.rules.matchers.MatcherType;
 import org.junit.After;

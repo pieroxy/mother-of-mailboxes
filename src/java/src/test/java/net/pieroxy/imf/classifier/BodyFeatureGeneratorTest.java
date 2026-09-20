@@ -1,5 +1,7 @@
 package net.pieroxy.imf.classifier;
 
+import net.pieroxy.imf.detection.classifier.BodyFeatureGenerator;
+import net.pieroxy.imf.detection.classifier.ClassifierExample;
 import org.junit.Test;
 
 import java.util.Collection;
