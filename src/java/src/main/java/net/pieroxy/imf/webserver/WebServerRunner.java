@@ -1,5 +1,7 @@
 package net.pieroxy.imf.webserver;
 
+import net.pieroxy.imf.api.ApiServlet;
+import net.pieroxy.imf.api.ServiceProvider;
 import net.pieroxy.imf.config.general.WebServerConfiguration;
 import net.pieroxy.imf.utils.logging.OneLineLogFormatter;
 import org.apache.catalina.LifecycleException;
@@ -21,7 +23,7 @@ public class WebServerRunner {
   private final static String COMPRESSIBLE_MIME_TYPES =
       "text/html,text/css,application/javascript,image/svg+xml,application/json";
 
-  public static Tomcat start(WebServerConfiguration config, String dataFolder) throws LifecycleException, IOException {
+  public static Tomcat start(WebServerConfiguration config, String dataFolder, ServiceProvider serviceProvider) throws LifecycleException, IOException {
     // Tomcat's own logging shim (org.apache.juli.logging.DirectJDKLog) force-overwrites the root
     // logger's ConsoleHandler formatter with a plain SimpleFormatter the first time any Tomcat
     // class logs (see its static initializer) — undoing LoggingBootstrap's setup for every logger,
@@ -60,6 +62,8 @@ public class WebServerRunner {
     ctx.addWelcomeFile("index.html");
     tomcat.addServlet("", "default", new DefaultServlet());
     ctx.addServletMappingDecoded("/", "default");
+    tomcat.addServlet("", "api", new ApiServlet(serviceProvider));
+    ctx.addServletMappingDecoded("/api/*", "api");
     addMimeTypes(ctx);
 
     tomcat.start();

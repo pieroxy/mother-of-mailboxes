@@ -1,6 +1,7 @@
 package net.pieroxy.imf.standalone;
 
 import com.google.gson.Gson;
+import net.pieroxy.imf.api.ServiceProvider;
 import net.pieroxy.imf.config.general.Configuration;
 import net.pieroxy.imf.config.credentials.Credential;
 import net.pieroxy.imf.config.credentials.CredentialsFile;
@@ -65,10 +66,9 @@ public class Runner {
     });
 
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
-      // Not consumed yet — no auth is wired for this Hello World milestone — but resolved now so
-      // a bad "credentials" key fails fast at startup instead of silently once auth lands.
-      CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
-      webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder());
+      Credential webServerCredential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
+      ServiceProvider serviceProvider = new ServiceProvider(webServerCredential);
+      webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder(), serviceProvider);
     }
 
     Runtime.getRuntime().addShutdownHook(new Thread(Runner::shutdown, "shutdown-hook"));
