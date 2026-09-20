@@ -1,7 +1,7 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
 import net.pieroxy.imf.detection.classifier.ClassifierLabel;
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.detection.classifier.ClassifierCorpusScanner;
 import net.pieroxy.imf.detection.classifier.SubjectClassifierTrainer;
 import net.pieroxy.imf.rules.RuleContext;

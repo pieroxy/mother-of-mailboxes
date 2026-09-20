@@ -1,8 +1,8 @@
 package net.pieroxy.imf.utils.mail;
 
 import com.sun.mail.imap.IMAPFolder;
-import net.pieroxy.imf.config.Credential;
-import net.pieroxy.imf.config.MailAccountConfiguration;
+import net.pieroxy.imf.config.credentials.Credential;
+import net.pieroxy.imf.config.general.MailAccountConfiguration;
 
 import javax.mail.*;
 import javax.mail.search.ComparisonTerm;

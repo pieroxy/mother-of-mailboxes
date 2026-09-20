@@ -1,6 +1,6 @@
 package net.pieroxy.imf.rules;
 
-import net.pieroxy.imf.config.MailFilterRuleConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.imf.learning.LearnedRulesStore;
 
 import java.util.ArrayList;

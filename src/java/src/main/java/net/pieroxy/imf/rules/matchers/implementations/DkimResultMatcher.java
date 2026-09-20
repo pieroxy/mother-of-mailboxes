@@ -1,6 +1,6 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.detection.dkim.dkim.DkimResult;
+import net.pieroxy.imf.detection.dkim.DkimResult;
 import net.pieroxy.imf.detection.dkim.DkimVerifier;
 import net.pieroxy.imf.rules.matchers.MatchResult;
 import net.pieroxy.imf.rules.matchers.Matcher;

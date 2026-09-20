@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * <p>
  * Separate model file ({@link ClassifierCorpusStore#getHeaderModelFile()}) from the subject
  * classifier, so the two can run and be evaluated side by side (see
- * {@code net.pieroxy.imf.config.MailFilterRuleConfiguration#isKeepProcessing()} for wiring a
+ * {@code net.pieroxy.imf.config.general.MailFilterRuleConfiguration#isKeepProcessing()} for wiring a
  * rule that compares them without either one blocking the mail's normal handling).
  */
 public class HeaderClassifierTrainer {

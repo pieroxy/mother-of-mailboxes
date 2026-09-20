@@ -1,9 +1,9 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
-import net.pieroxy.imf.dkim.DkimTestSigner;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.detection.dkim.DkimTestSigner;
 import net.pieroxy.imf.detection.dkim.DkimVerifier;
-import net.pieroxy.imf.dkim.FakeDkimPublicKeyRecordRetriever;
+import net.pieroxy.imf.detection.dkim.FakeDkimPublicKeyRecordRetriever;
 import org.junit.Test;
 
 import javax.mail.MessagingException;

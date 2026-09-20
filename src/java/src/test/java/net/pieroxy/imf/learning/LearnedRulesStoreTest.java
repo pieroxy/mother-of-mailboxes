@@ -1,8 +1,8 @@
 package net.pieroxy.imf.learning;
 
-import net.pieroxy.imf.config.MailFilterRuleActionConfiguration;
-import net.pieroxy.imf.config.MailFilterRuleConfiguration;
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleActionConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.rules.actions.ActionType;
 import net.pieroxy.imf.rules.matchers.MatcherType;
 import org.junit.Rule;

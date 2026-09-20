@@ -2,8 +2,8 @@ package net.pieroxy.imf.utils.mail;
 
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPStore;
-import net.pieroxy.imf.config.Credential;
-import net.pieroxy.imf.config.MailAccountConfiguration;
+import net.pieroxy.imf.config.credentials.Credential;
+import net.pieroxy.imf.config.general.MailAccountConfiguration;
 import net.pieroxy.imf.utils.scheduling.BackoffLoop;
 
 import javax.mail.Folder;

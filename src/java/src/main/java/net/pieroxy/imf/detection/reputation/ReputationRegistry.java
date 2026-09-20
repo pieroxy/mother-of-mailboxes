@@ -1,6 +1,6 @@
 package net.pieroxy.imf.detection.reputation;
 
-import net.pieroxy.imf.config.ReputationListConfig;
+import net.pieroxy.imf.config.general.ReputationListConfig;
 
 import java.util.HashMap;
 import java.util.List;

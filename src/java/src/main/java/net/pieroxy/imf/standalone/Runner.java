@@ -1,10 +1,10 @@
 package net.pieroxy.imf.standalone;
 
 import com.google.gson.Gson;
-import net.pieroxy.imf.config.Configuration;
-import net.pieroxy.imf.config.Credential;
-import net.pieroxy.imf.config.CredentialsFile;
-import net.pieroxy.imf.config.CredentialsResolver;
+import net.pieroxy.imf.config.general.Configuration;
+import net.pieroxy.imf.config.credentials.Credential;
+import net.pieroxy.imf.config.credentials.CredentialsFile;
+import net.pieroxy.imf.utils.CredentialsResolver;
 import net.pieroxy.imf.utils.logging.LoggingBootstrap;
 import net.pieroxy.imf.detection.reputation.ReputationRegistry;
 import net.pieroxy.imf.detection.reputation.ReputationRegistryHolder;

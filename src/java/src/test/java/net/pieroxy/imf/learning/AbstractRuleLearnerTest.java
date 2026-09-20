@@ -1,6 +1,6 @@
 package net.pieroxy.imf.learning;
 
-import net.pieroxy.imf.mail.GreenMailImapFixture;
+import net.pieroxy.imf.utils.mail.GreenMailImapFixture;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

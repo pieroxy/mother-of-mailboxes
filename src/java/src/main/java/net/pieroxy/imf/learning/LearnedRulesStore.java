@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
-import net.pieroxy.imf.config.MailFilterRuleConfiguration;
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
 
 import java.io.File;
 import java.io.FileReader;

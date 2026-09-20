@@ -1,8 +1,8 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
 import net.jpountz.lz4.LZ4FrameOutputStream;
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
-import net.pieroxy.imf.config.ReputationListConfig;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.config.general.ReputationListConfig;
 import net.pieroxy.imf.detection.reputation.ReputationListType;
 import net.pieroxy.imf.detection.reputation.ReputationRegistry;
 import org.junit.Rule;

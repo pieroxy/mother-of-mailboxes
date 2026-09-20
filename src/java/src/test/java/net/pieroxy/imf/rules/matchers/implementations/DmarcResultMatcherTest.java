@@ -1,12 +1,12 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
-import net.pieroxy.imf.dkim.DkimTestSigner;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.detection.dkim.DkimTestSigner;
 import net.pieroxy.imf.detection.dkim.DkimVerifier;
-import net.pieroxy.imf.dkim.FakeDkimPublicKeyRecordRetriever;
+import net.pieroxy.imf.detection.dkim.FakeDkimPublicKeyRecordRetriever;
 import net.pieroxy.imf.detection.dmarc.DmarcEvaluator;
 import net.pieroxy.imf.detection.dmarc.DmarcMessageEvaluator;
-import net.pieroxy.imf.dmarc.FakeDmarcDnsResolver;
+import net.pieroxy.imf.detection.dmarc.FakeDmarcDnsResolver;
 import net.pieroxy.imf.spf.FakeSpfDnsResolver;
 import net.pieroxy.imf.detection.spf.SpfEvaluator;
 import org.junit.Test;

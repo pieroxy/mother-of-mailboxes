@@ -1,7 +1,7 @@
 package net.pieroxy.imf.utils.mail;
 
-import net.pieroxy.imf.config.Credential;
-import net.pieroxy.imf.config.MailAccountConfiguration;
+import net.pieroxy.imf.config.credentials.Credential;
+import net.pieroxy.imf.config.general.MailAccountConfiguration;
 
 import javax.mail.MessagingException;
 

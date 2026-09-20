@@ -5,7 +5,7 @@ import net.pieroxy.imf.detection.classifier.ClassifierExampleExtractor;
 import net.pieroxy.imf.detection.classifier.ClassifierLabel;
 import net.pieroxy.imf.detection.classifier.HeaderClassifierTrainer;
 import net.pieroxy.imf.detection.classifier.HeaderFeatureGenerator;
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.rules.RuleContext;
 import net.pieroxy.imf.rules.matchers.MatchResult;
 import net.pieroxy.imf.rules.matchers.Matcher;
@@ -27,7 +27,7 @@ import java.util.logging.Level;
  * features (sender/recipient domains, In-Reply-To, List-Id, Precedence, Return-Path/Reply-To
  * alignment with From...), not the subject text (see {@link SubjectClassifierMatcher}, which
  * this is meant to run alongside rather than replace — see
- * {@code net.pieroxy.imf.config.MailFilterRuleConfiguration#isKeepProcessing()} for comparing
+ * {@code net.pieroxy.imf.config.general.MailFilterRuleConfiguration#isKeepProcessing()} for comparing
  * the two without either one blocking the mail's normal handling).
  * <p>
  * Same contract as {@link SubjectClassifierMatcher} otherwise: not learnable by example (the

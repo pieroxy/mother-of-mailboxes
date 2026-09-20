@@ -16,7 +16,7 @@ import java.util.logging.Logger;
  * the whole list load over a single malformed line — an external list can change format without
  * notice.
  */
-final class ReputationListParser {
+public final class ReputationListParser {
   private static final Logger LOGGER = Logger.getLogger(ReputationListParser.class.getName());
 
   private ReputationListParser() {}

@@ -1,6 +1,6 @@
 package net.pieroxy.imf.rules.actions;
 
-import net.pieroxy.imf.config.MailFilterRuleActionConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.imf.rules.actions.implementations.AndAction;
 import net.pieroxy.imf.rules.actions.implementations.MoveToAction;
 import net.pieroxy.imf.rules.actions.implementations.ReadAction;

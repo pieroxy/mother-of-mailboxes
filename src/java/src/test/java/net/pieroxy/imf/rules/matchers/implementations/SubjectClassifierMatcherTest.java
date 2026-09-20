@@ -4,7 +4,7 @@ import net.pieroxy.imf.detection.classifier.ClassifierCorpusStore;
 import net.pieroxy.imf.detection.classifier.ClassifierExample;
 import net.pieroxy.imf.detection.classifier.ClassifierLabel;
 import net.pieroxy.imf.detection.classifier.SubjectClassifierTrainer;
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.rules.RuleContext;
 import net.pieroxy.imf.rules.matchers.Matcher;
 import net.pieroxy.imf.rules.matchers.MatcherType;

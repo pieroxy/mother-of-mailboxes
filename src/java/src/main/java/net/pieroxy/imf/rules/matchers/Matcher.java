@@ -1,6 +1,6 @@
 package net.pieroxy.imf.rules.matchers;
 
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.utils.logging.LogLevels;
 import net.pieroxy.imf.rules.RuleContext;
 

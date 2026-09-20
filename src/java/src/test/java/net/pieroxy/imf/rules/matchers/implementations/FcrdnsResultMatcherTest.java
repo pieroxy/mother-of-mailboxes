@@ -1,7 +1,7 @@
 package net.pieroxy.imf.rules.matchers.implementations;
 
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
-import net.pieroxy.imf.fcrdns.FakeFcrdnsDnsResolver;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.detection.fcrdns.FakeFcrdnsDnsResolver;
 import net.pieroxy.imf.detection.fcrdns.FcrdnsEvaluator;
 import org.junit.Test;
 

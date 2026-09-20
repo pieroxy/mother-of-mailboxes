@@ -1,9 +1,9 @@
 package net.pieroxy.imf.learning;
 
-import net.pieroxy.imf.config.LearningShortcutConfiguration;
-import net.pieroxy.imf.config.MailFilterRuleActionConfiguration;
-import net.pieroxy.imf.config.MailFilterRuleConfiguration;
-import net.pieroxy.imf.config.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.imf.config.general.LearningShortcutConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleActionConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.imf.config.general.MailFilterRuleMatcherConfiguration;
 import net.pieroxy.imf.utils.mail.ImapMailbox;
 import net.pieroxy.imf.rules.actions.Action;
 import net.pieroxy.imf.rules.actions.ActionType;
