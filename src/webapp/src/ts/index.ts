@@ -1,7 +1,4 @@
 import m from "mithril";
+import { LoginForm } from "./forms/LoginForm";
 
-const HelloWorld = {
-  view: () => m("h1", "Hello World"),
-};
-
-m.mount(document.getElementById("app")!, HelloWorld);
+m.mount(document.getElementById("app")!, LoginForm);
