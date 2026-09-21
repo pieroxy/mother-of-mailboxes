@@ -53,6 +53,11 @@ public class RuleCatalog {
     return learnedRulesFallback;
   }
 
+  /** Account-level context this catalog's rules were built with (see {@link RuleContext}). */
+  public RuleContext getContext() {
+    return context;
+  }
+
   /** Forces a rebuild (manual config + learned rules re-read from disk) on the next get(). */
   public void invalidate() {
     rules = null;

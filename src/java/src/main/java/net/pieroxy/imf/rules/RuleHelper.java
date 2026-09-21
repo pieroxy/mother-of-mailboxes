@@ -1,8 +1,10 @@
 package net.pieroxy.imf.rules;
 
 import net.pieroxy.imf.utils.MailTools;
+import net.pieroxy.imf.utils.logging.StatsLog;
 
 import javax.mail.Message;
+import java.io.File;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,14 +29,14 @@ public class RuleHelper {
         if (result.ruleApplied()) {
           anyMatched = true;
           if (!result.keepProcessing()) {
-            return new RuleExecutionResult(true, false, learnedRulesExecuted);
+            return new RuleExecutionResult(true, false, learnedRulesExecuted, result.matchedDescription());
           }
         }
       } catch (Exception e) {
         logger.log(Level.WARNING, "Rule failed on " + context + " for message from " + MailTools.describeFromSafely(message), e);
       }
     }
-    return new RuleExecutionResult(anyMatched, true, learnedRulesExecuted);
+    return new RuleExecutionResult(anyMatched, true, learnedRulesExecuted, null);
   }
 
   /**
@@ -45,18 +47,39 @@ public class RuleHelper {
    * keeps every {@code config.json} that doesn't place a {@code LEARNED_RULES} entry explicitly
    * behaving exactly as it did before that type existed — learned rules still always run, just
    * implicitly, after everything else.
+   * <p>
+   * Also records exactly one {@code PROCESSED} stats event (see {@link StatsLog}) for the whole
+   * call: {@code result=MATCH} (naming which rule, manual or learned, ultimately blocked the
+   * message) if one did, {@code result=PASS} if the chain ran to completion without ever
+   * blocking — regardless of whether a {@code keepProcessing} rule matched along the way (that
+   * match has its own {@code MATCH} entry, logged separately by {@code Rule#apply}).
    * @return true if at least one rule matched (in rules or in the learned-rules fallback).
    */
-  public static boolean processRules(List<RuleInterface> rules, RuleInterface learnedRulesFallback, Message message, Logger logger, String context) {
+  public static boolean processRules(List<RuleInterface> rules, RuleInterface learnedRulesFallback, Message message, Logger logger, String context, File statsDir) {
+    long start = System.nanoTime();
+    boolean matched;
+    boolean blocked;
+    String matchedDescription = null;
+
     RuleExecutionResult result = evaluate(rules, message, logger, context);
     if (!result.keepProcessing()) {
-      return true; // a blocking rule already matched: never touch the learned rules afterward
-    }
-    if (!result.learnedRulesExecuted()) {
+      matched = true;
+      blocked = true; // a blocking rule already matched: never touch the learned rules afterward
+      matchedDescription = result.matchedDescription();
+    } else if (!result.learnedRulesExecuted()) {
+      RuleExecutionResult fallbackResult = learnedRulesFallback.apply(message);
       // Bitwise |, not ||: the fallback must run even if a keepProcessing rule already matched
       // above (result.ruleApplied() true doesn't mean we can skip it, unlike the early return).
-      return result.ruleApplied() | learnedRulesFallback.apply(message).ruleApplied();
+      matched = result.ruleApplied() | fallbackResult.ruleApplied();
+      blocked = !fallbackResult.keepProcessing();
+      if (blocked) matchedDescription = fallbackResult.matchedDescription();
+    } else {
+      matched = result.ruleApplied();
+      blocked = false;
     }
-    return result.ruleApplied();
+
+    long processedMs = (System.nanoTime() - start) / 1_000_000;
+    StatsLog.recordProcessed(statsDir, blocked ? StatsLog.ProcessResult.MATCH : StatsLog.ProcessResult.PASS, matchedDescription, processedMs);
+    return matched;
   }
 }

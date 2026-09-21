@@ -69,6 +69,6 @@ public class Rule implements RuleInterface {
     } catch (Exception e) {
       action.getLogger().log(Level.WARNING, "Action failed on message from " + MailTools.describeFromSafely(message), e);
     }
-    return RuleExecutionResult.applied(config.isKeepProcessing());
+    return RuleExecutionResult.applied(config.isKeepProcessing(), matchResult.debugString());
   }
 }

@@ -47,9 +47,45 @@ public class StatsLogTest {
     assertEquals(1, lines.size());
 
     JsonObject event = GSON.fromJson(lines.get(0), JsonObject.class);
+    assertEquals("MATCH", event.get("type").getAsString());
     assertEquals("IpReputationMatcher[spamhaus-drop](score=0.87)", event.get("matcher").getAsString());
     assertTrue("date should look like yyyy-MM-dd HH:mm:ssZ, was: " + event.get("date").getAsString(),
         DATE_PATTERN.matcher(event.get("date").getAsString()).matches());
+  }
+
+  @Test
+  public void recordProcessedWritesTypeResultMatcherAndDuration() throws IOException {
+    File statsDir = new File(tmp.getRoot(), "logs");
+
+    StatsLog.recordProcessed(statsDir, StatsLog.ProcessResult.MATCH, "FromDomainMatcher(gmail.com)", 42);
+
+    String today = LocalDate.now(ZoneOffset.UTC).toString();
+    List<String> lines = Files.readAllLines(new File(statsDir, "stats-" + today + ".json").toPath());
+    assertEquals(1, lines.size());
+
+    JsonObject event = GSON.fromJson(lines.get(0), JsonObject.class);
+    assertEquals("PROCESSED", event.get("type").getAsString());
+    assertEquals("MATCH", event.get("result").getAsString());
+    assertEquals("FromDomainMatcher(gmail.com)", event.get("matcher").getAsString());
+    assertEquals(42, event.get("processedMs").getAsLong());
+  }
+
+  @Test
+  public void recordProcessedSupportsPassResultWithNoMatcher() throws IOException {
+    File statsDir = new File(tmp.getRoot(), "logs");
+
+    StatsLog.recordProcessed(statsDir, StatsLog.ProcessResult.PASS, null, 7);
+
+    String today = LocalDate.now(ZoneOffset.UTC).toString();
+    List<String> lines = Files.readAllLines(new File(statsDir, "stats-" + today + ".json").toPath());
+    JsonObject event = GSON.fromJson(lines.get(0), JsonObject.class);
+    assertEquals("PASS", event.get("result").getAsString());
+    assertFalse("a PASS event has no matcher field", event.has("matcher"));
+  }
+
+  @Test
+  public void doesNothingForRecordProcessedWhenStatsDirIsNull() {
+    StatsLog.recordProcessed(null, StatsLog.ProcessResult.PASS, null, 5);
   }
 
   @Test

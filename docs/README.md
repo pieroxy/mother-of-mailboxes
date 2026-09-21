@@ -389,21 +389,36 @@ evaluated, alignment computed) without touching any global logging configuration
 
 ### Stats log
 
-Besides the human-readable log above, every successful rule match also appends one JSON line to
-`<dataFolder>/logs/stats-YYYY-MM-DD.json` (UTC day), e.g.:
+Besides the human-readable log above, IMF appends one JSON line per event to
+`<dataFolder>/logs/stats-YYYY-MM-DD.json` (UTC day). Two event types, told apart by `type`:
 
 ```json
-{"matcher":"IpReputationMatcher[spamhaus-drop](score=0.87)","date":"2026-09-18 10:35:12Z"}
-{"matcher":"FromDomainMatcher(gmail.com)","date":"2026-09-18 10:36:01Z"}
+{"type":"MATCH","matcher":"IpReputationMatcher[spamhaus-drop](score=0.87)","date":"2026-09-18 10:35:12Z"}
+{"type":"PROCESSED","result":"MATCH","matcher":"IpReputationMatcher[spamhaus-drop](score=0.87)","processedMs":42,"date":"2026-09-18 10:35:12Z"}
+{"type":"PROCESSED","result":"PASS","processedMs":7,"date":"2026-09-18 10:36:01Z"}
 ```
 
+- **`MATCH`** — one per rule that actually matched (manual or learned), same moment as the
+  matching line in the console/`log.txt` (see [Rule evaluation order](#rule-evaluation-order)).
+  `matcher` is that same description, including any per-message detail a matcher reports (a
+  reputation score, a classifier score, which of several configured keys hit...). A message
+  processed by a `keepProcessing` rule followed by a blocking one produces two `MATCH` lines —
+  one for each rule that matched, in evaluation order.
+- **`PROCESSED`** — exactly one per message, once the whole rule chain (manual rules, then
+  learned rules) has finished running for it. `processedMs` is how long that took; `result` is
+  `MATCH` if some rule ultimately blocked the message — `matcher` then names that rule (same
+  description as its own separate `MATCH` line above; deliberately redundant so the common case,
+  a single non-`keepProcessing` rule blocking, is fully readable from this one line alone) — or
+  `PASS` if the chain ran to completion without ever blocking (no `matcher` field), even if a
+  `keepProcessing` rule matched somewhere along the way (that rule's own `MATCH` line is the only
+  record of it). This is the one to use for throughput/latency: count `PROCESSED` lines for
+  messages handled, average `processedMs` for how fast, and the `PASS`/`MATCH` split of `result`
+  for how much traffic gets filtered.
+
 One JSON object per line (not one JSON array for the whole file), so recording an event is a
-plain append, never a rewrite of the whole day's file — safe with several accounts matching
-concurrently. The `matcher` field is the same description shown in the console/`log.txt` line
-for that match (see [Rule evaluation order](#rule-evaluation-order)), including any per-message
-detail a matcher reports (a reputation score, a classifier score, which of several configured
-keys hit...). Nothing is written for a rule that doesn't match, and this file has no rotation or
-pruning of its own — clean up old `stats-*.json` files yourself if needed.
+plain append, never a rewrite of the whole day's file — safe with several accounts running
+concurrently. This file has no rotation or pruning of its own — clean up old `stats-*.json`
+files yourself if needed.
 
 ## Data files
 
