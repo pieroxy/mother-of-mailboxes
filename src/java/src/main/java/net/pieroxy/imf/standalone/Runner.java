@@ -2,6 +2,7 @@ package net.pieroxy.imf.standalone;
 
 import com.google.gson.Gson;
 import net.pieroxy.imf.api.ServiceProvider;
+import net.pieroxy.imf.api.SessionStore;
 import net.pieroxy.imf.config.general.Configuration;
 import net.pieroxy.imf.config.credentials.Credential;
 import net.pieroxy.imf.config.credentials.CredentialsFile;
@@ -67,7 +68,7 @@ public class Runner {
 
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
       Credential webServerCredential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
-      ServiceProvider serviceProvider = new ServiceProvider(webServerCredential);
+      ServiceProvider serviceProvider = new ServiceProvider(webServerCredential, new SessionStore());
       webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder(), serviceProvider);
     }
 

@@ -21,7 +21,8 @@ public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput>
     boolean ok = expected != null
         && expected.getUsername().equals(input.getLogin())
         && expected.getPassword().equals(input.getPassword());
-    return new LoginApiOutput(ok);
+    if (!ok) return new LoginApiOutput(false, null);
+    return new LoginApiOutput(true, serviceProvider.getSessionStore().create());
   }
 }
 
@@ -50,12 +51,14 @@ class LoginApiInput {
 @TypeScriptType
 class LoginApiOutput {
   private boolean ok;
+  private String sessionId;
 
   public LoginApiOutput() {
   }
 
-  public LoginApiOutput(boolean ok) {
+  public LoginApiOutput(boolean ok, String sessionId) {
     this.ok = ok;
+    this.sessionId = sessionId;
   }
 
   public boolean isOk() {
@@ -64,5 +67,13 @@ class LoginApiOutput {
 
   public void setOk(boolean ok) {
     this.ok = ok;
+  }
+
+  public String getSessionId() {
+    return sessionId;
+  }
+
+  public void setSessionId(String sessionId) {
+    this.sessionId = sessionId;
   }
 }
