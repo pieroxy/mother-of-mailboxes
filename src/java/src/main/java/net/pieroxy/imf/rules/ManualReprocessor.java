@@ -60,7 +60,7 @@ public class ManualReprocessor {
     try {
       LOGGER.info(() -> "Reprocessing message from " + MailTools.describeFromSafely(message));
       boolean matched = RuleHelper.processRules(ruleCatalog.get(), ruleCatalog.getLearnedRulesFallback(), message, LOGGER,
-          ROOT_FOLDER + "/" + TO_PROCESS_FOLDER, ruleCatalog.getContext().statsDir());
+          ROOT_FOLDER + "/" + TO_PROCESS_FOLDER, ruleCatalog.getContext());
       if (message.isSet(Flags.Flag.DELETED)) {
         LOGGER.info(() -> "Message from " + MailTools.describeFromSafely(message) + " was relocated by its matching rule's action");
         return;

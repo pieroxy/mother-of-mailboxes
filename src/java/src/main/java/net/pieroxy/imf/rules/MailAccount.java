@@ -154,7 +154,7 @@ public class MailAccount implements Runnable {
   /** Applies the first matching rule (manual config, then learned rules). */
   private void inspect(Message message) {
     RuleHelper.processRules(ruleCatalog.get(), ruleCatalog.getLearnedRulesFallback(), message, LOGGER,
-        "account " + config.getDisplayName(), ruleCatalog.getContext().statsDir());
+        "account " + config.getDisplayName(), ruleCatalog.getContext());
   }
 
   /** Package-private (instead of private): lets MailAccountTest run a cycle without going through run()/BackoffLoop. */

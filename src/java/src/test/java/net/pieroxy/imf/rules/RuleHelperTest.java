@@ -76,7 +76,7 @@ public class RuleHelperTest {
     SpyRule fallback = new SpyRule(true);
 
     boolean matched = RuleHelper.processRules(List.of(blockingRule("nobody@example.com")), fallback,
-        messageFrom("alice@example.com"), logger, "test", null);
+        messageFrom("alice@example.com"), logger, "test", RuleContext.EMPTY);
 
     assertTrue("the non-matching manual rule must not prevent the fallback", fallback.invoked);
     assertTrue(matched);
@@ -87,7 +87,7 @@ public class RuleHelperTest {
     SpyRule fallback = new SpyRule(true);
 
     boolean matched = RuleHelper.processRules(List.of(blockingRule("alice@example.com")), fallback,
-        messageFrom("alice@example.com"), logger, "test", null);
+        messageFrom("alice@example.com"), logger, "test", RuleContext.EMPTY);
 
     assertFalse("a blocking manual match must stop evaluation before the fallback ever runs", fallback.invoked);
     assertTrue(matched);
@@ -98,7 +98,7 @@ public class RuleHelperTest {
     SpyRule inlineLearnedRules = new SpyRule(false);
     SpyRule fallback = new SpyRule(true);
 
-    RuleHelper.processRules(List.of(inlineLearnedRules), fallback, messageFrom("alice@example.com"), logger, "test", null);
+    RuleHelper.processRules(List.of(inlineLearnedRules), fallback, messageFrom("alice@example.com"), logger, "test", RuleContext.EMPTY);
 
     assertTrue(inlineLearnedRules.invoked);
     assertFalse("learnedRulesExecuted from the inline entry must prevent a second, redundant run", fallback.invoked);
@@ -117,7 +117,7 @@ public class RuleHelperTest {
     SpyRule fallback = new SpyRule(true);
 
     RuleHelper.processRules(List.of(blockingRule("alice@example.com")), fallback,
-        messageFrom("alice@example.com"), logger, "test", statsDir);
+        messageFrom("alice@example.com"), logger, "test", new RuleContext(null, null, null, statsDir));
 
     JsonObject event = onlyProcessedEvent(statsDir);
     assertEquals("PROCESSED", event.get("type").getAsString());
@@ -132,7 +132,7 @@ public class RuleHelperTest {
     SpyRule fallback = new SpyRule(true); // keepProcessing=false: blocks
 
     RuleHelper.processRules(List.of(blockingRule("nobody@example.com")), fallback,
-        messageFrom("alice@example.com"), logger, "test", statsDir);
+        messageFrom("alice@example.com"), logger, "test", new RuleContext(null, null, null, statsDir));
 
     JsonObject event = onlyProcessedEvent(statsDir);
     assertEquals("MATCH", event.get("result").getAsString());
@@ -146,7 +146,7 @@ public class RuleHelperTest {
     SpyRule fallback = new SpyRule(false); // never matches: keepProcessing=true
 
     RuleHelper.processRules(List.of(blockingRule("nobody@example.com")), fallback,
-        messageFrom("alice@example.com"), logger, "test", statsDir);
+        messageFrom("alice@example.com"), logger, "test", new RuleContext(null, null, null, statsDir));
 
     JsonObject event = onlyProcessedEvent(statsDir);
     assertEquals("PASS", event.get("result").getAsString());

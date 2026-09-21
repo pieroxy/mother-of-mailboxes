@@ -4,7 +4,6 @@ import net.pieroxy.imf.utils.MailTools;
 import net.pieroxy.imf.utils.logging.StatsLog;
 
 import javax.mail.Message;
-import java.io.File;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,7 +18,7 @@ public class RuleHelper {
    * one stops evaluation (a rule that matched without {@code keepProcessing}), or the list is
    * exhausted. A rule that throws doesn't block the following ones either.
    */
-  public static RuleExecutionResult evaluate(List<RuleInterface> rules, Message message, Logger logger, String context) {
+  public static RuleExecutionResult evaluate(List<RuleInterface> rules, Message message, Logger logger, String logContext) {
     boolean anyMatched = false;
     boolean learnedRulesExecuted = false;
     for (RuleInterface rule : rules) {
@@ -33,7 +32,7 @@ public class RuleHelper {
           }
         }
       } catch (Exception e) {
-        logger.log(Level.WARNING, "Rule failed on " + context + " for message from " + MailTools.describeFromSafely(message), e);
+        logger.log(Level.WARNING, "Rule failed on " + logContext + " for message from " + MailTools.describeFromSafely(message), e);
       }
     }
     return new RuleExecutionResult(anyMatched, true, learnedRulesExecuted, null);
@@ -55,13 +54,13 @@ public class RuleHelper {
    * match has its own {@code MATCH} entry, logged separately by {@code Rule#apply}).
    * @return true if at least one rule matched (in rules or in the learned-rules fallback).
    */
-  public static boolean processRules(List<RuleInterface> rules, RuleInterface learnedRulesFallback, Message message, Logger logger, String context, File statsDir) {
+  public static boolean processRules(List<RuleInterface> rules, RuleInterface learnedRulesFallback, Message message, Logger logger, String logContext, RuleContext context) {
     long start = System.nanoTime();
     boolean matched;
     boolean blocked;
     String matchedDescription = null;
 
-    RuleExecutionResult result = evaluate(rules, message, logger, context);
+    RuleExecutionResult result = evaluate(rules, message, logger, logContext);
     if (!result.keepProcessing()) {
       matched = true;
       blocked = true; // a blocking rule already matched: never touch the learned rules afterward
@@ -79,7 +78,7 @@ public class RuleHelper {
     }
 
     long processedMs = (System.nanoTime() - start) / 1_000_000;
-    StatsLog.recordProcessed(statsDir, blocked ? StatsLog.ProcessResult.MATCH : StatsLog.ProcessResult.PASS, matchedDescription, processedMs);
+    StatsLog.recordProcessed(context.statsDir(), blocked ? StatsLog.ProcessResult.MATCH : StatsLog.ProcessResult.PASS, matchedDescription, processedMs);
     return matched;
   }
 }
