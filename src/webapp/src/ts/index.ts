@@ -1,3 +1,4 @@
+import "../css/style.scss";
 import m from "mithril";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";

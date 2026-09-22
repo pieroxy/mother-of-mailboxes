@@ -1,5 +1,6 @@
 import m from "mithril";
 import { ApiEndpoints } from "../auto/ApiEndpoints";
+import { Logo } from "../components/icons/Logo";
 import { Auth } from "../utils/Auth";
 import { Endpoints } from "../utils/navigation/Endpoints";
 import { Routing } from "../utils/navigation/Routing";
@@ -16,24 +17,27 @@ export class LoginPage extends AbstractPage {
   }
 
   render(): m.Children {
-    return m("form", { onsubmit: (e: Event) => this.submit(e) }, [
-      m("input", {
-        type: "text",
-        placeholder: "Login",
-        value: this.login,
-        disabled: this.submitting,
-        oninput: (e: Event) => (this.login = (e.target as HTMLInputElement).value),
-      }),
-      m("input", {
-        type: "password",
-        placeholder: "Password",
-        value: this.password,
-        disabled: this.submitting,
-        oninput: (e: Event) => (this.password = (e.target as HTMLInputElement).value),
-      }),
-      m("button", { type: "submit", disabled: this.submitting }, "Login"),
-      this.error ? m("div", this.error) : null,
-    ]);
+    return m("loginpage", [
+      m(Logo),
+      m("form", { onsubmit: (e: Event) => this.submit(e) }, [
+        m("input", {
+          type: "text",
+          placeholder: "Login",
+          value: this.login,
+          disabled: this.submitting,
+          oninput: (e: Event) => (this.login = (e.target as HTMLInputElement).value),
+        }),
+        m("input", {
+          type: "password",
+          placeholder: "Password",
+          value: this.password,
+          disabled: this.submitting,
+          oninput: (e: Event) => (this.password = (e.target as HTMLInputElement).value),
+        }),
+        m("button", { type: "submit", disabled: this.submitting }, "Login"),
+        this.error ? m("div", this.error) : null,
+      ])
+    ])
   }
 
   private submit(e: Event) {
