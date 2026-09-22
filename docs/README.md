@@ -1,11 +1,11 @@
-# IMF documentation
+# MOM documentation
 
-IMF (imap-mail-filter) is a small daemon that polls one or more IMAP accounts and applies
+MOM (Mother Of Mailboxes) is a small daemon that polls one or more IMAP accounts and applies
 configurable rules to new mail: move it, mark it read, or both. Rules can be written by hand in
 `config.json`, or taught by example by dropping sample messages into special IMAP folders.
 
 - [Quick start](quickstart.md) — download the jar, try it, then run it as a systemd service
-- [Running IMF](#running-imf)
+- [Running MOM](#running-mom)
 - [Configuration file](#configuration-file)
   - [Top-level fields](#top-level-fields)
   - [Account fields](#account-fields)
@@ -27,14 +27,14 @@ configurable rules to new mail: move it, mark it read, or both. Rules can be wri
 - [Reputation lists](#reputation-lists)
 - [Web server](#web-server)
 
-## Running IMF
+## Running MOM
 
-IMF requires Java 17. Build a runnable jar with Maven, then run it with the path to a
+MOM requires Java 17. Build a runnable jar with Maven, then run it with the path to a
 **directory containing `config.json` and `credentials.json`**:
 
 ```sh
 mvn clean package
-java -jar target/imf-core-1.0-SNAPSHOT.jar /path/to/config-dir
+java -jar target/mom-core-1.0-SNAPSHOT.jar /path/to/config-dir
 ```
 
 One thread is started per account declared in `configurations`. Each account is processed on
@@ -57,7 +57,7 @@ same directory — see [Credentials file](#credentials-file).
 | Field | Required | Description |
 |---|---|---|
 | `configurations` | yes | List of accounts to monitor (see below). |
-| `dataFolder` | yes | Directory where IMF persists its own state: per-account UID cursors, learned rules, classifier corpus, and logs (`<dataFolder>/logs/log.txt`). Created if missing. |
+| `dataFolder` | yes | Directory where MOM persists its own state: per-account UID cursors, learned rules, classifier corpus, and logs (`<dataFolder>/logs/log.txt`). Created if missing. |
 | `keepLogFiles` | no | Number of rotated, lz4-compressed daily log files to keep. `0` or absent disables rotation (the log file just keeps growing). |
 | `reputationLists` | no | IP/domain reputation lists to download and refresh (see [Reputation lists](#reputation-lists)). Absent means the feature is off. |
 | `webServer` | no | Embedded web server serving the web UI (see [Web server](#web-server)). Absent, or `enabled: false`, means the feature is off entirely — no Tomcat startup. |
@@ -72,14 +72,14 @@ Each entry in `configurations` is one IMAP account:
 | `host` | yes | IMAP server hostname. |
 | `port` | yes | IMAP server port. |
 | `credentials` | yes | Key into `credentials.json`'s `credentials` map, resolved into the IMAP login/password at startup. See [Credentials file](#credentials-file). |
-| `runEvery` | yes | Seconds between processing cycles (see [Running IMF](#running-imf) for how IMAP IDLE affects this). |
+| `runEvery` | yes | Seconds between processing cycles (see [Running MOM](#running-mom) for how IMAP IDLE affects this). |
 | `classifierSpamFolderName` | no | Folder treated as "Spam" for classifier corpus labeling. Defaults to `"Spam"`. |
-| `classifierExcludedFolders` | no | Folder names (anywhere in the tree) to skip entirely for classifier corpus collection — neither `SPAM` nor `HAM`, just ignored, like `INBOX`/`imf-rules/` already are. See [Classifier corpus collection](#classifier-corpus-collection). |
+| `classifierExcludedFolders` | no | Folder names (anywhere in the tree) to skip entirely for classifier corpus collection — neither `SPAM` nor `HAM`, just ignored, like `INBOX`/`mom-rules/` already are. See [Classifier corpus collection](#classifier-corpus-collection). |
 | `classifierCorpusRetentionDays` | no | Enables classifier corpus collection for this account when `> 0` (see [Classifier corpus collection](#classifier-corpus-collection)). `0` or absent disables it. |
 | `classifierCorpusScanBatchSize` | no | Cap on messages fetched/processed in one corpus scan cycle for this account. `0` or absent defaults to 500. Lower it on a slow link or server; raise it to catch up faster on a fast one. |
 | `rules` | no | List of manually-configured rules for this account (see [Matchers and actions](#matchers-and-actions)). Absent/empty means only learned rules (if any) apply. |
-| `learningShortcuts` | no | Named flat `imf-rules/<name>` folders bound to a fixed (matcher type, action) pair, as an alternative to the full discovery tree. See [Learning shortcuts](#learning-shortcuts). |
-| `discoveryTreeDisabled` | no | Skips creating/maintaining the `<MATCHER_TYPE>/<ACTION_TYPE>` discovery tree under `imf-rules/` entirely. `imf-rules/Done` and any `learningShortcuts` folders are unaffected. Default `false`. Useful with a mail client that shows every IMAP folder unconditionally regardless of subscription state (e.g. Apple Mail), once shortcuts cover what's actually used. See [Learning shortcuts](#learning-shortcuts). |
+| `learningShortcuts` | no | Named flat `mom-rules/<name>` folders bound to a fixed (matcher type, action) pair, as an alternative to the full discovery tree. See [Learning shortcuts](#learning-shortcuts). |
+| `discoveryTreeDisabled` | no | Skips creating/maintaining the `<MATCHER_TYPE>/<ACTION_TYPE>` discovery tree under `mom-rules/` entirely. `mom-rules/Done` and any `learningShortcuts` folders are unaffected. Default `false`. Useful with a mail client that shows every IMAP folder unconditionally regardless of subscription state (e.g. Apple Mail), once shortcuts cover what's actually used. See [Learning shortcuts](#learning-shortcuts). |
 
 Connections are always made over IMAPS (implicit TLS) — there is no plain-IMAP option.
 
@@ -87,7 +87,7 @@ Connections are always made over IMAPS (implicit TLS) — there is no plain-IMAP
 
 ```json
 {
-  "dataFolder": "/var/lib/imf",
+  "dataFolder": "/var/lib/mom",
   "keepLogFiles": 14,
   "configurations": [
     {
@@ -192,14 +192,14 @@ file's `credentials` map:
 }
 ```
 
-Every `credentials` key referenced from `config.json` must exist in this map — IMF fails fast
+Every `credentials` key referenced from `config.json` must exist in this map — MOM fails fast
 at startup otherwise.
 
 ## Matchers and actions
 
 A rule is a `matcher` + an `action`. When a matcher matches a message, its action runs.
 
-**Matchers** (`net.pieroxy.imf.rules.matchers`):
+**Matchers** (`net.pieroxy.mom.rules.matchers`):
 
 | Type | Purpose |
 |---|---|
@@ -222,7 +222,7 @@ A rule is a `matcher` + an `action`. When a matcher matches a message, its actio
 | [`OR`](matchers/or.md) | Composite: any child matching is enough. |
 | [`NOT`](matchers/not.md) | Composite: matches if its single child does not. |
 
-**Actions** (`net.pieroxy.imf.rules.actions`):
+**Actions** (`net.pieroxy.mom.rules.actions`):
 
 | Type | Purpose |
 |---|---|
@@ -243,10 +243,10 @@ configs instead of `key`/`keys`.
 
 ## Rule evaluation order
 
-For each new message, IMF walks the rules in `config.json`, in the order they appear, and applies
+For each new message, MOM walks the rules in `config.json`, in the order they appear, and applies
 the **first one whose matcher matches**. A rule "applies" (and stops the search) as soon as its
 matcher matches, even if the action itself later fails; a failed action is logged but doesn't
-make IMF try the next rule instead.
+make MOM try the next rule instead.
 
 Learned rules always get a chance to run too, but *where* depends on `config.json`:
 
@@ -297,12 +297,12 @@ Instead of writing a rule by hand, you can teach it by dropping example messages
 specific IMAP folder path:
 
 ```
-imf-rules/<MATCHER_TYPE>/<ACTION_TYPE>/<key>
+mom-rules/<MATCHER_TYPE>/<ACTION_TYPE>/<key>
 ```
 
-For example, `imf-rules/FROM_DOMAIN_EQUALS/MOVE_TO/Spam`: every message dropped in that folder
+For example, `mom-rules/FROM_DOMAIN_EQUALS/MOVE_TO/Spam`: every message dropped in that folder
 teaches the rule "if the sender's domain equals this message's sender domain, move to Spam".
-IMF automatically creates the `<MATCHER_TYPE>/<ACTION_TYPE>` skeleton for every learnable
+MOM automatically creates the `<MATCHER_TYPE>/<ACTION_TYPE>` skeleton for every learnable
 matcher/action combination each cycle — you only need to create the final `<key>` folder
 yourself (its name becomes the action's key, e.g. the target folder for `MOVE_TO`).
 
@@ -311,12 +311,12 @@ Only "learnable" matcher/action types support this (everything except the compos
 
 1. The matcher's key is extracted from the example (e.g. its sender's domain).
 2. The rule is persisted to `<dataFolder>/<displayName>-learned-rules.json` — a separate file
-   from `config.json`, which IMF never modifies. If a rule with the same matcher type and
+   from `config.json`, which MOM never modifies. If a rule with the same matcher type and
    action already exists, the new key is merged into it (`keys`) rather than creating a
    duplicate rule.
 3. The action actually runs on the example message itself.
 4. If the example is still present afterward (the action didn't move or delete it), it's moved
-   to `imf-rules/Done` — so it isn't re-learned/re-run every cycle. It's marked **unread** on
+   to `mom-rules/Done` — so it isn't re-learned/re-run every cycle. It's marked **unread** on
    the way in, regardless of its state before: a clear indicator in the mail client that
    something there still needs to be manually sorted.
 
@@ -331,7 +331,7 @@ only ever use a handful of them, and subscribing an IMAP client to the rest just
 there unused doesn't scale.
 
 `learningShortcuts` (per account) gives a specific (matcher type, action) pair its own flat
-folder directly under `imf-rules/`, instead of the two nested levels:
+folder directly under `mom-rules/`, instead of the two nested levels:
 
 ```json
 {
@@ -345,8 +345,8 @@ folder directly under `imf-rules/`, instead of the two nested levels:
 }
 ```
 
-Dropping a message into `imf-rules/MoveSameDomainToSpam` teaches exactly the same rule as
-`imf-rules/FROM_DOMAIN_EQUALS/MOVE_TO_AND_READ/Spam` would — same extraction, same persistence
+Dropping a message into `mom-rules/MoveSameDomainToSpam` teaches exactly the same rule as
+`mom-rules/FROM_DOMAIN_EQUALS/MOVE_TO_AND_READ/Spam` would — same extraction, same persistence
 to `<displayName>-learned-rules.json`, same `Done` archival — just reached through one
 subscribable folder instead of two unsubscribed levels. The two mechanisms coexist freely: a
 shortcut doesn't remove its equivalent discovery-tree folder, so nothing stops using one to
@@ -355,7 +355,7 @@ explore and the other day to day.
 The `action` is fully fixed in config, `key` included — a shortcut has no `<key>` folder level
 left to carry a destination, unlike the discovery tree. `matcher` only ever takes a `type`: its
 key is still extracted from each example, exactly as in the discovery tree, so setting `key` (or
-`keys`) on a shortcut's matcher is rejected. IMF validates every shortcut at startup — a
+`keys`) on a shortcut's matcher is rejected. MOM validates every shortcut at startup — a
 non-learnable matcher/action type, a missing `action.key`, a matcher `key`/`keys`, a name reused
 by two shortcuts, or a name colliding with a discovery-tree folder (a `MATCHER_TYPE` name, or
 `Done`) all fail loudly rather than being silently ignored.
@@ -369,15 +369,15 @@ used day to day.
 ## Manually reprocessing a message
 
 To re-run the full rule catalog against a message that's already in your mailbox (for example,
-after adding a rule that should have caught it), drop it into `imf-rules/ToProcess`. Every
-cycle, IMF treats every message found there exactly as if it had just arrived: the first
+after adding a rule that should have caught it), drop it into `mom-rules/ToProcess`. Every
+cycle, MOM treats every message found there exactly as if it had just arrived: the first
 matching rule applies normally. If the message is still present afterward — no rule matched, or
-the matching rule's action didn't relocate it — it's moved to `imf-rules/Done` (the same folder
+the matching rule's action didn't relocate it — it's moved to `mom-rules/Done` (the same folder
 used by the learning system above, marked unread the same way) for manual review.
 
 ## Logging
 
-Console logging is always on. IMF also always writes to `<dataFolder>/logs/log.txt`, rotating
+Console logging is always on. MOM also always writes to `<dataFolder>/logs/log.txt`, rotating
 daily into lz4-compressed archives (kept for `keepLogFiles` days) if `keepLogFiles > 0`.
 
 Each matcher/action node in a rule has its own logger, independently leveled via that node's
@@ -389,7 +389,7 @@ evaluated, alignment computed) without touching any global logging configuration
 
 ### Stats log
 
-Besides the human-readable log above, IMF appends one JSON line per event to
+Besides the human-readable log above, MOM appends one JSON line per event to
 `<dataFolder>/logs/stats-YYYY-MM-DD.json` (UTC day). Two event types, told apart by `type`:
 
 ```json
@@ -422,15 +422,15 @@ files yourself if needed.
 
 ## Data files
 
-Everything IMF persists lives under `dataFolder`, one file/folder per account (keyed by
+Everything MOM persists lives under `dataFolder`, one file/folder per account (keyed by
 `displayName`):
 
 | Path | Contents |
 |---|---|
 | `logs/log.txt` | Current log file (see [Logging](#logging)); rotated into `logs/log.txt.N.lz4` archives. |
-| `logs/stats-YYYY-MM-DD.json` | One JSON-lines file per UTC day of successful rule matches (see [Stats log](#stats-log)). Not rotated/pruned by IMF. |
+| `logs/stats-YYYY-MM-DD.json` | One JSON-lines file per UTC day of successful rule matches (see [Stats log](#stats-log)). Not rotated/pruned by MOM. |
 | `<displayName>.json` | INBOX UID cursor (which messages have already been processed). |
-| `<displayName>-learned-rules.json` | Rules learned via `imf-rules/` (see above). Hand-editable. |
+| `<displayName>-learned-rules.json` | Rules learned via `mom-rules/` (see above). Hand-editable. |
 | `classifier-corpus/<displayName>-scan-state.json` | Per-folder UID cursor for corpus scanning. |
 | `classifier-corpus/<displayName>/classifier-YYYY-MM-DD.json.lz4` | One compressed file per day of collected corpus data. |
 | `classifier-corpus/<displayName>/subject-model.bin` | Trained subject classifier model (see below). Absent until enough data has been collected. |
@@ -439,8 +439,8 @@ Everything IMF persists lives under `dataFolder`, one file/folder per account (k
 
 ## Classifier corpus collection
 
-When `classifierCorpusRetentionDays > 0`, IMF builds a labeled dataset per account under
-`dataFolder`, walking every folder except `INBOX` and `imf-rules/` and labeling messages `SPAM`
+When `classifierCorpusRetentionDays > 0`, MOM builds a labeled dataset per account under
+`dataFolder`, walking every folder except `INBOX` and `mom-rules/` and labeling messages `SPAM`
 (if in the `classifierSpamFolderName` folder) or `HAM` (everything else). Two different scan
 rhythms:
 
@@ -490,12 +490,12 @@ into a dedicated folder (e.g. `"SpamML"`, or a `"Spam/ML"` subfolder) rather tha
 
 ### Subject classifier training
 
-Once a day, right after a full scan completes, IMF (re)trains a subject-only spam classifier
+Once a day, right after a full scan completes, MOM (re)trains a subject-only spam classifier
 (Naive Bayes) on the entire retained corpus, and writes it to
 `classifier-corpus/<displayName>/subject-model.bin`. Training is
 skipped — logged, not an error — until there are **at least 50 examples of each class** (`SPAM`
 and `HAM`); a lopsided or too-small corpus produces a model that hasn't learned anything useful,
-so IMF doesn't bother writing one yet.
+so MOM doesn't bother writing one yet.
 
 Use [`SUBJECT_CLASSIFIER_EQUALS`](matchers/subject-classifier-equals.md) in a rule to actually
 act on this — see its doc for the config format (a probability threshold like `">0.9"`, not a
@@ -571,7 +571,7 @@ successful download. Every download attempt, success or failure, is logged.
 Blank lines are ignored; `#` or `;` start a comment, either as a whole line or trailing after an
 entry (e.g. Spamhaus DROP publishes `1.10.16.0/20 ; SBL256894` — the `; SBL256894` reference is
 stripped, not treated as part of the entry). A single malformed entry is skipped (logged) rather
-than failing the whole list. If a refresh fails (the source is down, network issue...), IMF keeps
+than failing the whole list. If a refresh fails (the source is down, network issue...), MOM keeps
 serving the last successfully downloaded copy indefinitely, rather than losing the signal.
 
 See [Starter configuration](../README.md#starter-configuration) for the five free sources wired
@@ -587,7 +587,7 @@ referenced lists contain the same value, the worst (highest) score wins.
 
 ## Web server
 
-IMF can embed a web server (Tomcat) serving a web UI, controlled by the top-level `webServer`
+MOM can embed a web server (Tomcat) serving a web UI, controlled by the top-level `webServer`
 block:
 
 ```json

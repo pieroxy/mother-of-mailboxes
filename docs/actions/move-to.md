@@ -20,7 +20,7 @@ Moves the message to another IMAP folder.
 - Implemented as a copy-then-delete: the message is copied to the target folder **with its
   current flags** (e.g. `\Seen` if already marked read), then flagged `\Deleted` in the source
   folder. Actual removal happens when the folder is next expunged.
-- Learnable: dropping an example message into `imf-rules/<MATCHER_TYPE>/MOVE_TO/<key>` teaches a
+- Learnable: dropping an example message into `mom-rules/<MATCHER_TYPE>/MOVE_TO/<key>` teaches a
   rule that moves matching mail to the folder named `<key>`.
 
 ## Example

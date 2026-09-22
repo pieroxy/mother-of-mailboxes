@@ -16,7 +16,7 @@ another's — without actually moving or flagging the mail.
 
 - Touches nothing on the message. Always reports success.
 - Not learnable: there's no folder/key to speak of, and "learn me a rule that does nothing"
-  isn't a meaningful example to drop into `imf-rules/`.
+  isn't a meaningful example to drop into `mom-rules/`.
 
 ## Example
 

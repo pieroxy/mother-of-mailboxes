@@ -13,7 +13,7 @@ Marks the message as read (`\Seen`), in place — doesn't move or otherwise touc
 ## Behavior
 
 - Sets the `\Seen` flag on the message.
-- Learnable: dropping an example message into `imf-rules/<MATCHER_TYPE>/READ/<key>` teaches a
+- Learnable: dropping an example message into `mom-rules/<MATCHER_TYPE>/READ/<key>` teaches a
   rule that just marks matching mail as read.
 
 ## Example

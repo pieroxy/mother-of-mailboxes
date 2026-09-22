@@ -21,7 +21,7 @@ the configured value. **Case-insensitive.**
   are ignored — `"Jean Dupont <jdupont@example.com>"` and `jdupont@example.com` match the same
   key.
 - Learnable: dropping an example message into
-  `imf-rules/FROM_ADDRESS_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's
+  `mom-rules/FROM_ADDRESS_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's
   sender address as the key. Fails to learn from a message with zero or multiple From addresses,
   or one with no usable email part.
 

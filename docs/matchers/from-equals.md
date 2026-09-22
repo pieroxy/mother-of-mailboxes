@@ -20,7 +20,7 @@ just `address` if there's no display name), equals the configured value. **Case-
 - Comparison is a plain `String.equals` — no trimming, no case folding. If you're not sure of
   the exact display name a sender uses, prefer [`FROM_ADDRESS_EQUALS`](from-address-equals.md).
 - Learnable: dropping an example message into
-  `imf-rules/FROM_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's exact `From:`
+  `mom-rules/FROM_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's exact `From:`
   string as the key. Fails to learn from a message with zero or multiple From addresses.
 
 ## Example

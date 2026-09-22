@@ -22,8 +22,8 @@ part of it).
   are ignored — `"Jean Dupont <jdupont@example.com>"` and `jdupont@example.com` are tested the
   same way.
 - Every configured regular expression is compiled once at startup — a typo'd regex fails loudly
-  right away (IMF refuses to start) rather than on the first message it's tested against.
-- Not learnable: dropping an example message into `imf-rules/` doesn't work for this matcher —
+  right away (MOM refuses to start) rather than on the first message it's tested against.
+- Not learnable: dropping an example message into `mom-rules/` doesn't work for this matcher —
   there's no sensible way to generalize a regular expression from one concrete address the way
   `FROM_ADDRESS_EQUALS` learns a literal one. Write the regex by hand in `config.json`.
 

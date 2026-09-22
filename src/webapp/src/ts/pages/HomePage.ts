@@ -7,7 +7,7 @@ import { AbstractPage } from "./AbstractPage";
 
 export class HomePage extends AbstractPage {
   getPageTitle(): string {
-    return "IMF";
+    return "MOM";
   }
 
   render(): m.Children {

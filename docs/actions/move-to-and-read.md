@@ -23,7 +23,7 @@ Marks the message as read, **then** moves it. Equivalent to an `AND` of `READ` f
   two children (a `READ` config with no key, and a `MOVE_TO` config using this action's own
   `key`/`logLevel`) are constructed on the fly.
 - Learnable, same as [`MOVE_TO`](move-to.md): dropping an example message into
-  `imf-rules/<MATCHER_TYPE>/MOVE_TO_AND_READ/<key>` teaches a rule that marks matching mail read
+  `mom-rules/<MATCHER_TYPE>/MOVE_TO_AND_READ/<key>` teaches a rule that marks matching mail read
   and moves it to the folder named `<key>`.
 
 ## Example

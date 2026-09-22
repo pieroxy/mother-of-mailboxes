@@ -1,7 +1,7 @@
 import m from "mithril";
 import { ApiEndpoints } from "../auto/ApiEndpoints";
 
-const STORAGE_KEY = "imf.sessionId";
+const STORAGE_KEY = "mom.sessionId";
 
 export enum AuthStatus {
   LOGGED_IN,

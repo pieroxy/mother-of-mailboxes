@@ -1,7 +1,7 @@
 {
-  "name": "imf-webapp",
+  "name": "mom-webapp",
   "version": "1.0.0",
-  "description": "IMF web UI",
+  "description": "MOM web UI",
   "scripts": {
     "dev": "webpack --mode development",
     "build": "webpack --mode production"

@@ -1,18 +1,17 @@
-# imap-mail-filter
-
+# MOM
 
 ## What is it?
 
-imap-mail-filter (IMF) is a small daemon that bolts spam detection and routing rules onto any IMAP mailbox — built for people who run their own mail server. On Gmail or Outlook.com? You're already covered, no need for this.
+MOM (Mother Of Mailboxes) is a small daemon that bolts spam detection and routing rules onto any IMAP mailbox — built for people who run their own mail server. On Gmail or Outlook.com? You're already covered, no need for this.
 
-Mail servers and clients often do this natively, but every time you switch software you get to reconfigure it all from scratch. IMF only needs IMAP, so it doesn't care what's behind it: point it at a new server and everything — rules included — just keeps working.
+Mail servers and clients often do this natively, but every time you switch software you get to reconfigure it all from scratch. MOM only needs IMAP, so it doesn't care what's behind it: point it at a new server and everything — rules included — just keeps working.
 
-Teaching it a new rule is dead simple too: drop an example email into the right `imf-rules/` subfolder, and every future email matching the same criteria gets routed automatically. See [Learning rules by example](docs/README.md#learning-rules-by-example) for how that folder structure works.
+Teaching it a new rule is dead simple too: drop an example email into the right `mom-rules/` subfolder, and every future email matching the same criteria gets routed automatically. See [Learning rules by example](docs/README.md#learning-rules-by-example) for how that folder structure works.
 
 ## Requirements
 
 * Java 17.
-* An IMAP account, reachable over IMAPS (implicit TLS) — there's no plain-IMAP mode, sorry. Folder-creation rights too, since IMF manages its own `imf-rules/` folder tree; the default on pretty much any account you'd actually own.
+* An IMAP account, reachable over IMAPS (implicit TLS) — there's no plain-IMAP mode, sorry. Folder-creation rights too, since MOM manages its own `mom-rules/` folder tree; the default on pretty much any account you'd actually own.
 * An internet connection — to your mail server, and for the SPF/DKIM/DMARC/FCrDNS checks, which are just DNS lookups. Nothing else ever leaves the box.
 
 That's it.
@@ -34,14 +33,14 @@ Additionally:
 
 A few things worth understanding before you dive in:
 
-* **No UI, no manual rule editing** — the primary way to teach IMF a rule is to drop an example email into the right `imf-rules/` subfolder. See [Learning rules by example](docs/README.md#learning-rules-by-example).
+* **No UI, no manual rule editing** — the primary way to teach MOM a rule is to drop an example email into the right `mom-rules/` subfolder. See [Learning rules by example](docs/README.md#learning-rules-by-example).
 * **First match wins** — rules are evaluated in the order they appear in `config.json` (learned rules included, wherever you place them — after everything else by default); the first one that matches runs its action and evaluation stops there. See [Rule evaluation order](docs/README.md#rule-evaluation-order).
-* **Everything is HAM except Spam** — for [classifier corpus collection](docs/README.md#classifier-corpus-collection), every folder is treated as legitimate mail (HAM) except the configured Spam folder. `INBOX`, `imf-rules/`, and any [excluded folders](docs/README.md#excluding-a-folder-from-the-corpus) (e.g. `SpamML`) are skipped entirely rather than counted as either.
+* **Everything is HAM except Spam** — for [classifier corpus collection](docs/README.md#classifier-corpus-collection), every folder is treated as legitimate mail (HAM) except the configured Spam folder. `INBOX`, `mom-rules/`, and any [excluded folders](docs/README.md#excluding-a-folder-from-the-corpus) (e.g. `SpamML`) are skipped entirely rather than counted as either.
 * **INBOX doesn't count** — INBOX is never scanned for the corpus, so mail you leave sitting there teaches the classifier nothing. Filing/archiving read mail into folders (an "inbox zero" habit) is what actually feeds it examples of legitimate mail.
-* **Unread in Spam means "review me"** — by convention (see the [starter config](config.example.json)), strong verdicts (SPF/DKIM/DMARC `fail`) are moved to Spam pre-marked read, while weaker, corroborating-only signals are left unread — a manual-review flag, since IMF has no UI to show confidence.
+* **Unread in Spam means "review me"** — by convention (see the [starter config](config.example.json)), strong verdicts (SPF/DKIM/DMARC `fail`) are moved to Spam pre-marked read, while weaker, corroborating-only signals are left unread — a manual-review flag, since MOM has no UI to show confidence.
 * **Always verified live** — SPF/DKIM/DMARC/FCrDNS are recomputed from scratch via DNS on every check; any `Authentication-Results`/`Received-SPF` header already on the message is never trusted, since anyone could have forged it before delivery.
 * **Reputation lists are the opposite: never live** — [`IP_REPUTATION_EQUALS`](docs/matchers/ip-reputation-equals.md)/[`FROM_DOMAIN_REPUTATION_EQUALS`](docs/matchers/from-domain-reputation-equals.md) check IPs/domains against lists downloaded in bulk ahead of time, for the whole process — never a query per message. Each source is called again once `refreshHours` has elapsed. See [Reputation lists](docs/README.md#reputation-lists).
-* **Manual reprocessing** — drop any message into `imf-rules/ToProcess` to run the current rule set against it (handy for reclassifying an old message after adding or fixing a rule); it ends up in `imf-rules/Done` once handled, whether or not a rule actually matched. See [Manually reprocessing a message](docs/README.md#manually-reprocessing-a-message).
+* **Manual reprocessing** — drop any message into `mom-rules/ToProcess` to run the current rule set against it (handy for reclassifying an old message after adding or fixing a rule); it ends up in `mom-rules/Done` once handled, whether or not a rule actually matched. See [Manually reprocessing a message](docs/README.md#manually-reprocessing-a-message).
 
 ## Roadmap
 
@@ -65,7 +64,7 @@ A few things worth understanding before you dive in:
 ## Documentation
 
 * New here? [Quick start guide](docs/quickstart.md) — download the jar, try it, then run it as a systemd service.
-* [docs/](docs/README.md) — how IMF works, the configuration reference, a dedicated page for every matcher and action.
+* [docs/](docs/README.md) — how MOM works, the configuration reference, a dedicated page for every matcher and action.
 * [`docs/IMPLEMENTATION-DETAILS.md`](docs/IMPLEMENTATION-DETAILS.md) — digging into the code? The "why" behind a few non-obvious internals.
 
 ## Starter configuration

@@ -35,7 +35,7 @@ match against.
 
 ## Not learnable by example
 
-Unlike the other leaf matchers, dropping an example into `imf-rules/` does nothing for this
+Unlike the other leaf matchers, dropping an example into `mom-rules/` does nothing for this
 type — it isn't in the learnable list. There's no per-example "key" to extract (the config field
 here is a threshold, not a value pulled from a message), and the model isn't trained from
 individual dropped examples anyway: it's retrained from the whole classifier corpus once a day

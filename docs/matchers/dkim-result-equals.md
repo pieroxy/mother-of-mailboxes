@@ -15,7 +15,7 @@ Matches when a **live-verified** DKIM (RFC 6376) result equals the configured va
 
 ## Why "live-verified"
 
-Same reasoning as [`SPF_RESULT_EQUALS`](spf-result-equals.md): IMF never reads or trusts a
+Same reasoning as [`SPF_RESULT_EQUALS`](spf-result-equals.md): MOM never reads or trusts a
 pre-existing `Authentication-Results` header for DKIM. It always re-verifies the signature
 itself, on the message's raw bytes.
 
@@ -24,7 +24,7 @@ itself, on the message's raw bytes.
 DKIM verification is real cryptographic signature checking (RSA or Ed25519) over
 headers and body canonicalized according to precise RFC 6376 rules — unlike SPF, there's no
 "just compare strings" shortcut, and a single implementation detail gotten wrong can silently
-fail signatures that are actually valid. IMF delegates this to
+fail signatures that are actually valid. MOM delegates this to
 [`org.apache.james.jdkim`](https://james.apache.org/jdkim/) rather than reimplementing it:
 
 1. The message's raw bytes (headers + body, exactly as received) are read.

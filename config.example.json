@@ -1,5 +1,5 @@
 {
-  "dataFolder": "/var/lib/imf",
+  "dataFolder": "/var/lib/mom",
   "keepLogFiles": 14,
   "classifierCorpusRetentionDays": 90,
   "webServer": {

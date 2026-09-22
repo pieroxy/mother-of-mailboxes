@@ -12,7 +12,7 @@ export class LoginPage extends AbstractPage {
   private error: string | undefined;
 
   getPageTitle(): string {
-    return "IMF - Login";
+    return "MOM - Login";
   }
 
   render(): m.Children {

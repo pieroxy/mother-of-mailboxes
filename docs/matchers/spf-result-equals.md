@@ -16,7 +16,7 @@ Matches when a **live-verified** SPF (RFC 7208) result equals the configured val
 ## Why "live-verified"
 
 Most mail servers add an `Authentication-Results` (or `Received-SPF`) header once they've
-checked SPF themselves. IMF **never reads or trusts those headers** — it always redoes the
+checked SPF themselves. MOM **never reads or trusts those headers** — it always redoes the
 check itself, for two reasons:
 
 1. Your own receiving server may not check SPF at all (the reason this matcher exists).
@@ -45,7 +45,7 @@ the matcher simply doesn't match — it never throws.
 
 - **Macros** (`%{...}`) in a mechanism's value aren't supported; a mechanism using one is
   skipped rather than failing the whole record (macros are almost always used only in `exp=`,
-  which IMF never reads, so this rarely matters in practice).
+  which MOM never reads, so this rarely matters in practice).
 - **`ptr`** is deliberately never matched, as recommended by the RFC — it requires an
   unreliable reverse-DNS lookup.
 - The evaluation trusts the topmost `Received:` header as having been added by your own,

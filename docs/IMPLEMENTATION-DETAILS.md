@@ -3,7 +3,7 @@
 [← back to docs](README.md)
 
 Internals that don't belong in [the main docs](README.md) (which document how to configure and
-use IMF) but are worth writing down somewhere rather than only living in code comments — the
+use MOM) but are worth writing down somewhere rather than only living in code comments — the
 "why" behind a design choice that isn't obvious from reading the code alone.
 
 ## Classifier corpus deduplication by Message-ID

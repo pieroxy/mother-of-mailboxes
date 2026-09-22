@@ -23,7 +23,7 @@ Matches when the sender's domain (the part after `@`) equals the configured valu
   via an `AND` matcher if you need that guarantee (see the example in the
   [main config example](../README.md#example-configjson)).
 - Learnable: dropping an example message into
-  `imf-rules/FROM_DOMAIN_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's sender
+  `mom-rules/FROM_DOMAIN_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's sender
   domain as the key. Fails to learn from a message with zero or multiple From addresses, or one
   with no domain part.
 
