@@ -1,10 +1,11 @@
 import m from "mithril";
-import { ApiEndpoints } from "../auto/ApiEndpoints";
-import { Logo } from "../components/icons/Logo";
-import { Auth } from "../utils/Auth";
-import { Endpoints } from "../utils/navigation/Endpoints";
-import { Routing } from "../utils/navigation/Routing";
+import { ApiEndpoints } from "../../auto/ApiEndpoints";
+import { LogoSub } from "../atoms/icons/Logo";
+import { Auth } from "../../utils/Auth";
+import { Endpoints } from "../../utils/navigation/Endpoints";
+import { Routing } from "../../utils/navigation/Routing";
 import { AbstractPage } from "./AbstractPage";
+import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
 export class LoginPage extends AbstractPage {
   private login = "";
@@ -18,7 +19,7 @@ export class LoginPage extends AbstractPage {
 
   render(): m.Children {
     return m("loginpage", [
-      m(Logo),
+      m(LogoSub),
       m("form", { onsubmit: (e: Event) => this.submit(e) }, [
         m("input", {
           type: "text",
@@ -35,7 +36,7 @@ export class LoginPage extends AbstractPage {
           oninput: (e: Event) => (this.password = (e.target as HTMLInputElement).value),
         }),
         m("button", { type: "submit", disabled: this.submitting }, "Login"),
-        this.error ? m("div", this.error) : null,
+        this.error ? m("div.errorMessage", this.error) : null,
       ])
     ])
   }
@@ -52,6 +53,7 @@ export class LoginPage extends AbstractPage {
           Routing.goToScreen(Endpoints.HOME);
         } else {
           this.error = "Invalid login or password.";
+          Notifications.addNotification(new Notification(NotificationsClass.LOGIN, NotificationsType.ERROR, this.error, 50000))
         }
         m.redraw();
       })

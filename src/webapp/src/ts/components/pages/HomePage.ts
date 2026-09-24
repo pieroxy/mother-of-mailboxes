@@ -1,8 +1,8 @@
 import m from "mithril";
-import { ApiEndpoints } from "../auto/ApiEndpoints";
-import { Auth } from "../utils/Auth";
-import { Endpoints } from "../utils/navigation/Endpoints";
-import { Routing } from "../utils/navigation/Routing";
+import { ApiEndpoints } from "../../auto/ApiEndpoints";
+import { Auth } from "../../utils/Auth";
+import { Endpoints } from "../../utils/navigation/Endpoints";
+import { Routing } from "../../utils/navigation/Routing";
 import { AbstractPage } from "./AbstractPage";
 
 export class HomePage extends AbstractPage {
