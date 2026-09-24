@@ -19,12 +19,17 @@ package net.pieroxy.mom.rules;
  *                             bubbled up so {@link RuleHelper#processRules} can name, on its
  *                             {@code PROCESSED} stats event, which rule ultimately blocked the
  *                             message (see {@code net.pieroxy.mom.utils.logging.StatsLog}).
+ * @param nonNoopActionApplied only meaningful when ruleApplied is true: whether the action that
+ *                             ran was anything other than the literal {@code NOOP} type (see
+ *                             {@code ActionType}) — lets {@link RuleHelper#processRules} tell
+ *                             {@code MailAccount} whether this message actually got acted upon,
+ *                             for the live per-account counters (see {@code AccountsApi}).
  */
-public record RuleExecutionResult(boolean ruleApplied, boolean keepProcessing, boolean learnedRulesExecuted, String matchedDescription) {
+public record RuleExecutionResult(boolean ruleApplied, boolean keepProcessing, boolean learnedRulesExecuted, String matchedDescription, boolean nonNoopActionApplied) {
   /** No match: keepProcessing is irrelevant here (nothing to keep processing from), left true by convention. */
-  public static final RuleExecutionResult NOT_APPLIED = new RuleExecutionResult(false, true, false, null);
+  public static final RuleExecutionResult NOT_APPLIED = new RuleExecutionResult(false, true, false, null, false);
 
-  public static RuleExecutionResult applied(boolean keepProcessing, String matchedDescription) {
-    return new RuleExecutionResult(true, keepProcessing, false, matchedDescription);
+  public static RuleExecutionResult applied(boolean keepProcessing, String matchedDescription, boolean nonNoopActionApplied) {
+    return new RuleExecutionResult(true, keepProcessing, false, matchedDescription, nonNoopActionApplied);
   }
 }

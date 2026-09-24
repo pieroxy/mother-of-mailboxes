@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -62,6 +63,13 @@ public class MailAccount implements Runnable {
   private final ImapIdleWatcher idleWatcher;
   private final Thread thread;
   private LocalDate lastSkeletonEnsureDate;
+
+  // Live dashboard state (see AccountsApi): written only from this account's own thread, read
+  // from Tomcat's request-handling threads — volatile/Atomic, not synchronized, is enough since
+  // there's a single writer.
+  private volatile AccountStatus status = AccountStatus.OK;
+  private final AtomicLong messagesProcessed = new AtomicLong();
+  private final AtomicLong messagesMatched = new AtomicLong();
 
   public MailAccount(MailAccountConfiguration config, Credential credential, String dataFolder) {
     this(config, credential, dataFolder, ImapMailboxConnection::connect);
@@ -122,6 +130,25 @@ public class MailAccount implements Runnable {
     thread.join(timeoutMs);
   }
 
+  /** displayName if set, otherwise the IMAP login — surfaced by the web API's account list. */
+  public String getAccountLabel() {
+    return accountLabel();
+  }
+
+  public AccountStatus getStatus() {
+    return status;
+  }
+
+  /** Messages processed this session (reset on restart) — surfaced by the web API's account list. */
+  public long getMessagesProcessed() {
+    return messagesProcessed.get();
+  }
+
+  /** Of those, how many matched a rule whose action was not NOOP. */
+  public long getMessagesMatched() {
+    return messagesMatched.get();
+  }
+
   @Override
   public void run() {
     LOGGER.info("Starting account " + config.getDisplayName());
@@ -142,7 +169,24 @@ public class MailAccount implements Runnable {
     // cycle's own connection opens INBOX: some IMAP servers refuse a second, concurrent SELECT
     // of the same mailbox, so the two must never overlap.
     new BackoffLoop(config.getRunEvery() * 1000L, MAX_BACKOFF_MS, idleWatcher)
-        .run(config.getDisplayName(), this::processMessages);
+        .run(config.getDisplayName(), this::processMessagesTracked);
+  }
+
+  /**
+   * Wraps {@link #processMessages} to keep {@link #status} current for the dashboard: PROCESSING
+   * while a cycle runs, OK right after one finishes cleanly (i.e. back to idling/IDLE-waiting),
+   * KO if it threw. Kept separate from {@link #processMessages} itself rather than folded into
+   * {@link BackoffLoop}, which deliberately stays unaware of what the task it runs represents.
+   */
+  private void processMessagesTracked() throws Exception {
+    status = AccountStatus.PROCESSING;
+    try {
+      processMessages();
+      status = AccountStatus.OK;
+    } catch (Exception e) {
+      status = AccountStatus.KO;
+      throw e;
+    }
   }
 
   /** displayName if set, otherwise falls back to the IMAP login — see {@link RuleCatalog#logRules}. */
@@ -153,8 +197,10 @@ public class MailAccount implements Runnable {
 
   /** Applies the first matching rule (manual config, then learned rules). */
   private void inspect(Message message) {
-    RuleHelper.processRules(ruleCatalog.get(), ruleCatalog.getLearnedRulesFallback(), message, LOGGER,
+    RuleHelper.ProcessOutcome outcome = RuleHelper.processRules(ruleCatalog.get(), ruleCatalog.getLearnedRulesFallback(), message, LOGGER,
         "account " + config.getDisplayName(), ruleCatalog.getContext());
+    messagesProcessed.incrementAndGet();
+    if (outcome.nonNoopActionApplied()) messagesMatched.incrementAndGet();
   }
 
   /** Package-private (instead of private): lets MailAccountTest run a cycle without going through run()/BackoffLoop. */

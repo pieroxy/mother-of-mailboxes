@@ -36,6 +36,6 @@ public class LearnedRulesGroupRule implements RuleInterface {
   @Override
   public RuleExecutionResult apply(Message message) {
     RuleExecutionResult result = RuleHelper.evaluate(learnedRules, message, LOGGER, "learned rules");
-    return new RuleExecutionResult(result.ruleApplied(), result.keepProcessing(), true, result.matchedDescription());
+    return new RuleExecutionResult(result.ruleApplied(), result.keepProcessing(), true, result.matchedDescription(), result.nonNoopActionApplied());
   }
 }

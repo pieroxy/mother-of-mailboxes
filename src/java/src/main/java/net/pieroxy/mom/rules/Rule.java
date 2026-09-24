@@ -3,6 +3,7 @@ package net.pieroxy.mom.rules;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.utils.logging.StatsLog;
 import net.pieroxy.mom.rules.actions.Action;
+import net.pieroxy.mom.rules.actions.ActionType;
 import net.pieroxy.mom.rules.matchers.MatchResult;
 import net.pieroxy.mom.rules.matchers.Matcher;
 import net.pieroxy.mom.utils.MailTools;
@@ -69,6 +70,6 @@ public class Rule implements RuleInterface {
     } catch (Exception e) {
       action.getLogger().log(Level.WARNING, "Action failed on message from " + MailTools.describeFromSafely(message), e);
     }
-    return RuleExecutionResult.applied(config.isKeepProcessing(), matchResult.debugString());
+    return RuleExecutionResult.applied(config.isKeepProcessing(), matchResult.debugString(), config.getAction().getType() != ActionType.NOOP);
   }
 }

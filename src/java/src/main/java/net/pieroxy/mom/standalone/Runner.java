@@ -68,7 +68,7 @@ public class Runner {
 
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
       Credential webServerCredential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
-      ServiceProvider serviceProvider = new ServiceProvider(webServerCredential, new SessionStore());
+      ServiceProvider serviceProvider = new ServiceProvider(webServerCredential, new SessionStore(), accounts);
       webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder(), serviceProvider);
     }
 

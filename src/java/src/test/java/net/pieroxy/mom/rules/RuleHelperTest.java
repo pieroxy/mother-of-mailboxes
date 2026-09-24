@@ -67,7 +67,7 @@ public class RuleHelperTest {
     @Override public String describe() { return "Spy"; }
     @Override public RuleExecutionResult apply(Message message) {
       invoked = true;
-      return matches ? new RuleExecutionResult(true, false, true, "Spy") : new RuleExecutionResult(false, true, true, null);
+      return matches ? new RuleExecutionResult(true, false, true, "Spy", true) : new RuleExecutionResult(false, true, true, null, false);
     }
   }
 
@@ -76,7 +76,7 @@ public class RuleHelperTest {
     SpyRule fallback = new SpyRule(true);
 
     boolean matched = RuleHelper.processRules(List.of(blockingRule("nobody@example.com")), fallback,
-        messageFrom("alice@example.com"), logger, "test", RuleContext.EMPTY);
+        messageFrom("alice@example.com"), logger, "test", RuleContext.EMPTY).matched();
 
     assertTrue("the non-matching manual rule must not prevent the fallback", fallback.invoked);
     assertTrue(matched);
@@ -87,7 +87,7 @@ public class RuleHelperTest {
     SpyRule fallback = new SpyRule(true);
 
     boolean matched = RuleHelper.processRules(List.of(blockingRule("alice@example.com")), fallback,
-        messageFrom("alice@example.com"), logger, "test", RuleContext.EMPTY);
+        messageFrom("alice@example.com"), logger, "test", RuleContext.EMPTY).matched();
 
     assertFalse("a blocking manual match must stop evaluation before the fallback ever runs", fallback.invoked);
     assertTrue(matched);
