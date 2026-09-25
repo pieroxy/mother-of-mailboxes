@@ -8,6 +8,7 @@ import { AbstractPage } from "./AbstractPage";
 import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
 import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
+import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
 const REFRESH_INTERVAL_MS = 60_000;
 
@@ -47,6 +48,7 @@ export class HomePage extends AbstractPage {
       })
       .catch((err: Error) => {
         this.error = err.message;
+        Notifications.addNotification(new Notification(NotificationsClass.SERVER_UNREACHABLE, NotificationsType.ERROR, "Failed to contact server", 5))
         m.redraw();
       });
   }
