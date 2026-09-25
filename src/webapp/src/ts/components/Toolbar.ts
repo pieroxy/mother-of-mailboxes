@@ -6,7 +6,7 @@ export class Toolbar implements m.ClassComponent<ToolbarAttrs> {
   view({attrs}:m.Vnode<ToolbarAttrs>): void | Children {
     return m(".topbar", [
       m("span.logo", m(Logo)),
-      attrs.refreshData ? m(RefreshIcon) : null
+      attrs.refreshData ? m("span.refresh", { onclick: attrs.refreshData }, m(RefreshIcon)) : null
     ])
   }
 }
