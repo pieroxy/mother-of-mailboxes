@@ -8,13 +8,17 @@ import { AbstractPage } from "./AbstractPage";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
 export class LoginPage extends AbstractPage {
-  private login = "";
-  private password = "";
-  private submitting = false;
-  private error: string | undefined;
+  private login = ""
+  private password = ""
+  private submitting = false
+  private error: string | undefined
+
+  showToolbar(): boolean {
+    return false
+  }
 
   getPageTitle(): string {
-    return "MOM - Login";
+    return "MOM - Login"
   }
 
   render(): m.Children {

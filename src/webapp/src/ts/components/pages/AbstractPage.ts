@@ -12,6 +12,9 @@ import { Dialogs } from "../../utils/Dialogs";
 export abstract class AbstractPage<A = {}> implements m.ClassComponent<A> {
   abstract getPageTitle(): string;
   abstract render(vnode: m.Vnode<A, this>): m.Children;
+  showToolbar():boolean {
+    return true
+  }
   refreshData?:()=>void = undefined;
 
   view(vnode: m.Vnode<A, this>): m.Children {
@@ -19,7 +22,7 @@ export abstract class AbstractPage<A = {}> implements m.ClassComponent<A> {
       return [
         this.renderNotification(),
         this.renderDialog(),
-        m(Toolbar, {refreshData:this.refreshData}),
+        this.showToolbar() ? m(Toolbar, {refreshData:this.refreshData}) : null,
         this.render(vnode),
       ];
   }
