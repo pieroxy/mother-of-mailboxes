@@ -24,6 +24,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -70,6 +71,10 @@ public class MailAccount implements Runnable {
   private volatile AccountStatus status = AccountStatus.OK;
   private final AtomicLong messagesProcessed = new AtomicLong();
   private final AtomicLong messagesMatched = new AtomicLong();
+  // Kept around after a subsequent successful cycle (not cleared back to null): a dashboard
+  // showing OK is more useful if it can still say when/why the account last had trouble.
+  private volatile String lastErrorMessage;
+  private volatile Instant lastErrorTimestamp;
 
   public MailAccount(MailAccountConfiguration config, Credential credential, String dataFolder) {
     this(config, credential, dataFolder, ImapMailboxConnection::connect);
@@ -149,6 +154,16 @@ public class MailAccount implements Runnable {
     return messagesMatched.get();
   }
 
+  /** Message of the account's most recent cycle failure this session, or null if none happened. */
+  public String getLastErrorMessage() {
+    return lastErrorMessage;
+  }
+
+  /** When {@link #getLastErrorMessage()} was recorded, or null if none happened this session. */
+  public Instant getLastErrorTimestamp() {
+    return lastErrorTimestamp;
+  }
+
   @Override
   public void run() {
     LOGGER.info("Starting account " + config.getDisplayName());
@@ -185,6 +200,8 @@ public class MailAccount implements Runnable {
       status = AccountStatus.OK;
     } catch (Exception e) {
       status = AccountStatus.KO;
+      lastErrorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+      lastErrorTimestamp = Instant.now();
       throw e;
     }
   }

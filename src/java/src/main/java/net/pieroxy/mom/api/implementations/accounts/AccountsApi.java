@@ -7,6 +7,7 @@ import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.rules.MailAccount;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,8 +29,10 @@ public class AccountsApi extends AbstractApiEndpoint<AccountsApiInput, AccountsA
   }
 
   private static AccountStatusDto toDto(MailAccount account) {
+    Instant lastErrorTimestamp = account.getLastErrorTimestamp();
     return new AccountStatusDto(account.getAccountLabel(), account.getStatus().name(),
-        account.getMessagesProcessed(), account.getMessagesMatched());
+        account.getMessagesProcessed(), account.getMessagesMatched(),
+        account.getLastErrorMessage(), lastErrorTimestamp != null ? lastErrorTimestamp.toString() : null);
   }
 }
 
@@ -63,15 +66,22 @@ class AccountStatusDto {
   private String status;
   private long messagesProcessed;
   private long messagesMatched;
+  /** Message of the account's most recent cycle failure this session, or null if none happened. */
+  private String lastErrorMessage;
+  /** ISO-8601 timestamp of {@link #lastErrorMessage}, or null if none happened this session. */
+  private String lastErrorTimestamp;
 
   public AccountStatusDto() {
   }
 
-  public AccountStatusDto(String name, String status, long messagesProcessed, long messagesMatched) {
+  public AccountStatusDto(String name, String status, long messagesProcessed, long messagesMatched,
+                           String lastErrorMessage, String lastErrorTimestamp) {
     this.name = name;
     this.status = status;
     this.messagesProcessed = messagesProcessed;
     this.messagesMatched = messagesMatched;
+    this.lastErrorMessage = lastErrorMessage;
+    this.lastErrorTimestamp = lastErrorTimestamp;
   }
 
   public String getName() {
@@ -104,5 +114,21 @@ class AccountStatusDto {
 
   public void setMessagesMatched(long messagesMatched) {
     this.messagesMatched = messagesMatched;
+  }
+
+  public String getLastErrorMessage() {
+    return lastErrorMessage;
+  }
+
+  public void setLastErrorMessage(String lastErrorMessage) {
+    this.lastErrorMessage = lastErrorMessage;
+  }
+
+  public String getLastErrorTimestamp() {
+    return lastErrorTimestamp;
+  }
+
+  public void setLastErrorTimestamp(String lastErrorTimestamp) {
+    this.lastErrorTimestamp = lastErrorTimestamp;
   }
 }

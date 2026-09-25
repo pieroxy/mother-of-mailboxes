@@ -73,6 +73,7 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
         m(".account-name", account.name),
         m(".account-messages-processed", account.messagesProcessed + " processed"),
         m(".account-messages-matched", account.messagesMatched + " matched"),
+        account.status == 'KO' ? m(".account-error", account.lastErrorTimestamp + ": " + account.lastErrorMessage ) : null
       )
     ]);
   }
