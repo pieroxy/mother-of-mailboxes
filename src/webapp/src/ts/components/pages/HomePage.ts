@@ -67,10 +67,11 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
     const account = attrs.account;
     return m(".account.status-" + account.status.toLowerCase(), [
       m(StatusIcon, { status: account.status }),
-      m(".account-name", account.name),
-      m(".account-status", account.status),
-      m(".account-messages-processed", account.messagesProcessed + " processed"),
-      m(".account-messages-matched", account.messagesMatched + " matched"),
+      m(".account-details", 
+        m(".account-name", account.name),
+        m(".account-messages-processed", account.messagesProcessed + " processed"),
+        m(".account-messages-matched", account.messagesMatched + " matched"),
+      )
     ]);
   }
 }
