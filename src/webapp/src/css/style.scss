@@ -35,11 +35,10 @@ body {
             height: 3em;
             background-color: #200414;
             z-index: 100;
-            line-height: 1em;
             align-items: center;
-            padding: 0 2em;
-            overflow: hidden;
+            padding: 0 5%;
             display: flex;
+            gap: 16px;
 
             .logo {
                 color:#fff8;
@@ -155,8 +154,6 @@ body {
 svg.icon {
   width: 40px;
   height: 40px;
-  vertical-align: middle;
-  margin: 0 0 10px 0;
 
   &.chevron {
     width: 30px;
