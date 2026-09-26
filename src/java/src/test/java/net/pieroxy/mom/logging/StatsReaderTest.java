@@ -81,6 +81,21 @@ public class StatsReaderTest {
   }
 
   @Test
+  public void groupsMatchersThatOnlyDifferByTheirScoreValue() {
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
+    File statsDir = tmp.getRoot();
+    StatsLog.recordMatch(statsDir, "BodyClassifierMatcher(score=1.0)");
+    StatsLog.recordMatch(statsDir, "BodyClassifierMatcher(score=0.999)");
+    StatsLog.recordMatch(statsDir, "IpReputationMatcher[spamhaus-drop](score=0.87)");
+    StatsLog.recordMatch(statsDir, "IpReputationMatcher[spamhaus-drop](score=0.42)");
+
+    Map<String, Long> matcherCounts = StatsReader.read(statsDir, today, today).matcherCounts();
+
+    assertEquals(2L, (long) matcherCounts.get("BodyClassifierMatcher(score)"));
+    assertEquals(2L, (long) matcherCounts.get("IpReputationMatcher[spamhaus-drop](score)"));
+  }
+
+  @Test
   public void coversEveryDayInTheRangeInOrder() {
     LocalDate from = LocalDate.of(2026, 3, 1);
     LocalDate to = LocalDate.of(2026, 3, 4);

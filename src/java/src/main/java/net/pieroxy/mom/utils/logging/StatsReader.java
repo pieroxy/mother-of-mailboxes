@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Reads back what {@link StatsLog} wrote — one pass per day over {@code <statsDir>/
@@ -29,6 +30,11 @@ public final class StatsReader {
   private final static Logger LOGGER = Logger.getLogger(StatsReader.class.getName());
   private final static Gson GSON = new Gson();
   private final static DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  // Matches e.g. "BodyClassifierMatcher(score=0.999)" and "IpReputationMatcher[list](score=0.87)"
+  // — the exact score varies message to message, so grouping by matcher identity means dropping
+  // it: "BodyClassifierMatcher(score=1.0)" and "...(score=0.999)" are the same matcher having
+  // fired twice, not two different matchers each firing once.
+  private final static Pattern SCORE_VALUE = Pattern.compile("score=-?\\d+(\\.\\d+)?");
 
   private StatsReader() {}
 
@@ -65,7 +71,7 @@ public final class StatsReader {
               if (event.has("processedMs")) totalMs += event.get("processedMs").getAsLong();
             } else if ("MATCH".equals(type)) {
               String matcher = stringField(event, "matcher");
-              if (matcher != null) matcherCounts.merge(matcher, 1L, Long::sum);
+              if (matcher != null) matcherCounts.merge(normalizeMatcherKey(matcher), 1L, Long::sum);
             }
           } catch (JsonParseException e) {
             // One line is one event (see StatsLog): a single truncated/corrupt line (e.g. from a
@@ -83,5 +89,10 @@ public final class StatsReader {
 
   private static String stringField(JsonObject event, String field) {
     return event.has(field) ? event.get(field).getAsString() : null;
+  }
+
+  /** Drops a "score=<value>" reading from a matcher description — see {@link #SCORE_VALUE}. */
+  private static String normalizeMatcherKey(String matcher) {
+    return SCORE_VALUE.matcher(matcher).replaceAll("score");
   }
 }
