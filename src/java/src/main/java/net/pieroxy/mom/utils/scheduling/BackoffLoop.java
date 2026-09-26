@@ -26,6 +26,10 @@ public class BackoffLoop {
   private final long initialDelayMs;
   private final long maxDelayMs;
   private final Waiter waiter;
+  // Mirrors the loop's local delayMs, so a caller (e.g. MailAccount, for its "next scheduled
+  // cycle" dashboard estimate) can read the delay that will be used for the upcoming wait —
+  // without the loop needing to know anything about who's asking or why.
+  private volatile long currentDelayMs;
 
   public BackoffLoop(long initialDelayMs, long maxDelayMs) {
     this(initialDelayMs, maxDelayMs, Thread::sleep);
@@ -35,6 +39,12 @@ public class BackoffLoop {
     this.initialDelayMs = initialDelayMs;
     this.maxDelayMs = maxDelayMs;
     this.waiter = waiter;
+    this.currentDelayMs = initialDelayMs;
+  }
+
+  /** The delay that will be used for the wait before the next cycle — see {@link #run}. */
+  public long getCurrentDelayMs() {
+    return currentDelayMs;
   }
 
   public void run(String name, Task task) {
@@ -57,6 +67,7 @@ public class BackoffLoop {
         delayMs = Math.min(delayMs * 2, maxDelayMs);
         LOGGER.log(Level.WARNING, name + ": " + e.getMessage() + ". Next retry in " + delayMs + "ms.", e);
       }
+      currentDelayMs = delayMs;
     }
     LOGGER.info(name + " stopped.");
   }

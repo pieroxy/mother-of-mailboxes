@@ -62,6 +62,7 @@ public class MailAccount implements Runnable {
   private final List<String> classifierExcludedFolders;
   private final ImapMailboxFactory mailboxFactory;
   private final ImapIdleWatcher idleWatcher;
+  private final BackoffLoop backoffLoop;
   private final Thread thread;
   private LocalDate lastSkeletonEnsureDate;
 
@@ -75,6 +76,7 @@ public class MailAccount implements Runnable {
   // showing OK is more useful if it can still say when/why the account last had trouble.
   private volatile String lastErrorMessage;
   private volatile Instant lastErrorTimestamp;
+  private volatile Instant lastCycleCompletedTimestamp;
 
   public MailAccount(MailAccountConfiguration config, Credential credential, String dataFolder) {
     this(config, credential, dataFolder, ImapMailboxConnection::connect);
@@ -105,6 +107,9 @@ public class MailAccount implements Runnable {
         ? config.getClassifierExcludedFolders() : List.of();
     this.mailboxFactory = mailboxFactory;
     this.idleWatcher = new ImapIdleWatcher(config, credential);
+    // Held as a field (rather than built inline in run()) so getNextScheduledCycle() can read
+    // its current backoff delay live, from a request-handling thread, at any time.
+    this.backoffLoop = new BackoffLoop(config.getRunEvery() * 1000L, MAX_BACKOFF_MS, idleWatcher);
     // Not started here: Thread's constructor only stores the Runnable, and this is only ever
     // read (start()/requestStop()/join()) after construction completes — see Runner#main.
     this.thread = new Thread(this, "mail-account-" + config.getDisplayName());
@@ -164,6 +169,21 @@ public class MailAccount implements Runnable {
     return lastErrorTimestamp;
   }
 
+  /** When the account's last cycle (success or failure) finished, or null before the first one has. */
+  public Instant getLastCycleCompletedTimestamp() {
+    return lastCycleCompletedTimestamp;
+  }
+
+  /**
+   * Best-effort estimate of when the next cycle will start: the last cycle's end plus the
+   * current backoff delay (see {@link BackoffLoop#getCurrentDelayMs}) — can fire earlier if IMAP
+   * IDLE wakes it up sooner. Null before the first cycle has completed.
+   */
+  public Instant getNextScheduledCycle() {
+    Instant last = lastCycleCompletedTimestamp;
+    return last == null ? null : last.plusMillis(backoffLoop.getCurrentDelayMs());
+  }
+
   @Override
   public void run() {
     LOGGER.info("Starting account " + config.getDisplayName());
@@ -183,8 +203,7 @@ public class MailAccount implements Runnable {
     // a watch that failed for this cycle). The watcher always closes its connection before a
     // cycle's own connection opens INBOX: some IMAP servers refuse a second, concurrent SELECT
     // of the same mailbox, so the two must never overlap.
-    new BackoffLoop(config.getRunEvery() * 1000L, MAX_BACKOFF_MS, idleWatcher)
-        .run(config.getDisplayName(), this::processMessagesTracked);
+    backoffLoop.run(config.getDisplayName(), this::processMessagesTracked);
   }
 
   /**
@@ -203,6 +222,11 @@ public class MailAccount implements Runnable {
       lastErrorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
       lastErrorTimestamp = Instant.now();
       throw e;
+    } finally {
+      // BackoffLoop recomputes its own delay for the next wait right after this method returns
+      // (see BackoffLoop#run) — a negligible instant later than this timestamp, never observable
+      // from the outside since both only ever get read from a different (HTTP-handling) thread.
+      lastCycleCompletedTimestamp = Instant.now();
     }
   }
 

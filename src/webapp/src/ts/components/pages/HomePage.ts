@@ -9,13 +9,16 @@ import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
 import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
+import { CycleProgressBar } from "../CycleProgressBar";
 
 const REFRESH_INTERVAL_MS = 60_000;
+const TICK_INTERVAL_MS = 1_000;
 
 export class HomePage extends AbstractPage {
   private accounts: AccountStatusDto[] = [];
   private error: string | undefined;
   private refreshTimer: number | undefined;
+  private tickTimer: number | undefined;
 
   getPageTitle(): string {
     return "MOM";
@@ -25,10 +28,14 @@ export class HomePage extends AbstractPage {
     this.refreshData = () => this.loadAccounts();
     this.loadAccounts();
     this.refreshTimer = window.setInterval(() => this.loadAccounts(), REFRESH_INTERVAL_MS);
+    // Ticks the cycle progress bars every second without re-fetching account data that often:
+    // they're computed live from timestamps already in hand (see CycleProgressBar).
+    this.tickTimer = window.setInterval(() => m.redraw(), TICK_INTERVAL_MS);
   }
 
   onremove() {
     if (this.refreshTimer !== undefined) window.clearInterval(this.refreshTimer);
+    if (this.tickTimer !== undefined) window.clearInterval(this.tickTimer);
   }
 
   render(): m.Children {
@@ -69,10 +76,14 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
     const account = attrs.account;
     return m(".account.status-" + account.status.toLowerCase(), [
       m(StatusIcon, { status: account.status }),
-      m(".account-details", 
+      m(".account-details",
         m(".account-name", account.name),
         m(".account-messages-processed", account.messagesProcessed + " processed"),
         m(".account-messages-matched", account.messagesMatched + " matched"),
+        m(CycleProgressBar, {
+          lastCycleCompletedTimestamp: account.lastCycleCompletedTimestamp,
+          nextScheduledCycleTimestamp: account.nextScheduledCycleTimestamp,
+        }),
         account.status == 'KO' ? m(".account-error", account.lastErrorTimestamp + ": " + account.lastErrorMessage ) : null
       )
     ]);

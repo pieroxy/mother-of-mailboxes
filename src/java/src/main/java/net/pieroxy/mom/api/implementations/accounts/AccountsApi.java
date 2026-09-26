@@ -29,10 +29,14 @@ public class AccountsApi extends AbstractApiEndpoint<AccountsApiInput, AccountsA
   }
 
   private static AccountStatusDto toDto(MailAccount account) {
-    Instant lastErrorTimestamp = account.getLastErrorTimestamp();
     return new AccountStatusDto(account.getAccountLabel(), account.getStatus().name(),
         account.getMessagesProcessed(), account.getMessagesMatched(),
-        account.getLastErrorMessage(), lastErrorTimestamp != null ? lastErrorTimestamp.toString() : null);
+        account.getLastErrorMessage(), toIsoString(account.getLastErrorTimestamp()),
+        toIsoString(account.getLastCycleCompletedTimestamp()), toIsoString(account.getNextScheduledCycle()));
+  }
+
+  private static String toIsoString(Instant instant) {
+    return instant == null ? null : instant.toString();
   }
 }
 
@@ -70,18 +74,25 @@ class AccountStatusDto {
   private String lastErrorMessage;
   /** ISO-8601 timestamp of {@link #lastErrorMessage}, or null if none happened this session. */
   private String lastErrorTimestamp;
+  /** ISO-8601 timestamp of the last cycle (success or failure) to finish, or null before the first one has. */
+  private String lastCycleCompletedTimestamp;
+  /** ISO-8601 best-effort estimate of when the next cycle will start, or null before the first one has completed. */
+  private String nextScheduledCycleTimestamp;
 
   public AccountStatusDto() {
   }
 
   public AccountStatusDto(String name, String status, long messagesProcessed, long messagesMatched,
-                           String lastErrorMessage, String lastErrorTimestamp) {
+                           String lastErrorMessage, String lastErrorTimestamp,
+                           String lastCycleCompletedTimestamp, String nextScheduledCycleTimestamp) {
     this.name = name;
     this.status = status;
     this.messagesProcessed = messagesProcessed;
     this.messagesMatched = messagesMatched;
     this.lastErrorMessage = lastErrorMessage;
     this.lastErrorTimestamp = lastErrorTimestamp;
+    this.lastCycleCompletedTimestamp = lastCycleCompletedTimestamp;
+    this.nextScheduledCycleTimestamp = nextScheduledCycleTimestamp;
   }
 
   public String getName() {
@@ -130,5 +141,21 @@ class AccountStatusDto {
 
   public void setLastErrorTimestamp(String lastErrorTimestamp) {
     this.lastErrorTimestamp = lastErrorTimestamp;
+  }
+
+  public String getLastCycleCompletedTimestamp() {
+    return lastCycleCompletedTimestamp;
+  }
+
+  public void setLastCycleCompletedTimestamp(String lastCycleCompletedTimestamp) {
+    this.lastCycleCompletedTimestamp = lastCycleCompletedTimestamp;
+  }
+
+  public String getNextScheduledCycleTimestamp() {
+    return nextScheduledCycleTimestamp;
+  }
+
+  public void setNextScheduledCycleTimestamp(String nextScheduledCycleTimestamp) {
+    this.nextScheduledCycleTimestamp = nextScheduledCycleTimestamp;
   }
 }
