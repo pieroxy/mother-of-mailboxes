@@ -13,6 +13,8 @@ import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
+import { ArrowCircleUpIcon } from "../atoms/icons/ArrowCircleUpIcon";
+import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 
 interface AccountSettingsPageAttrs {
   accountName: string;
@@ -29,6 +31,9 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   private config: AccountBasicConfigDto | undefined;
   private credentials: CredentialsInfoDto | undefined;
   private rules: MailFilterRuleConfiguration[] = [];
+  private savedRulesOrder: MailFilterRuleConfiguration[] = [];
+  private rulesDirty = false;
+  private savingRulesOrder = false;
   private shortcuts: LearningShortcutConfiguration[] = [];
   private loading = true;
   private error: string | undefined;
@@ -64,9 +69,82 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         sectionHeader("Credentials", () => Routing.goToAccountCredentialsEdit(this.accountName)),
         renderCredentialsSection(this.credentials),
       ]),
-      m(".page-card", [sectionHeader("Rules"), renderRulesSection(this.rules)]),
+      m(".page-card", [
+        m(".section-header", [
+          m("h2", "Rules"),
+          this.rulesDirty ? m(".rules-order-actions", [
+            m("button.save-order-button", { onclick: () => this.saveRulesOrder(), disabled: this.savingRulesOrder },
+              this.savingRulesOrder ? "Saving…" : "Save Order"),
+            m("button.cancel-order-button", { onclick: () => this.cancelRulesOrder(), disabled: this.savingRulesOrder }, "Cancel"),
+          ]) : null,
+        ]),
+        this.renderRulesSection(),
+      ]),
       m(".page-card", [sectionHeader("Shortcuts"), renderShortcutsSection(this.shortcuts)]),
     ]);
+  }
+
+  private renderRulesSection(): m.Children {
+    if (this.rules.length === 0) return m(".settings-empty", "No rules configured.");
+    return m(".rule-list", this.rules.map((rule, index) => this.renderRule(rule, index)));
+  }
+
+  private renderRule(rule: MailFilterRuleConfiguration, index: number): m.Children {
+    const header = m(".rule-card-header", [
+      m(".rule-index", rule.type === RuleType.LEARNED_RULES ? "#" + (index + 1)
+        : "#" + (index + 1) + (rule.keepProcessing ? " · keeps processing" : "")),
+      this.renderMoveControls(index),
+    ]);
+    if (rule.type === RuleType.LEARNED_RULES) {
+      return m(".rule-card", { key: index }, [header, m(".rule-learned-marker", "Learned rules run here")]);
+    }
+    return m(".rule-card", { key: index }, [
+      header,
+      m(".rule-section", [m(".rule-section-label", "When"), m("ul.tree-root", renderMatcherNode(rule.matcher))]),
+      m(".rule-section", [m(".rule-section-label", "Then"), m("ul.tree-root", renderActionNode(rule.action))]),
+    ]);
+  }
+
+  private renderMoveControls(index: number): m.Children {
+    const isFirst = index === 0;
+    const isLast = index === this.rules.length - 1;
+    return m(".rule-move-controls", [
+      m("span.rule-move-button" + (isFirst ? ".disabled" : ""),
+        { title: "Move up", onclick: () => this.moveRule(index, -1) }, m(ArrowCircleUpIcon)),
+      m("span.rule-move-button" + (isLast ? ".disabled" : ""),
+        { title: "Move down", onclick: () => this.moveRule(index, 1) }, m(ArrowCircleDownIcon)),
+    ]);
+  }
+
+  private moveRule(index: number, delta: number) {
+    const target = index + delta;
+    if (target < 0 || target >= this.rules.length) return;
+    const reordered = [...this.rules];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    this.rules = reordered;
+    this.rulesDirty = true;
+  }
+
+  private cancelRulesOrder() {
+    this.rules = [...this.savedRulesOrder];
+    this.rulesDirty = false;
+  }
+
+  private saveRulesOrder() {
+    this.savingRulesOrder = true;
+    this.error = undefined;
+    ApiEndpoints.UpdateAccountRules.call({ accountName: this.accountName, rules: this.rules })
+      .then(() => {
+        this.savingRulesOrder = false;
+        this.rulesDirty = false;
+        this.savedRulesOrder = [...this.rules];
+        m.redraw();
+      })
+      .catch((err: Error) => {
+        this.savingRulesOrder = false;
+        this.error = err.message;
+        m.redraw();
+      });
   }
 
   private load() {
@@ -77,6 +155,8 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         this.config = output.config;
         this.credentials = output.credentials;
         this.rules = output.rules;
+        this.savedRulesOrder = [...output.rules];
+        this.rulesDirty = false;
         this.shortcuts = output.shortcuts;
         this.loading = false;
         m.redraw();
@@ -123,25 +203,6 @@ function renderCredentialsSection(credentials: CredentialsInfoDto): m.Children {
   return m(".config-grid", [
     configRow("Credentials key", credentials.credentialsKey),
     configRow("Username", credentials.username),
-  ]);
-}
-
-function renderRulesSection(rules: MailFilterRuleConfiguration[]): m.Children {
-  if (rules.length === 0) return m(".settings-empty", "No rules configured.");
-  return m(".rule-list", rules.map((rule, index) => renderRule(rule, index)));
-}
-
-function renderRule(rule: MailFilterRuleConfiguration, index: number): m.Children {
-  if (rule.type === RuleType.LEARNED_RULES) {
-    return m(".rule-card", { key: index }, [
-      m(".rule-index", "#" + (index + 1)),
-      m(".rule-learned-marker", "Learned rules run here"),
-    ]);
-  }
-  return m(".rule-card", { key: index }, [
-    m(".rule-index", "#" + (index + 1) + (rule.keepProcessing ? " · keeps processing" : "")),
-    m(".rule-section", [m(".rule-section-label", "When"), m("ul.tree-root", renderMatcherNode(rule.matcher))]),
-    m(".rule-section", [m(".rule-section-label", "Then"), m("ul.tree-root", renderActionNode(rule.action))]),
   ]);
 }
 

@@ -7,6 +7,11 @@ import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
+import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
+import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.mom.config.general.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.mom.rules.actions.ActionType;
+import net.pieroxy.mom.rules.matchers.MatcherType;
 import net.pieroxy.mom.utils.mail.GreenMailImapFixture;
 import org.junit.After;
 import org.junit.Before;
@@ -162,5 +167,41 @@ public class ServiceProviderRestartAccountTest {
     } finally {
       stopReplacedAccount(setup);
     }
+  }
+
+  @Test
+  public void updateRulesReplacesTheOrderAndRestarts() throws Exception {
+    Setup setup = setUp();
+    MailAccount original = setup.accounts.get(0);
+    MailFilterRuleConfiguration first = rule("spam.example.com", "Spam");
+    MailFilterRuleConfiguration second = rule("newsletter.example.com", "Newsletter");
+    setup.config.setRules(new ArrayList<>(List.of(first, second)));
+
+    try {
+      // The "reorder" a client actually sends: the same rules, swapped.
+      setup.serviceProvider.updateRules("test-account", List.of(second, first));
+
+      Configuration reloaded = new Gson().fromJson(new FileReader(setup.configFile), Configuration.class);
+      List<MailFilterRuleConfiguration> persistedRules = reloaded.getConfigurations().get(0).getRules();
+      assertEquals("newsletter.example.com", persistedRules.get(0).getMatcher().getKey());
+      assertEquals("spam.example.com", persistedRules.get(1).getMatcher().getKey());
+
+      assertNotSame("the account must have been restarted", original, setup.accounts.get(0));
+    } finally {
+      stopReplacedAccount(setup);
+    }
+  }
+
+  private static MailFilterRuleConfiguration rule(String fromDomain, String moveToFolder) {
+    MailFilterRuleMatcherConfiguration matcher = new MailFilterRuleMatcherConfiguration();
+    matcher.setType(MatcherType.FROM_DOMAIN_EQUALS);
+    matcher.setKey(fromDomain);
+    MailFilterRuleActionConfiguration action = new MailFilterRuleActionConfiguration();
+    action.setType(ActionType.MOVE_TO);
+    action.setKey(moveToFolder);
+    MailFilterRuleConfiguration rule = new MailFilterRuleConfiguration();
+    rule.setMatcher(matcher);
+    rule.setAction(action);
+    return rule;
   }
 }

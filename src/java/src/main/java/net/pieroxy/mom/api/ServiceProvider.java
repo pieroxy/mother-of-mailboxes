@@ -6,6 +6,7 @@ import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
+import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
 import net.pieroxy.mom.utils.CredentialsResolver;
 
@@ -124,6 +125,16 @@ public class ServiceProvider {
       credential.setPassword(password);
     }
     persistCredentialsFile();
+    restartAccount(accountName);
+  }
+
+  /**
+   * Replaces the account's whole {@code rules} list (as of writing, only ever a reordering of the
+   * same rules the client already fetched — see {@code UpdateAccountRulesApi}) and restarts it.
+   */
+  public synchronized void updateRules(String accountName, List<MailFilterRuleConfiguration> rules) {
+    MailAccountConfiguration config = findAccountConfig(accountName);
+    config.setRules(rules);
     restartAccount(accountName);
   }
 
