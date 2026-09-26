@@ -13,4 +13,8 @@ export class Routing {
   static goToAccountSettings(accountName: string) {
     m.route.set(Endpoints.ACCOUNT_SETTINGS, { accountName });
   }
+
+  static goToAccountConfigEdit(accountName: string) {
+    m.route.set(Endpoints.ACCOUNT_CONFIG_EDIT, { accountName });
+  }
 }

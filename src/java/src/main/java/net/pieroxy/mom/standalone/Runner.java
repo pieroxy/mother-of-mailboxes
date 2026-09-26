@@ -17,8 +17,8 @@ import org.apache.catalina.startup.Tomcat;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,7 +29,10 @@ public class Runner {
   private final static String MVN_VER;
   private static Configuration config;
   private static String logFile;
-  private static final List<MailAccount> accounts = new ArrayList<>();
+  // CopyOnWriteArrayList, not a plain ArrayList: ServiceProvider#restartAccount replaces an entry
+  // from an API request thread while other request threads (AccountsApi, StatsApi, ...) may be
+  // iterating this same list concurrently.
+  private static final List<MailAccount> accounts = new CopyOnWriteArrayList<>();
   private static ReputationRegistry reputationRegistry;
   private static Tomcat webServer;
 
@@ -50,7 +53,8 @@ public class Runner {
 
   public static void main(String[] args) throws Exception {
     Gson gson = new Gson();
-    Runner.config = gson.fromJson(new FileReader(new File(args[0], "config.json")), Configuration.class);
+    File configFile = new File(args[0], "config.json");
+    Runner.config = gson.fromJson(new FileReader(configFile), Configuration.class);
     CredentialsFile credentialsFile = gson.fromJson(new FileReader(new File(args[0], "credentials.json")), CredentialsFile.class);
     logFile = new File(config.getDataFolder(), "logs/log.txt").getAbsolutePath();
     LoggingBootstrap.configure(logFile, config.getKeepLogFiles());
@@ -68,7 +72,8 @@ public class Runner {
 
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
       Credential webServerCredential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
-      ServiceProvider serviceProvider = new ServiceProvider(webServerCredential, new SessionStore(), accounts);
+      ServiceProvider serviceProvider = new ServiceProvider(webServerCredential, new SessionStore(), accounts,
+          config, configFile, credentialsFile, config.getDataFolder());
       webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder(), serviceProvider);
     }
 

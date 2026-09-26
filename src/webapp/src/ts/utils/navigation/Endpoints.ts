@@ -4,4 +4,5 @@ export enum Endpoints {
   HOME = "/",
   STATS = "/stats/:accountName",
   ACCOUNT_SETTINGS = "/settings/:accountName",
+  ACCOUNT_CONFIG_EDIT = "/settings/:accountName/config/edit",
 }

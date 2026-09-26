@@ -12,6 +12,7 @@ import {
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
+import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 
 interface AccountSettingsPageAttrs {
   accountName: string;
@@ -55,10 +56,13 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   private renderContent(): m.Children {
     if (!this.config || !this.credentials) return null;
     return m(".settings-content", [
-      m(".page-card", [m("h2", "Config"), renderConfigSection(this.config)]),
-      m(".page-card", [m("h2", "Credentials"), renderCredentialsSection(this.credentials)]),
-      m(".page-card", [m("h2", "Rules"), renderRulesSection(this.rules)]),
-      m(".page-card", [m("h2", "Shortcuts"), renderShortcutsSection(this.shortcuts)]),
+      m(".page-card", [
+        sectionHeader("Config", () => Routing.goToAccountConfigEdit(this.accountName)),
+        renderConfigSection(this.config),
+      ]),
+      m(".page-card", [sectionHeader("Credentials"), renderCredentialsSection(this.credentials)]),
+      m(".page-card", [sectionHeader("Rules"), renderRulesSection(this.rules)]),
+      m(".page-card", [sectionHeader("Shortcuts"), renderShortcutsSection(this.shortcuts)]),
     ]);
   }
 
@@ -80,6 +84,13 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         m.redraw();
       });
   }
+}
+
+function sectionHeader(title: string, onEdit?: () => void): m.Children {
+  return m(".section-header", [
+    m("h2", title),
+    onEdit ? m("span.section-edit-link", { title: "Edit " + title.toLowerCase(), onclick: onEdit }, m(SettingsIcon)) : null,
+  ]);
 }
 
 function configRow(label: string, value: m.Children): m.Children {

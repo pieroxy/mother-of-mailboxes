@@ -7,6 +7,7 @@ import { Endpoints } from "./utils/navigation/Endpoints";
 import { ProfilePage } from "./components/pages/ProfilePage";
 import { StatsPage } from "./components/pages/StatsPage";
 import { AccountSettingsPage } from "./components/pages/AccountSettingsPage";
+import { AccountConfigEditPage } from "./components/pages/AccountConfigEditPage";
 
 const routes: m.RouteDefs = {
   [Endpoints.LOGIN]: LoginPage,
@@ -14,6 +15,7 @@ const routes: m.RouteDefs = {
   [Endpoints.PROFILE]: new AuthenticatedPageResolver(ProfilePage),
   [Endpoints.STATS]: new AuthenticatedPageResolver(StatsPage),
   [Endpoints.ACCOUNT_SETTINGS]: new AuthenticatedPageResolver(AccountSettingsPage),
+  [Endpoints.ACCOUNT_CONFIG_EDIT]: new AuthenticatedPageResolver(AccountConfigEditPage),
 };
 
 m.route(document.getElementById("app")!, Endpoints.LOGIN, routes);
