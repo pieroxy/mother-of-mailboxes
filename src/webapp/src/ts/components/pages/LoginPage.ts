@@ -22,7 +22,7 @@ export class LoginPage extends AbstractPage {
   }
 
   render(): m.Children {
-    return m("loginpage", [
+    return m("page.loginpage", [
       m(LogoSub),
       m("form", { onsubmit: (e: Event) => this.submit(e) }, [
         m("input", {

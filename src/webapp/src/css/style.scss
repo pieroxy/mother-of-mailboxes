@@ -25,7 +25,6 @@ body {
     padding: 0;
 
     > #app {
-        margin-top:3em;
 
         .topbar {
             position: fixed;
@@ -102,126 +101,132 @@ body {
             }
         }
 
-        .accounts {
-            display: flex;
-            gap: 24px;
+        page {
+          padding: 5em 10% 0 10%;
+          display: block;
 
-            .account {
-                background-color: $bg-color-l3;
-                background-color: #3f1933;
-                color: #aaa;
-                margin: 10px;
-                padding: 10px;
-                border-radius: 10px;
-                display: flex;
-                gap: 16px;
+          .accounts {
+              display: flex;
+              gap: 24px;
 
-                .account-details {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                }
+              .account {
+                  background-color: $bg-color-l3;
+                  background-color: #3f1933;
+                  color: #aaa;
+                  margin: 10px;
+                  padding: 10px;
+                  border-radius: 10px;
+                  display: flex;
+                  gap: 16px;
 
-                .cycle-progress {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                    margin-top: 4px;
+                  .account-details {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                  }
 
-                    &.cycle-progress-pending {
-                        color: #aaa8;
-                        font-style: italic;
-                    }
+                  .cycle-progress {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 2px;
+                      margin-top: 4px;
 
-                    .cycle-progress-bar {
-                        width: 100%;
-                        height: 6px;
-                        border-radius: 3px;
-                        background-color: $bg-color-d1;
-                        overflow: hidden;
+                      &.cycle-progress-pending {
+                          color: #aaa8;
+                          font-style: italic;
+                      }
 
-                        .cycle-progress-bar-fill {
-                            height: 100%;
-                            background-color: #00abab;
-                            transition: width 0.1s linear;
-                        }
-                    }
+                      .cycle-progress-bar {
+                          width: 100%;
+                          height: 6px;
+                          border-radius: 3px;
+                          background-color: $bg-color-d1;
+                          overflow: hidden;
 
-                    .cycle-progress-labels {
-                        display: flex;
-                        justify-content: space-between;
-                        font-size: 12px;
-                        color: #aaa8;
-                    }
-                }
+                          .cycle-progress-bar-fill {
+                              height: 100%;
+                              background-color: #00abab;
+                              transition: width 0.1s linear;
+                          }
+                      }
 
-                .classifier-training {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                    margin-top: 4px;
+                      .cycle-progress-labels {
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 12px;
+                          color: #aaa8;
+                      }
+                  }
 
-                    .classifier-training-counts {
-                        font-size: 12px;
-                        color: #aaa8;
-                    }
+                  .classifier-training {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                      margin-top: 4px;
 
-                    .classifier-training-models {
-                        display: flex;
-                        gap: 8px;
-                        flex-wrap: wrap;
+                      .classifier-training-counts {
+                          font-size: 12px;
+                          color: #aaa8;
+                      }
 
-                        .classifier-badge {
-                            display: flex;
-                            align-items: center;
-                            gap: 4px;
-                            font-size: 11px;
-                            padding: 2px 6px;
-                            border-radius: 8px;
-                            background-color: $bg-color-d1;
+                      .classifier-training-models {
+                          display: flex;
+                          gap: 8px;
+                          flex-wrap: wrap;
 
-                            svg.icon {
-                                width: 12px;
-                                height: 12px;
-                            }
+                          .classifier-badge {
+                              display: flex;
+                              align-items: center;
+                              gap: 4px;
+                              font-size: 11px;
+                              padding: 2px 6px;
+                              border-radius: 8px;
+                              background-color: $bg-color-d1;
 
-                            .classifier-badge-status {
-                                color: #aaa8;
-                            }
+                              svg.icon {
+                                  width: 12px;
+                                  height: 12px;
+                              }
 
-                            &.classifier-badge-trained .classifier-badge-status {
-                                color: #0a08;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                              .classifier-badge-status {
+                                  color: #aaa8;
+                              }
 
-        loginpage {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            border: 0;
-            padding: 0;
-            margin: 0;
-            gap: 48px;
+                              &.classifier-badge-trained .classifier-badge-status {
+                                  color: #0a08;
+                              }
+                          }
+                      }
+                  }
+              }
+          }
 
-            > svg {
-                width: 50%;
-                max-width: 200px;
-                color: #fff7;
-            }
+          &.loginpage {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              border: 0;
+              padding: 0;
+              margin: 0;
+              gap: 48px;
 
-            > form {
-                display: flex;
-                flex-direction: column;
-                gap: 24px;
-            }
+              > svg {
+                  width: 50%;
+                  max-width: 200px;
+                  color: #fff7;
+              }
+
+              > form {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 24px;
+              }
+          }
         }
     }
+
 }
 
 

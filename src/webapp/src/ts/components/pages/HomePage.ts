@@ -1,9 +1,6 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { AccountStatusDto } from "../../auto/pieroxy-mom";
-import { Auth } from "../../utils/Auth";
-import { Endpoints } from "../../utils/navigation/Endpoints";
-import { Routing } from "../../utils/navigation/Routing";
 import { AbstractPage } from "./AbstractPage";
 import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
@@ -40,10 +37,9 @@ export class HomePage extends AbstractPage {
   }
 
   render(): m.Children {
-    return m("homepage", [
+    return m("page.homepage", [
       m(".accounts", this.accounts.map((account) => m(AccountRow, { account }))),
       this.error ? m(".accounts-error.errorMessage", this.error) : null,
-      m("button.logout-button", { onclick: () => this.logout() }, "Log out"),
     ]);
   }
 
@@ -59,12 +55,6 @@ export class HomePage extends AbstractPage {
         Notifications.addNotification(new Notification(NotificationsClass.SERVER_UNREACHABLE, NotificationsType.ERROR, "Failed to contact server", 5))
         m.redraw();
       });
-  }
-
-  private logout() {
-    const sessionId = Auth.clearSession();
-    Routing.goToScreen(Endpoints.LOGIN);
-    if (sessionId) ApiEndpoints.Logout.call({ sessionId });
   }
 }
 
