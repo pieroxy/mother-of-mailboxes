@@ -81,6 +81,7 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
         m(".account-name", account.name),
         m(".account-messages-processed", account.messagesProcessed + " processed"),
         m(".account-messages-matched", account.messagesMatched + " matched"),
+        m(".account-rules", account.ruleCount + " rule(s), " + account.activeRuleCount + " active"),
         m(CycleProgressBar, {
           lastCycleCompletedTimestamp: account.lastCycleCompletedTimestamp,
           nextScheduledCycleTimestamp: account.nextScheduledCycleTimestamp,

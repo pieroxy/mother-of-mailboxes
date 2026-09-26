@@ -10,8 +10,10 @@ import net.pieroxy.mom.detection.classifier.HeaderClassifierTrainer;
 import net.pieroxy.mom.detection.classifier.SubjectClassifierTrainer;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
+import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.learning.LearnedRulesStore;
 import net.pieroxy.mom.learning.RuleLearner;
+import net.pieroxy.mom.rules.actions.ActionType;
 import net.pieroxy.mom.utils.FileNameValidator;
 import net.pieroxy.mom.utils.mail.ImapIdleWatcher;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
@@ -228,6 +230,24 @@ public class MailAccount implements Runnable {
   /** A model file's own mtime is its last-(re)trained timestamp — null if it doesn't exist yet. */
   private static Instant trainedTimestamp(File modelFile) {
     return modelFile.isFile() ? Instant.ofEpochMilli(modelFile.lastModified()) : null;
+  }
+
+  /** Number of manually configured rules for this account (config.json's "rules" list). */
+  public int getRuleCount() {
+    List<MailFilterRuleConfiguration> rules = config.getRules();
+    return rules == null ? 0 : rules.size();
+  }
+
+  /**
+   * Of those, how many have an action that actually does something — a {@code NOOP} action (or a
+   * {@code LEARNED_RULES} entry, which carries no action of its own) doesn't count.
+   */
+  public int getActiveRuleCount() {
+    List<MailFilterRuleConfiguration> rules = config.getRules();
+    if (rules == null) return 0;
+    return (int) rules.stream()
+        .filter(r -> r.getAction() != null && r.getAction().getType() != null && r.getAction().getType() != ActionType.NOOP)
+        .count();
   }
 
   @Override

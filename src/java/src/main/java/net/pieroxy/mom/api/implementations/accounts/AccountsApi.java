@@ -37,7 +37,7 @@ public class AccountsApi extends AbstractApiEndpoint<AccountsApiInput, AccountsA
         account.getMessagesProcessed(), account.getMessagesMatched(),
         account.getLastErrorMessage(), toIsoString(account.getLastErrorTimestamp()),
         toIsoString(account.getLastCycleCompletedTimestamp()), toIsoString(account.getNextScheduledCycle()),
-        toClassifierTrainingDto(account));
+        toClassifierTrainingDto(account), account.getRuleCount(), account.getActiveRuleCount());
   }
 
   private static ClassifierTrainingStateDto toClassifierTrainingDto(MailAccount account) {
@@ -95,6 +95,10 @@ class AccountStatusDto {
   /** ISO-8601 best-effort estimate of when the next cycle will start, or null before the first one has completed. */
   private String nextScheduledCycleTimestamp;
   private ClassifierTrainingStateDto classifierTraining;
+  /** Number of manually configured rules for this account (config.json's "rules" list). */
+  private int ruleCount;
+  /** Of those, how many have an action that isn't NOOP (a LEARNED_RULES entry, with no action of its own, doesn't count). */
+  private int activeRuleCount;
 
   public AccountStatusDto() {
   }
@@ -102,7 +106,7 @@ class AccountStatusDto {
   public AccountStatusDto(String name, String status, long messagesProcessed, long messagesMatched,
                            String lastErrorMessage, String lastErrorTimestamp,
                            String lastCycleCompletedTimestamp, String nextScheduledCycleTimestamp,
-                           ClassifierTrainingStateDto classifierTraining) {
+                           ClassifierTrainingStateDto classifierTraining, int ruleCount, int activeRuleCount) {
     this.name = name;
     this.status = status;
     this.messagesProcessed = messagesProcessed;
@@ -112,6 +116,8 @@ class AccountStatusDto {
     this.lastCycleCompletedTimestamp = lastCycleCompletedTimestamp;
     this.nextScheduledCycleTimestamp = nextScheduledCycleTimestamp;
     this.classifierTraining = classifierTraining;
+    this.ruleCount = ruleCount;
+    this.activeRuleCount = activeRuleCount;
   }
 
   public String getName() {
@@ -184,6 +190,22 @@ class AccountStatusDto {
 
   public void setClassifierTraining(ClassifierTrainingStateDto classifierTraining) {
     this.classifierTraining = classifierTraining;
+  }
+
+  public int getRuleCount() {
+    return ruleCount;
+  }
+
+  public void setRuleCount(int ruleCount) {
+    this.ruleCount = ruleCount;
+  }
+
+  public int getActiveRuleCount() {
+    return activeRuleCount;
+  }
+
+  public void setActiveRuleCount(int activeRuleCount) {
+    this.activeRuleCount = activeRuleCount;
   }
 }
 
