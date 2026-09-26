@@ -12,6 +12,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -158,6 +159,54 @@ public class ClassifierCorpusStoreTest {
         example("first", ClassifierLabel.SPAM), example("second", ClassifierLabel.HAM)));
 
     assertEquals(2, store.readAll().size());
+  }
+
+  @Test
+  public void loadTrainingCountsReturnsZeroesWhenNeverSaved() {
+    ClassifierCorpusStore store = new ClassifierCorpusStore(tmp.getRoot().getAbsolutePath(), "account", 30);
+
+    ClassifierTrainingCounts counts = store.loadTrainingCounts();
+
+    assertEquals(0, counts.getSpamCount());
+    assertEquals(0, counts.getHamCount());
+  }
+
+  @Test
+  public void saveThenLoadTrainingCountsRoundTrips() {
+    ClassifierCorpusStore store = new ClassifierCorpusStore(tmp.getRoot().getAbsolutePath(), "account", 30);
+
+    store.saveTrainingCounts(34, 12);
+    ClassifierTrainingCounts counts = store.loadTrainingCounts();
+
+    assertEquals(34, counts.getSpamCount());
+    assertEquals(12, counts.getHamCount());
+  }
+
+  @Test
+  public void saveTrainingCountsOverwritesThePreviousValue() {
+    ClassifierCorpusStore store = new ClassifierCorpusStore(tmp.getRoot().getAbsolutePath(), "account", 30);
+
+    store.saveTrainingCounts(34, 12);
+    store.saveTrainingCounts(50, 50);
+
+    ClassifierTrainingCounts counts = store.loadTrainingCounts();
+    assertEquals(50, counts.getSpamCount());
+    assertEquals(50, counts.getHamCount());
+  }
+
+  @Test
+  public void loadTrainingCountsReturnsZeroesWhenTheFileIsCorrupted() throws Exception {
+    ClassifierCorpusStore store = new ClassifierCorpusStore(tmp.getRoot().getAbsolutePath(), "account", 30);
+    File countsFile = new File(new File(new File(tmp.getRoot(), "classifier-corpus"), "account"), "training-counts.json");
+    countsFile.getParentFile().mkdirs();
+    try (FileWriter w = new FileWriter(countsFile)) {
+      w.write("{ this is not valid json");
+    }
+
+    ClassifierTrainingCounts counts = store.loadTrainingCounts();
+
+    assertEquals(0, counts.getSpamCount());
+    assertEquals(0, counts.getHamCount());
   }
 
   /** Reads the compressed file directly: checks the format actually persisted to disk. */

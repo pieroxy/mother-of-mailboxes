@@ -37,6 +37,11 @@ public class SubjectClassifierTrainer {
     this.corpusStore = corpusStore;
   }
 
+  /** How many examples of each class this classifier needs before it (re)trains — see {@code AccountsApi}. */
+  public static int getMinExamplesPerClass() {
+    return MIN_EXAMPLES_PER_CLASS;
+  }
+
   public void train() throws IOException {
     List<ClassifierExample> examples = corpusStore.readAll();
     Map<ClassifierLabel, Long> counts = examples.stream()
@@ -44,6 +49,8 @@ public class SubjectClassifierTrainer {
         .collect(Collectors.groupingBy(ClassifierExample::getLabel, Collectors.counting()));
     long spamCount = counts.getOrDefault(ClassifierLabel.SPAM, 0L);
     long hamCount = counts.getOrDefault(ClassifierLabel.HAM, 0L);
+    // Saved regardless of whether training actually proceeds below — see ClassifierTrainingCounts.
+    corpusStore.saveTrainingCounts(spamCount, hamCount);
 
     if (spamCount < MIN_EXAMPLES_PER_CLASS || hamCount < MIN_EXAMPLES_PER_CLASS) {
       LOGGER.info("Subject classifier training skipped: not enough data yet (" + spamCount + " spam / "

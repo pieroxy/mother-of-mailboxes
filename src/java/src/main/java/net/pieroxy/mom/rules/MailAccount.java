@@ -5,6 +5,7 @@ import net.pieroxy.mom.detection.classifier.ClassifierCorpusScanner;
 import net.pieroxy.mom.detection.classifier.ClassifierCorpusStore;
 import net.pieroxy.mom.detection.classifier.ClassifierScanState;
 import net.pieroxy.mom.detection.classifier.ClassifierScanStateStore;
+import net.pieroxy.mom.detection.classifier.ClassifierTrainingCounts;
 import net.pieroxy.mom.detection.classifier.HeaderClassifierTrainer;
 import net.pieroxy.mom.detection.classifier.SubjectClassifierTrainer;
 import net.pieroxy.mom.config.credentials.Credential;
@@ -187,6 +188,46 @@ public class MailAccount implements Runnable {
   public Instant getNextScheduledCycle() {
     Instant last = lastCycleCompletedTimestamp;
     return last == null ? null : last.plusMillis(backoffLoop.getCurrentDelayMs());
+  }
+
+  /** Spam/ham example counts across this account's retained classifier corpus — see {@link ClassifierTrainingCounts}. */
+  public ClassifierTrainingCounts getClassifierTrainingCounts() {
+    return classifierCorpusStore.loadTrainingCounts();
+  }
+
+  /** Whether the subject classifier has a usable model on disk yet. */
+  public boolean isSubjectClassifierTrained() {
+    return classifierCorpusStore.getModelFile().isFile();
+  }
+
+  /** When the subject classifier's model was last (re)trained, or null if it never has been. */
+  public Instant getSubjectClassifierTrainedTimestamp() {
+    return trainedTimestamp(classifierCorpusStore.getModelFile());
+  }
+
+  /** Whether the header classifier has a usable model on disk yet. */
+  public boolean isHeaderClassifierTrained() {
+    return classifierCorpusStore.getHeaderModelFile().isFile();
+  }
+
+  /** When the header classifier's model was last (re)trained, or null if it never has been. */
+  public Instant getHeaderClassifierTrainedTimestamp() {
+    return trainedTimestamp(classifierCorpusStore.getHeaderModelFile());
+  }
+
+  /** Whether the body classifier has a usable model on disk yet. */
+  public boolean isBodyClassifierTrained() {
+    return classifierCorpusStore.getBodyModelFile().isFile();
+  }
+
+  /** When the body classifier's model was last (re)trained, or null if it never has been. */
+  public Instant getBodyClassifierTrainedTimestamp() {
+    return trainedTimestamp(classifierCorpusStore.getBodyModelFile());
+  }
+
+  /** A model file's own mtime is its last-(re)trained timestamp — null if it doesn't exist yet. */
+  private static Instant trainedTimestamp(File modelFile) {
+    return modelFile.isFile() ? Instant.ofEpochMilli(modelFile.lastModified()) : null;
   }
 
   @Override

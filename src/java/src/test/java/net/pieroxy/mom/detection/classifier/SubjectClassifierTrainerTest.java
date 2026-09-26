@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -46,6 +47,23 @@ public class SubjectClassifierTrainerTest {
 
     assertFalse("not enough examples (5 < " + SubjectClassifierTrainer.MIN_EXAMPLES_PER_CLASS
         + " per class): no model should be written", store.getModelFile().exists());
+  }
+
+  @Test
+  public void savesTrainingCountsEvenWhenTrainingIsSkipped() throws Exception {
+    ClassifierCorpusStore store = new ClassifierCorpusStore(tmp.getRoot().getAbsolutePath(), "account", 30);
+    List<ClassifierExample> examples = new ArrayList<>();
+    for (int i = 0; i < 5; i++) {
+      examples.add(example("spam subject " + i, ClassifierLabel.SPAM));
+      examples.add(example("ham subject " + i, ClassifierLabel.HAM));
+    }
+    store.append(LocalDate.now(), examples);
+
+    new SubjectClassifierTrainer(store).train();
+
+    ClassifierTrainingCounts counts = store.loadTrainingCounts();
+    assertEquals(5, counts.getSpamCount());
+    assertEquals(5, counts.getHamCount());
   }
 
   @Test

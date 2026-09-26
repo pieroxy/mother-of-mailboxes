@@ -9,6 +9,8 @@ import net.jpountz.lz4.LZ4FrameOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -41,11 +43,13 @@ public class ClassifierCorpusStore {
   private final static Pattern FILE_DATE_PATTERN = Pattern.compile("classifier-(\\d{4}-\\d{2}-\\d{2})\\.json\\.lz4");
 
   private final File accountFolder;
+  private final File trainingCountsFile;
   private final int keepDays;
   private final String logPrefix;
 
   public ClassifierCorpusStore(String dataFolder, String accountKey, int keepDays) {
     this.accountFolder = new File(new File(dataFolder, "classifier-corpus"), accountKey);
+    this.trainingCountsFile = new File(accountFolder, "training-counts.json");
     this.keepDays = keepDays;
     this.logPrefix = "Classifier corpus [" + accountKey + "] ";
   }
@@ -129,6 +133,35 @@ public class ClassifierCorpusStore {
   /** Path to the trained body classification model for this account (see {@code BodyClassifierTrainer}) — separate file, separate model from the two above. */
   public File getBodyModelFile() {
     return new File(accountFolder, "body-model.bin");
+  }
+
+  /**
+   * Last spam/ham counts saved by {@link #saveTrainingCounts} (see {@link ClassifierTrainingCounts}),
+   * or a zeroed instance if training has never run yet for this account.
+   */
+  public ClassifierTrainingCounts loadTrainingCounts() {
+    if (!trainingCountsFile.isFile()) return new ClassifierTrainingCounts();
+    try (Reader r = new FileReader(trainingCountsFile)) {
+      ClassifierTrainingCounts counts = GSON.fromJson(r, ClassifierTrainingCounts.class);
+      return counts != null ? counts : new ClassifierTrainingCounts();
+    } catch (IOException | JsonParseException e) {
+      LOGGER.log(Level.WARNING, logPrefix + "Could not read training counts file " + trainingCountsFile, e);
+      return new ClassifierTrainingCounts();
+    }
+  }
+
+  /**
+   * Called by each of the three trainers on every {@code train()} run, whether or not training
+   * actually happens that run (the corpus may still be below that trainer's threshold) — see
+   * {@link ClassifierTrainingCounts}.
+   */
+  public void saveTrainingCounts(long spamCount, long hamCount) {
+    accountFolder.mkdirs();
+    try (Writer w = new FileWriter(trainingCountsFile)) {
+      GSON.toJson(new ClassifierTrainingCounts(spamCount, hamCount), w);
+    } catch (IOException e) {
+      LOGGER.log(Level.WARNING, logPrefix + "Could not write training counts file " + trainingCountsFile, e);
+    }
   }
 
   /** Deletes files dated more than keepDays days before today. No effect if keepDays<=0. */

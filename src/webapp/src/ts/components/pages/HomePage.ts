@@ -10,6 +10,7 @@ import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
 import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 import { CycleProgressBar } from "../CycleProgressBar";
+import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
 
 const REFRESH_INTERVAL_MS = 60_000;
 const TICK_INTERVAL_MS = 1_000;
@@ -84,6 +85,7 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
           lastCycleCompletedTimestamp: account.lastCycleCompletedTimestamp,
           nextScheduledCycleTimestamp: account.nextScheduledCycleTimestamp,
         }),
+        m(ClassifierTrainingSummary, { training: account.classifierTraining }),
         account.status == 'KO' ? m(".account-error", account.lastErrorTimestamp + ": " + account.lastErrorMessage ) : null
       )
     ]);
