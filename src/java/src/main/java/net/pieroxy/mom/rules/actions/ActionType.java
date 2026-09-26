@@ -1,5 +1,6 @@
 package net.pieroxy.mom.rules.actions;
 
+import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.rules.actions.implementations.AndAction;
 import net.pieroxy.mom.rules.actions.implementations.MoveToAction;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@TypeScriptType
 public enum ActionType {
   MOVE_TO(MoveToAction::new, true),
   READ(ReadAction::new, false),

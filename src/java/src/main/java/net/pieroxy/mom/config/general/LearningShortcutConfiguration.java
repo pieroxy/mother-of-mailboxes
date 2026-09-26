@@ -1,5 +1,7 @@
 package net.pieroxy.mom.config.general;
 
+import net.pieroxy.mom.api.metadata.TypeScriptType;
+
 /**
  * One entry of {@code learningShortcuts} (see {@link MailAccountConfiguration}): a single flat
  * folder directly under {@code mom-rules/} — e.g. {@code mom-rules/MoveSameDomainToSpam} —
@@ -16,6 +18,7 @@ package net.pieroxy.mom.config.general;
  * (including its {@code key}, e.g. the destination folder for {@code MOVE_TO}) since there's no
  * folder level left to carry it.
  */
+@TypeScriptType
 public class LearningShortcutConfiguration {
   private String name;
   private MailFilterRuleMatcherConfiguration matcher;

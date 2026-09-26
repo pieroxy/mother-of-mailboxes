@@ -1,7 +1,10 @@
 package net.pieroxy.mom.config.general;
 
+import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.rules.RuleType;
 
+/** Read directly by {@code AccountConfigApi} to show an account's rules — see {@link TypeScriptType}. */
+@TypeScriptType
 public class MailFilterRuleConfiguration {
   /**
    * Optional: defaults to MATCHER_ACTION_RULE when absent, so every config.json written before

@@ -105,6 +105,49 @@ body {
           padding: 5em 10% 0 10%;
           display: block;
 
+          // Shared by every sub-page (StatsPage, AccountSettingsPage, ...): a back link + title
+          // header, a loading placeholder, and the dark card container used to group a section.
+          .page-header {
+              display: flex;
+              align-items: baseline;
+              gap: 16px;
+              margin-bottom: 16px;
+
+              .page-back {
+                  color: #aaa8;
+                  cursor: pointer;
+                  font-size: 14px;
+
+                  &:hover {
+                      color: #aaa;
+                  }
+              }
+
+              .page-title {
+                  margin: 0;
+                  font-size: 24px;
+                  color: #fff;
+              }
+          }
+
+          .page-loading {
+              color: #aaa8;
+              font-style: italic;
+          }
+
+          .page-card {
+              background-color: $bg-color-l3;
+              border-radius: 10px;
+              padding: 20px;
+
+              h2 {
+                  margin: 0 0 12px 0;
+                  font-size: 16px;
+                  color: #fff;
+                  font-weight: normal;
+              }
+          }
+
           .accounts {
               display: flex;
               gap: 24px;
@@ -126,7 +169,14 @@ body {
                       align-items: center;
                   }
 
-                  .stats-link {
+                  .account-left-actions {
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                      gap: 8px;
+                  }
+
+                  .stats-link, .settings-link {
                       cursor: pointer;
                       opacity: 0.6;
                       transition: opacity 0.15s linear;
@@ -251,29 +301,6 @@ body {
               display: block;
               color: #aaa;
 
-              .stats-header {
-                  display: flex;
-                  align-items: baseline;
-                  gap: 16px;
-                  margin-bottom: 16px;
-
-                  .stats-back {
-                      color: #aaa8;
-                      cursor: pointer;
-                      font-size: 14px;
-
-                      &:hover {
-                          color: #aaa;
-                      }
-                  }
-
-                  .stats-title {
-                      margin: 0;
-                      font-size: 24px;
-                      color: #fff;
-                  }
-              }
-
               .stats-filters {
                   display: flex;
                   align-items: center;
@@ -326,11 +353,6 @@ body {
                   }
               }
 
-              .stats-loading {
-                  color: #aaa8;
-                  font-style: italic;
-              }
-
               .stats-content {
                   display: flex;
                   flex-direction: column;
@@ -363,19 +385,6 @@ body {
                           color: #aaa8;
                           margin-top: 4px;
                       }
-                  }
-              }
-
-              .stats-card {
-                  background-color: $bg-color-l3;
-                  border-radius: 10px;
-                  padding: 20px;
-
-                  h2 {
-                      margin: 0 0 12px 0;
-                      font-size: 16px;
-                      color: #fff;
-                      font-weight: normal;
                   }
               }
 
@@ -525,6 +534,132 @@ body {
                           text-align: right;
                           min-width: 32px;
                       }
+                  }
+              }
+          }
+
+          &.accountsettingspage {
+              display: block;
+              color: #aaa;
+
+              .settings-content {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 24px;
+              }
+
+              .settings-empty {
+                  color: #aaa8;
+                  font-style: italic;
+              }
+
+              .config-grid {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+
+                  .config-row {
+                      display: grid;
+                      grid-template-columns: minmax(160px, 280px) 1fr;
+                      gap: 12px;
+                      font-size: 13px;
+
+                      .config-row-label {
+                          color: #aaa8;
+                      }
+
+                      .config-row-value {
+                          color: #fff;
+
+                          .token-list {
+                              display: flex;
+                              flex-wrap: wrap;
+                              gap: 6px;
+                          }
+
+                          .token {
+                              background-color: $bg-color-d1;
+                              color: #fff;
+                              font-size: 12px;
+                              padding: 2px 10px;
+                              border-radius: 10px;
+                          }
+                      }
+                  }
+              }
+
+              .rule-list {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+              }
+
+              .rule-card {
+                  background-color: $bg-color-d1;
+                  border-radius: 8px;
+                  padding: 12px 16px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+
+                  .rule-index {
+                      font-size: 12px;
+                      color: #aaa8;
+                      text-transform: uppercase;
+                      letter-spacing: 0.03em;
+                  }
+
+                  .shortcut-name {
+                      font-size: 13px;
+                      font-weight: bold;
+                      color: #fff;
+                  }
+
+                  .rule-learned-marker {
+                      font-style: italic;
+                      color: #aaa;
+                  }
+
+                  .rule-section {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 2px;
+
+                      .rule-section-label {
+                          font-size: 11px;
+                          color: #aaa8;
+                          text-transform: uppercase;
+                          letter-spacing: 0.03em;
+                      }
+                  }
+              }
+
+              .tree-root, .tree-children {
+                  list-style: none;
+                  margin: 0;
+                  padding: 0;
+              }
+
+              .tree-children {
+                  padding-left: 20px;
+                  border-left: 1px solid $bg-color-l3;
+                  margin-top: 4px;
+              }
+
+              .tree-node {
+                  font-size: 13px;
+
+                  .tree-node-label {
+                      padding: 2px 0;
+                  }
+
+                  .tree-node-type {
+                      color: #00abab;
+                      font-family: monospace;
+                  }
+
+                  .tree-node-detail {
+                      color: #aaa;
                   }
               }
           }

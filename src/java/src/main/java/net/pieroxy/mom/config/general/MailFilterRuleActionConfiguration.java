@@ -1,9 +1,12 @@
 package net.pieroxy.mom.config.general;
 
+import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.rules.actions.ActionType;
 
 import java.util.List;
 
+/** Read directly by {@code AccountConfigApi} to show an account's rules — see {@link TypeScriptType}. */
+@TypeScriptType
 public class MailFilterRuleActionConfiguration {
   private ActionType type;
   private String key;

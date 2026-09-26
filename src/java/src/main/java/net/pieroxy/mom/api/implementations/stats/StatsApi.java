@@ -50,13 +50,18 @@ public class StatsApi extends AbstractApiEndpoint<StatsApiInput, StatsApiOutput>
         .map(d -> new DailyStatsDto(d.date().toString(), d.messagesProcessed(), d.messagesMatched(), d.avgProcessingMs()))
         .collect(Collectors.toList());
 
-    List<MatcherCountDto> topMatchers = range.matcherCounts().entrySet().stream()
+    List<MatcherCountDto> topMatchers = topN(range.matcherCounts());
+    List<MatcherCountDto> topBlockingMatchers = topN(range.blockingMatcherCounts());
+
+    return new StatsApiOutput(days, topMatchers, topBlockingMatchers);
+  }
+
+  private static List<MatcherCountDto> topN(Map<String, Long> counts) {
+    return counts.entrySet().stream()
         .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
         .limit(TOP_MATCHERS_LIMIT)
         .map(e -> new MatcherCountDto(e.getKey(), e.getValue()))
         .collect(Collectors.toList());
-
-    return new StatsApiOutput(days, topMatchers);
   }
 }
 
@@ -96,15 +101,18 @@ class StatsApiInput {
 @TypeScriptType
 class StatsApiOutput {
   private List<DailyStatsDto> days;
-  /** Matchers that fired at least once in the range, most-fired first, capped at {@link StatsApi#TOP_MATCHERS_LIMIT}. */
+  /** Every matcher that fired at least once in the range, most-fired first, capped at {@link StatsApi#TOP_MATCHERS_LIMIT}. */
   private List<MatcherCountDto> topMatchers;
+  /** Of those, only the ones that actually ended processing for a message at least once (see {@code StatsReader#StatsRange}). */
+  private List<MatcherCountDto> topBlockingMatchers;
 
   public StatsApiOutput() {
   }
 
-  public StatsApiOutput(List<DailyStatsDto> days, List<MatcherCountDto> topMatchers) {
+  public StatsApiOutput(List<DailyStatsDto> days, List<MatcherCountDto> topMatchers, List<MatcherCountDto> topBlockingMatchers) {
     this.days = days;
     this.topMatchers = topMatchers;
+    this.topBlockingMatchers = topBlockingMatchers;
   }
 
   public List<DailyStatsDto> getDays() {
@@ -121,6 +129,14 @@ class StatsApiOutput {
 
   public void setTopMatchers(List<MatcherCountDto> topMatchers) {
     this.topMatchers = topMatchers;
+  }
+
+  public List<MatcherCountDto> getTopBlockingMatchers() {
+    return topBlockingMatchers;
+  }
+
+  public void setTopBlockingMatchers(List<MatcherCountDto> topBlockingMatchers) {
+    this.topBlockingMatchers = topBlockingMatchers;
   }
 }
 

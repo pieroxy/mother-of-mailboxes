@@ -9,4 +9,8 @@ export class Routing {
   static goToStats(accountName: string) {
     m.route.set(Endpoints.STATS, { accountName });
   }
+
+  static goToAccountSettings(accountName: string) {
+    m.route.set(Endpoints.ACCOUNT_SETTINGS, { accountName });
+  }
 }

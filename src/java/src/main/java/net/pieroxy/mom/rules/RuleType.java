@@ -1,11 +1,14 @@
 package net.pieroxy.mom.rules;
 
+import net.pieroxy.mom.api.metadata.TypeScriptType;
+
 /**
  * Discriminates what a {@code rules} entry in {@code config.json} builds — see
  * {@link RuleCatalog#build}. Optional in the JSON: absent defaults to
  * {@code MATCHER_ACTION_RULE}, so every {@code config.json} written before this type existed
  * keeps working unchanged.
  */
+@TypeScriptType
 public enum RuleType {
   /** The classic case: a {@code matcher} + an {@code action} (see {@link Rule}). */
   MATCHER_ACTION_RULE,

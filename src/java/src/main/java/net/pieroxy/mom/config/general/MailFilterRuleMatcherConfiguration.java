@@ -1,10 +1,13 @@
 package net.pieroxy.mom.config.general;
 
+import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.rules.matchers.MatcherType;
 
 import java.util.List;
 import java.util.Set;
 
+/** Read directly by {@code AccountConfigApi} to show an account's rules — see {@link TypeScriptType}. */
+@TypeScriptType
 public class MailFilterRuleMatcherConfiguration {
   private MatcherType type;
   private String key;

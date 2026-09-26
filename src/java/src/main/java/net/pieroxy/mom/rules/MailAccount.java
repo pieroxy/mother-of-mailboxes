@@ -158,6 +158,21 @@ public class MailAccount implements Runnable {
     return ruleCatalog.getContext().statsDir();
   }
 
+  /**
+   * The account's full configuration, exactly as loaded from {@code config.json} — including its
+   * {@code credentials} key (a reference into credentials.json, not a secret itself; the actual
+   * {@link Credential} is {@link #getCredentialUsername()} below, deliberately narrower). Used by
+   * {@code AccountConfigApi} to show an account's settings.
+   */
+  public MailAccountConfiguration getConfig() {
+    return config;
+  }
+
+  /** The resolved IMAP username this account logs in with — never the password. See {@link #getConfig()}. */
+  public String getCredentialUsername() {
+    return credential.getUsername();
+  }
+
   public AccountStatus getStatus() {
     return status;
   }

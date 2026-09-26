@@ -52,9 +52,9 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
 
   render(): m.Children {
     return m("page.statspage", [
-      m(".stats-header", [
-        m("a.stats-back", { onclick: () => Routing.goToScreen(Endpoints.HOME) }, "‹ Back to accounts"),
-        m("h1.stats-title", this.accountName),
+      m(".page-header", [
+        m("a.page-back", { onclick: () => Routing.goToScreen(Endpoints.HOME) }, "‹ Back to accounts"),
+        m("h1.page-title", this.accountName),
       ]),
       m(".stats-filters", [
         m(".stats-presets", PRESETS.map((preset) => m("button.stats-preset" + (this.activePresetDays === preset.days ? ".active" : ""), {
@@ -72,7 +72,7 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
         ]),
       ]),
       this.error ? m(".stats-error.errorMessage", this.error) : null,
-      !this.hasLoadedOnce && this.loading ? m(".stats-loading", "Loading…") : this.renderContent(),
+      !this.hasLoadedOnce && this.loading ? m(".page-loading", "Loading…") : this.renderContent(),
     ]);
   }
 
@@ -91,14 +91,14 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
         m(StatTile, { label: "Match rate", value: matchRate.toFixed(1) + "%" }),
         m(StatTile, { label: "Avg. processing time", value: avgMs !== null ? Math.round(avgMs) + " ms" : "—" }),
       ]),
-      m(".stats-card", [
+      m(".page-card", [
         m("h2", "Messages per day"),
         m(DailyStatsChart, { days: this.days }),
         m("button.stats-table-toggle", { onclick: () => (this.showTable = !this.showTable) },
           this.showTable ? "Hide data table" : "Show data table"),
         this.showTable ? this.renderTable() : null,
       ]),
-      m(".stats-card", [
+      m(".page-card", [
         m("h2", "Top matchers"),
         m(TopMatchersChart, { allMatchers: this.topMatchers, blockingMatchers: this.topBlockingMatchers }),
       ]),

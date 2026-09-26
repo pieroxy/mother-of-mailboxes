@@ -1,5 +1,6 @@
 package net.pieroxy.mom.rules.matchers;
 
+import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.rules.matchers.implementations.AndMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.BodyClassifierMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.DkimResultMatcher;
@@ -23,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@TypeScriptType
 public enum MatcherType {
   FROM_EQUALS(FromExactMatcher::new, true),
   FROM_ADDRESS_EQUALS(FromAddressMatcher::new, true),
