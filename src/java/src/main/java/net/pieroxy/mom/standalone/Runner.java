@@ -55,7 +55,8 @@ public class Runner {
     Gson gson = new Gson();
     File configFile = new File(args[0], "config.json");
     Runner.config = gson.fromJson(new FileReader(configFile), Configuration.class);
-    CredentialsFile credentialsFile = gson.fromJson(new FileReader(new File(args[0], "credentials.json")), CredentialsFile.class);
+    File credentialsFilePath = new File(args[0], "credentials.json");
+    CredentialsFile credentialsFile = gson.fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
     logFile = new File(config.getDataFolder(), "logs/log.txt").getAbsolutePath();
     LoggingBootstrap.configure(logFile, config.getKeepLogFiles());
 
@@ -73,7 +74,7 @@ public class Runner {
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
       Credential webServerCredential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
       ServiceProvider serviceProvider = new ServiceProvider(webServerCredential, new SessionStore(), accounts,
-          config, configFile, credentialsFile, config.getDataFolder());
+          config, configFile, credentialsFile, credentialsFilePath, config.getDataFolder());
       webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder(), serviceProvider);
     }
 

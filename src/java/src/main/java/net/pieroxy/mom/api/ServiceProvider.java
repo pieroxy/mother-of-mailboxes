@@ -29,16 +29,19 @@ public class ServiceProvider {
   private final Configuration config;
   private final File configFile;
   private final CredentialsFile credentialsFile;
+  private final File credentialsFilePath;
   private final String dataFolder;
 
   public ServiceProvider(Credential webServerCredential, SessionStore sessionStore, List<MailAccount> accounts,
-                          Configuration config, File configFile, CredentialsFile credentialsFile, String dataFolder) {
+                          Configuration config, File configFile, CredentialsFile credentialsFile,
+                          File credentialsFilePath, String dataFolder) {
     this.webServerCredential = webServerCredential;
     this.sessionStore = sessionStore;
     this.accounts = accounts;
     this.config = config;
     this.configFile = configFile;
     this.credentialsFile = credentialsFile;
+    this.credentialsFilePath = credentialsFilePath;
     this.dataFolder = dataFolder;
   }
 
@@ -105,11 +108,38 @@ public class ServiceProvider {
     fresh.start();
   }
 
+  /**
+   * Updates the account's stored IMAP username/password and restarts it so the change takes
+   * effect right away — see {@link #restartAccount}. A blank {@code password} leaves the current
+   * one unchanged (the browser is never shown the real password to begin with — see
+   * {@code AccountConfigApi}'s {@code CredentialsInfoDto} — so "unchanged" has to be the only
+   * thing a blank field can mean here, never "set it to empty").
+   */
+  public synchronized void updateCredentials(String accountName, String username, String password) {
+    MailAccountConfiguration config = findAccountConfig(accountName);
+    Credential credential = CredentialsResolver.resolve(config.getCredentials(), credentialsFile,
+        "mail account \"" + accountName + "\"");
+    credential.setUsername(username);
+    if (password != null && !password.isBlank()) {
+      credential.setPassword(password);
+    }
+    persistCredentialsFile();
+    restartAccount(accountName);
+  }
+
   private void persistConfig() {
     try (Writer w = new FileWriter(configFile)) {
       GSON.toJson(config, w);
     } catch (IOException e) {
       throw new UncheckedIOException("Could not write " + configFile, e);
+    }
+  }
+
+  private void persistCredentialsFile() {
+    try (Writer w = new FileWriter(credentialsFilePath)) {
+      GSON.toJson(credentialsFile, w);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not write " + credentialsFilePath, e);
     }
   }
 }

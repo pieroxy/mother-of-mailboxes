@@ -60,7 +60,10 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         sectionHeader("Config", () => Routing.goToAccountConfigEdit(this.accountName)),
         renderConfigSection(this.config),
       ]),
-      m(".page-card", [sectionHeader("Credentials"), renderCredentialsSection(this.credentials)]),
+      m(".page-card", [
+        sectionHeader("Credentials", () => Routing.goToAccountCredentialsEdit(this.accountName)),
+        renderCredentialsSection(this.credentials),
+      ]),
       m(".page-card", [sectionHeader("Rules"), renderRulesSection(this.rules)]),
       m(".page-card", [sectionHeader("Shortcuts"), renderShortcutsSection(this.shortcuts)]),
     ]);

@@ -135,6 +135,64 @@ body {
               font-style: italic;
           }
 
+          // Shared by every edit page (AccountConfigEditPage, AccountCredentialsEditPage, ...).
+          .edit-form {
+              display: flex;
+              flex-direction: column;
+              gap: 16px;
+              max-width: 480px;
+          }
+
+          .edit-field {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+
+              label {
+                  font-size: 11px;
+                  color: #aaa8;
+                  text-transform: uppercase;
+                  letter-spacing: 0.03em;
+              }
+
+              input[type="text"], input[type="number"], input[type="password"] {
+                  width: 100%;
+                  box-sizing: border-box;
+                  font-size: 14px;
+              }
+
+              .field-hint {
+                  font-size: 11px;
+                  color: #aaa8;
+                  text-transform: none;
+                  letter-spacing: normal;
+              }
+
+              .checkbox-field {
+                  flex-direction: row;
+                  align-items: center;
+                  gap: 8px;
+                  text-transform: none;
+                  font-size: 13px;
+                  color: #aaa;
+
+                  input {
+                      width: auto;
+                  }
+              }
+          }
+
+          .edit-actions {
+              display: flex;
+              gap: 12px;
+              margin-top: 8px;
+
+              .cancel-button {
+                  background-color: $bg-color-d1;
+                  color: #aaa;
+              }
+          }
+
           .page-card {
               background-color: $bg-color-l3;
               border-radius: 10px;
@@ -691,45 +749,6 @@ body {
               display: block;
               color: #aaa;
 
-              .edit-form {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 16px;
-                  max-width: 480px;
-              }
-
-              .edit-field {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 4px;
-
-                  label {
-                      font-size: 11px;
-                      color: #aaa8;
-                      text-transform: uppercase;
-                      letter-spacing: 0.03em;
-                  }
-
-                  input[type="text"], input[type="number"] {
-                      width: 100%;
-                      box-sizing: border-box;
-                      font-size: 14px;
-                  }
-
-                  .checkbox-field {
-                      flex-direction: row;
-                      align-items: center;
-                      gap: 8px;
-                      text-transform: none;
-                      font-size: 13px;
-                      color: #aaa;
-
-                      input {
-                          width: auto;
-                      }
-                  }
-              }
-
               .folder-editor {
                   display: flex;
                   flex-direction: column;
@@ -777,17 +796,11 @@ body {
                       }
                   }
               }
+          }
 
-              .edit-actions {
-                  display: flex;
-                  gap: 12px;
-                  margin-top: 8px;
-
-                  .cancel-button {
-                      background-color: $bg-color-d1;
-                      color: #aaa;
-                  }
-              }
+          &.accountcredentialseditpage {
+              display: block;
+              color: #aaa;
           }
         }
     }

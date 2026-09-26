@@ -5,4 +5,5 @@ export enum Endpoints {
   STATS = "/stats/:accountName",
   ACCOUNT_SETTINGS = "/settings/:accountName",
   ACCOUNT_CONFIG_EDIT = "/settings/:accountName/config/edit",
+  ACCOUNT_CREDENTIALS_EDIT = "/settings/:accountName/credentials/edit",
 }

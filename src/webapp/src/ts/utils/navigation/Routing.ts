@@ -17,4 +17,8 @@ export class Routing {
   static goToAccountConfigEdit(accountName: string) {
     m.route.set(Endpoints.ACCOUNT_CONFIG_EDIT, { accountName });
   }
+
+  static goToAccountCredentialsEdit(accountName: string) {
+    m.route.set(Endpoints.ACCOUNT_CREDENTIALS_EDIT, { accountName });
+  }
 }
