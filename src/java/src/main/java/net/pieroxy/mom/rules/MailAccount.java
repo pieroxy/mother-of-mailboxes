@@ -11,6 +11,7 @@ import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.learning.LearnedRulesStore;
 import net.pieroxy.mom.learning.RuleLearner;
+import net.pieroxy.mom.utils.FileNameValidator;
 import net.pieroxy.mom.utils.mail.ImapIdleWatcher;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.utils.mail.ImapMailboxConnection;
@@ -84,6 +85,10 @@ public class MailAccount implements Runnable {
 
   /** Visible for tests: lets a mailbox factory be injected without real IMAPS/TLS. */
   MailAccount(MailAccountConfiguration config, Credential credential, String dataFolder, ImapMailboxFactory mailboxFactory) {
+    // displayName is turned directly into file/directory names below (state file, learned rules,
+    // classifier corpus, stats dir) — fail fast here rather than hit an IOException deep inside
+    // one of those stores, or worse, silently write somewhere unintended.
+    FileNameValidator.validate(config.getDisplayName(), "mail account displayName");
     this.config = config;
     this.credential = credential;
     this.stateStore = new MailAccountStateStore(dataFolder, config.getDisplayName());
