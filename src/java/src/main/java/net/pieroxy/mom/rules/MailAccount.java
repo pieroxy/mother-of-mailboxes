@@ -153,6 +153,11 @@ public class MailAccount implements Runnable {
     return accountLabel();
   }
 
+  /** Directory this account's per-day {@code stats-yyyy-MM-dd.json} files live in — see {@code StatsLog}/{@code StatsReader}. */
+  public File getStatsDir() {
+    return ruleCatalog.getContext().statsDir();
+  }
+
   public AccountStatus getStatus() {
     return status;
   }

@@ -5,4 +5,8 @@ export class Routing {
   static goToScreen(target: Endpoints, replace: boolean = false) {
     m.route.set(target, null, { replace });
   }
+
+  static goToStats(accountName: string) {
+    m.route.set(Endpoints.STATS, { accountName });
+  }
 }

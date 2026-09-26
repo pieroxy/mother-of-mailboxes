@@ -8,6 +8,8 @@ import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 import { CycleProgressBar } from "../CycleProgressBar";
 import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
+import { StatsIcon } from "../atoms/icons/StatsIcon";
+import { Routing } from "../../utils/navigation/Routing";
 
 const REFRESH_INTERVAL_MS = 60_000;
 const TICK_INTERVAL_MS = 1_000;
@@ -66,7 +68,10 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
   view({ attrs }: m.Vnode<AccountRowAttrs>): m.Children {
     const account = attrs.account;
     return m(".account.status-" + account.status.toLowerCase(), [
-      m(StatusIcon, { status: account.status }),
+      m(".account-left", [
+        m(StatusIcon, { status: account.status }),
+        m("span.stats-link", { title: "View stats", onclick: () => Routing.goToStats(account.name) }, m(StatsIcon)),
+      ]),
       m(".account-details",
         m(".account-name", account.name),
         m(".account-messages-processed", account.messagesProcessed + " processed"),

@@ -119,6 +119,28 @@ body {
                   display: flex;
                   gap: 16px;
 
+                  .account-left {
+                      display: flex;
+                      flex-direction: column;
+                      justify-content: space-between;
+                      align-items: center;
+                  }
+
+                  .stats-link {
+                      cursor: pointer;
+                      opacity: 0.6;
+                      transition: opacity 0.15s linear;
+
+                      &:hover {
+                          opacity: 1;
+                      }
+
+                      svg.icon {
+                          width: 26px;
+                          height: 26px;
+                      }
+                  }
+
                   .account-details {
                       display: flex;
                       flex-direction: column;
@@ -222,6 +244,265 @@ body {
                   display: flex;
                   flex-direction: column;
                   gap: 24px;
+              }
+          }
+
+          &.statspage {
+              display: block;
+              color: #aaa;
+
+              .stats-header {
+                  display: flex;
+                  align-items: baseline;
+                  gap: 16px;
+                  margin-bottom: 16px;
+
+                  .stats-back {
+                      color: #aaa8;
+                      cursor: pointer;
+                      font-size: 14px;
+
+                      &:hover {
+                          color: #aaa;
+                      }
+                  }
+
+                  .stats-title {
+                      margin: 0;
+                      font-size: 24px;
+                      color: #fff;
+                  }
+              }
+
+              .stats-filters {
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  flex-wrap: wrap;
+                  gap: 16px;
+                  margin-bottom: 24px;
+
+                  .stats-presets {
+                      display: flex;
+                      gap: 8px;
+
+                      .stats-preset {
+                          background-color: $bg-color-l3;
+                          color: #aaa;
+                          box-shadow: none;
+                          font-size: 13px;
+                          padding: 6px 14px;
+
+                          &.active {
+                              background-color: #00abab;
+                              color: #000;
+                          }
+
+                          &:hover:not(.active) {
+                              background-color: $bg-color-l2;
+                          }
+                      }
+                  }
+
+                  .stats-custom-range {
+                      display: flex;
+                      gap: 12px;
+
+                      label {
+                          display: flex;
+                          flex-direction: column;
+                          gap: 4px;
+                          font-size: 11px;
+                          color: #aaa8;
+                          text-transform: uppercase;
+                          letter-spacing: 0.03em;
+                      }
+
+                      input[type="date"] {
+                          font-size: 13px;
+                          padding: 4px 8px;
+                          color-scheme: dark;
+                      }
+                  }
+              }
+
+              .stats-loading {
+                  color: #aaa8;
+                  font-style: italic;
+              }
+
+              .stats-content {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 24px;
+                  transition: opacity 0.15s linear;
+
+                  &.stats-content-loading {
+                      opacity: 0.5;
+                  }
+              }
+
+              .stats-summary {
+                  display: flex;
+                  gap: 16px;
+                  flex-wrap: wrap;
+
+                  .stat-tile {
+                      background-color: $bg-color-l3;
+                      border-radius: 10px;
+                      padding: 12px 20px;
+                      min-width: 140px;
+
+                      .stat-tile-value {
+                          font-size: 28px;
+                          color: #fff;
+                      }
+
+                      .stat-tile-label {
+                          font-size: 12px;
+                          color: #aaa8;
+                          margin-top: 4px;
+                      }
+                  }
+              }
+
+              .stats-card {
+                  background-color: $bg-color-l3;
+                  border-radius: 10px;
+                  padding: 20px;
+
+                  h2 {
+                      margin: 0 0 12px 0;
+                      font-size: 16px;
+                      color: #fff;
+                      font-weight: normal;
+                  }
+              }
+
+              .chart-legend {
+                  display: flex;
+                  gap: 16px;
+                  margin-bottom: 8px;
+                  font-size: 12px;
+                  color: #aaa8;
+
+                  .legend-item {
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                  }
+
+                  .legend-swatch {
+                      width: 10px;
+                      height: 10px;
+                      border-radius: 2px;
+                  }
+              }
+
+              .daily-stats-chart-svg {
+                  width: 100%;
+                  height: 220px;
+                  display: block;
+
+                  .chart-gridline {
+                      line {
+                          stroke: $bg-color-d1;
+                          stroke-width: 1;
+                      }
+
+                      text {
+                          fill: #aaa8;
+                          font-size: 11px;
+                      }
+                  }
+
+                  .chart-x-label {
+                      fill: #aaa8;
+                      font-size: 11px;
+                  }
+
+                  .bar {
+                      transition: opacity 0.1s linear;
+
+                      &:hover {
+                          opacity: 0.8;
+                      }
+                  }
+              }
+
+              .stats-table-toggle {
+                  margin-top: 12px;
+                  background-color: transparent;
+                  color: #00abab;
+                  box-shadow: none;
+                  padding: 4px 0;
+                  font-size: 13px;
+
+                  &:hover {
+                      text-decoration: underline;
+                  }
+              }
+
+              .stats-table {
+                  margin-top: 12px;
+                  width: 100%;
+                  border-collapse: collapse;
+                  font-size: 13px;
+
+                  th, td {
+                      text-align: left;
+                      padding: 6px 10px;
+                      border-bottom: 1px solid $bg-color-d1;
+                  }
+
+                  th {
+                      color: #aaa8;
+                      font-weight: normal;
+                  }
+              }
+
+              .top-matchers {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+
+                  &.top-matchers-empty {
+                      color: #aaa8;
+                      font-style: italic;
+                  }
+
+                  .matcher-row {
+                      display: grid;
+                      grid-template-columns: minmax(120px, 240px) 1fr auto;
+                      align-items: center;
+                      gap: 12px;
+                      font-size: 13px;
+
+                      .matcher-label {
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          white-space: nowrap;
+                      }
+
+                      .matcher-bar-track {
+                          background-color: $bg-color-d1;
+                          border-radius: 3px;
+                          height: 10px;
+                          overflow: hidden;
+                      }
+
+                      .matcher-bar-fill {
+                          height: 100%;
+                          background-color: #00abab;
+                          border-radius: 3px;
+                      }
+
+                      .matcher-count {
+                          color: #aaa8;
+                          text-align: right;
+                          min-width: 32px;
+                      }
+                  }
               }
           }
         }
