@@ -96,7 +96,7 @@ public class MailAccount implements Runnable {
     // BodyClassifierMatcher have no other way to know which account's model file to load, since
     // they're built without context by MatcherType.getImplementation() — see RuleContext.
     RuleContext ruleContext = new RuleContext(classifierCorpusStore.getModelFile(), classifierCorpusStore.getHeaderModelFile(),
-        classifierCorpusStore.getBodyModelFile(), new File(dataFolder, "logs"));
+        classifierCorpusStore.getBodyModelFile(), new File(new File(dataFolder, "logs"), config.getDisplayName()));
     this.ruleCatalog = new RuleCatalog(config.getRules(), learnedRulesStore, ruleContext);
     this.subjectClassifierTrainer = new SubjectClassifierTrainer(classifierCorpusStore);
     this.headerClassifierTrainer = new HeaderClassifierTrainer(classifierCorpusStore);

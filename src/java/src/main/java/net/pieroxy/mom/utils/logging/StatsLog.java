@@ -19,6 +19,9 @@ import java.util.logging.Logger;
  * the rule chain) to a per-UTC-day file ({@code <statsDir>/stats-yyyy-MM-dd.json}) — a
  * transactional record of what happened, as it happens, meant for later aggregation rather than
  * for a human to read live (see {@code OneLineLogFormatter}/{@code LoggingBootstrap} for that).
+ * {@code statsDir} is account-scoped ({@code MailAccount} builds it as {@code <dataFolder>/logs/
+ * <accountDisplayName>}, same layout as {@code ClassifierCorpusStore}) so lines never need an
+ * account field of their own and one account's stats can't interleave with another's.
  * One JSON object per line (rather than one JSON array for the whole file) so that adding an
  * event is a plain append, never a read-modify-write of the whole day's file — several account
  * threads can call this concurrently.
