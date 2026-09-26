@@ -96,6 +96,28 @@ public class StatsReaderTest {
   }
 
   @Test
+  public void blockingMatcherCountsOnlyCountsTheMatcherThatEndedProcessing() {
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
+    File statsDir = tmp.getRoot();
+    // A keepProcessing rule: fires (MATCH event) but never blocks, so the message's own PROCESSED
+    // event still ends up PASS with no matcher — see StatsLog#recordProcessed.
+    StatsLog.recordMatch(statsDir, "IpReputationMatcher[spamhaus-drop](score=0.6)");
+    StatsLog.recordProcessed(statsDir, StatsLog.ProcessResult.PASS, null, 10);
+    // A blocking rule: fires and also ends processing for its message.
+    StatsLog.recordMatch(statsDir, "FromDomainMatcher(spam.example.com)");
+    StatsLog.recordProcessed(statsDir, StatsLog.ProcessResult.MATCH, "FromDomainMatcher(spam.example.com)", 8);
+
+    StatsReader.StatsRange range = StatsReader.read(statsDir, today, today);
+
+    // Both fired at least once...
+    assertEquals(1L, (long) range.matcherCounts().get("FromDomainMatcher(spam.example.com)"));
+    assertEquals(1L, (long) range.matcherCounts().get("IpReputationMatcher[spamhaus-drop](score)"));
+    // ...but only the one that actually blocked a message counts as "blocking".
+    assertEquals(1L, (long) range.blockingMatcherCounts().get("FromDomainMatcher(spam.example.com)"));
+    assertEquals(null, range.blockingMatcherCounts().get("IpReputationMatcher[spamhaus-drop](score)"));
+  }
+
+  @Test
   public void coversEveryDayInTheRangeInOrder() {
     LocalDate from = LocalDate.of(2026, 3, 1);
     LocalDate to = LocalDate.of(2026, 3, 4);

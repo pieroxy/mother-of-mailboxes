@@ -35,6 +35,7 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
   private activePresetDays: number | null = 7;
   private days: DailyStatsDto[] = [];
   private topMatchers: MatcherCountDto[] = [];
+  private topBlockingMatchers: MatcherCountDto[] = [];
   private loading = false;
   private hasLoadedOnce = false;
   private error: string | undefined;
@@ -99,7 +100,7 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
       ]),
       m(".stats-card", [
         m("h2", "Top matchers"),
-        m(TopMatchersChart, { matchers: this.topMatchers }),
+        m(TopMatchersChart, { allMatchers: this.topMatchers, blockingMatchers: this.topBlockingMatchers }),
       ]),
     ]);
   }
@@ -147,6 +148,7 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
       .then((output) => {
         this.days = output.days;
         this.topMatchers = output.topMatchers;
+        this.topBlockingMatchers = output.topBlockingMatchers;
         this.loading = false;
         this.hasLoadedOnce = true;
         m.redraw();

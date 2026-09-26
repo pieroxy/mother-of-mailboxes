@@ -461,6 +461,29 @@ body {
                   }
               }
 
+              .matcher-mode-switch {
+                  display: flex;
+                  gap: 8px;
+                  margin-bottom: 12px;
+
+                  .matcher-mode-option {
+                      background-color: $bg-color-d1;
+                      color: #aaa;
+                      box-shadow: none;
+                      font-size: 12px;
+                      padding: 4px 12px;
+
+                      &.active {
+                          background-color: #00abab;
+                          color: #000;
+                      }
+
+                      &:hover:not(.active) {
+                          background-color: $bg-color-l2;
+                      }
+                  }
+              }
+
               .top-matchers {
                   display: flex;
                   flex-direction: column;
