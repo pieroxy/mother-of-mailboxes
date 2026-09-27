@@ -6,6 +6,7 @@ import net.pieroxy.mom.api.SessionStore;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.config.general.Configuration;
+import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
@@ -191,12 +192,52 @@ public class ServiceProviderRestartAccountTest {
     }
   }
 
+  @Test
+  public void updateAccountPersistsLearningShortcuts() throws Exception {
+    Setup setup = setUp();
+    MailAccount original = setup.accounts.get(0);
+    LearningShortcutConfiguration shortcut = shortcut("MoveNewsletterToSpam", MatcherType.FROM_DOMAIN_EQUALS, ActionType.MOVE_TO, "Spam");
+
+    try {
+      updateAccount(setup, "test-user", "", List.of(), List.of(shortcut));
+
+      Configuration reloaded = new Gson().fromJson(new FileReader(setup.configFile), Configuration.class);
+      List<LearningShortcutConfiguration> persisted = reloaded.getConfigurations().get(0).getLearningShortcuts();
+      assertEquals(1, persisted.size());
+      assertEquals("MoveNewsletterToSpam", persisted.get(0).getName());
+      assertEquals(MatcherType.FROM_DOMAIN_EQUALS, persisted.get(0).getMatcher().getType());
+      assertEquals("Spam", persisted.get(0).getAction().getKey());
+
+      assertNotSame("the account must have been restarted", original, setup.accounts.get(0));
+    } finally {
+      stopReplacedAccount(setup);
+    }
+  }
+
   /** Passes the setup's current config fields straight through, only exercising the username/password/rules under test — mirrors the one combined save the settings page now sends (see UpdateAccountApi). */
   private static void updateAccount(Setup setup, String username, String password, List<MailFilterRuleConfiguration> rules) {
+    updateAccount(setup, username, password, rules, List.of());
+  }
+
+  private static void updateAccount(Setup setup, String username, String password, List<MailFilterRuleConfiguration> rules,
+                                     List<LearningShortcutConfiguration> shortcuts) {
     setup.serviceProvider.updateAccount("test-account", setup.config.getHost(), setup.config.getPort(), setup.config.getRunEvery(),
         setup.config.getClassifierSpamFolderName(), setup.config.getClassifierExcludedFolders(),
         setup.config.getClassifierCorpusRetentionDays(), setup.config.getClassifierCorpusScanBatchSize(),
-        setup.config.isDiscoveryTreeDisabled(), username, password, rules);
+        setup.config.isDiscoveryTreeDisabled(), username, password, rules, shortcuts);
+  }
+
+  private static LearningShortcutConfiguration shortcut(String name, MatcherType matcherType, ActionType actionType, String actionKey) {
+    MailFilterRuleMatcherConfiguration matcher = new MailFilterRuleMatcherConfiguration();
+    matcher.setType(matcherType);
+    MailFilterRuleActionConfiguration action = new MailFilterRuleActionConfiguration();
+    action.setType(actionType);
+    action.setKey(actionKey);
+    LearningShortcutConfiguration shortcut = new LearningShortcutConfiguration();
+    shortcut.setName(name);
+    shortcut.setMatcher(matcher);
+    shortcut.setAction(action);
+    return shortcut;
   }
 
   private static MailFilterRuleConfiguration rule(String fromDomain, String moveToFolder) {

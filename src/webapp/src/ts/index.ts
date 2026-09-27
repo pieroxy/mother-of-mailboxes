@@ -10,6 +10,7 @@ import { AccountSettingsPage } from "./components/pages/AccountSettingsPage";
 import { AccountConfigEditPage } from "./components/pages/AccountConfigEditPage";
 import { AccountCredentialsEditPage } from "./components/pages/AccountCredentialsEditPage";
 import { RuleEditPage } from "./components/pages/RuleEditPage";
+import { ShortcutEditPage } from "./components/pages/ShortcutEditPage";
 
 const routes: m.RouteDefs = {
   [Endpoints.LOGIN]: LoginPage,
@@ -20,6 +21,7 @@ const routes: m.RouteDefs = {
   [Endpoints.ACCOUNT_CONFIG_EDIT]: new AuthenticatedPageResolver(AccountConfigEditPage),
   [Endpoints.ACCOUNT_CREDENTIALS_EDIT]: new AuthenticatedPageResolver(AccountCredentialsEditPage),
   [Endpoints.RULE_EDIT]: new AuthenticatedPageResolver(RuleEditPage),
+  [Endpoints.SHORTCUT_EDIT]: new AuthenticatedPageResolver(ShortcutEditPage),
 };
 
 m.route(document.getElementById("app")!, Endpoints.LOGIN, routes);

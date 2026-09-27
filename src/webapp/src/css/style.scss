@@ -779,7 +779,7 @@ body {
                   font-style: italic;
               }
 
-              .add-rule-button {
+              .add-item-button {
                   margin-top: 12px;
                   background-color: $bg-color-d1;
                   color: $text-muted;
@@ -997,6 +997,11 @@ body {
           }
 
           &.accountcredentialseditpage {
+              display: block;
+              color: $text-muted;
+          }
+
+          &.shortcuteditpage {
               display: block;
               color: $text-muted;
           }

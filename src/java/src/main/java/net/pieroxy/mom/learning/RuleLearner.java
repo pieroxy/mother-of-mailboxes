@@ -74,8 +74,12 @@ public class RuleLearner {
    * always extracted per example, same as the discovery tree), a missing action key (there's no
    * folder level left to carry it, unlike the discovery tree's {@code <key>} folder), a name
    * colliding with the discovery tree's own top-level names, or two shortcuts sharing a name.
+   * Public and static — besides the constructor above, {@code UpdateAccountApi} calls this
+   * directly so a bad shortcut is rejected synchronously, in the API response, rather than only
+   * surfacing later when this account's background thread next tries to build its RuleLearner and
+   * silently fails every cycle from then on.
    */
-  private void validateShortcuts(List<LearningShortcutConfiguration> shortcuts) {
+  public static void validateShortcuts(List<LearningShortcutConfiguration> shortcuts) {
     Set<String> seenNames = new HashSet<>();
     for (LearningShortcutConfiguration shortcut : shortcuts) {
       String name = shortcut.getName();
@@ -119,7 +123,7 @@ public class RuleLearner {
     }
   }
 
-  private boolean isReservedName(String name) {
+  private static boolean isReservedName(String name) {
     if (name.equals(DONE_FOLDER)) return true;
     for (MatcherType matcherType : MatcherType.learnableValues()) {
       if (name.equals(matcherType.name())) return true;

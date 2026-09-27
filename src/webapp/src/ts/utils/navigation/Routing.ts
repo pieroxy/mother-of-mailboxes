@@ -26,4 +26,9 @@ export class Routing {
   static goToRuleEdit(accountName: string, ruleIndex: number | "new") {
     m.route.set(Endpoints.RULE_EDIT, { accountName, ruleIndex });
   }
+
+  /** shortcutIndex is the shortcut's position in the account's shortcuts array, or "new" to create one. */
+  static goToShortcutEdit(accountName: string, shortcutIndex: number | "new") {
+    m.route.set(Endpoints.SHORTCUT_EDIT, { accountName, shortcutIndex });
+  }
 }

@@ -10,6 +10,14 @@ export interface PendingRule {
   edited: boolean;
 }
 
+/** Same idea as PendingRule, for the Shortcuts list — no "moved" concept, since shortcuts are an unordered set of folders, not a priority list. */
+export interface PendingShortcut {
+  shortcut: LearningShortcutConfiguration;
+  originalIndex: number | null;
+  deleted: boolean;
+  edited: boolean;
+}
+
 /**
  * One account's whole set of in-flight, unsaved edits — Config, Credentials and Rules — staged
  * locally while the user reviews them, and flushed to the backend in a single call only when they
@@ -26,7 +34,7 @@ export interface AccountEditSession {
   /** Empty means "no new password staged" — the same "blank = unchanged" convention the backend uses. */
   workingPassword: string;
   rules: PendingRule[];
-  shortcuts: LearningShortcutConfiguration[];
+  shortcuts: PendingShortcut[];
 }
 
 function isDeepEqual(a: unknown, b: unknown): boolean {
@@ -53,8 +61,12 @@ export function isRulesChanged(session: AccountEditSession): boolean {
   return session.rules.some((r) => r.deleted || r.edited || r.originalIndex === null || isRuleMoved(session, r));
 }
 
+export function isShortcutsChanged(session: AccountEditSession): boolean {
+  return session.shortcuts.some((s) => s.deleted || s.edited || s.originalIndex === null);
+}
+
 export function isSessionChanged(session: AccountEditSession): boolean {
-  return isConfigChanged(session) || isCredentialsChanged(session) || isRulesChanged(session);
+  return isConfigChanged(session) || isCredentialsChanged(session) || isRulesChanged(session) || isShortcutsChanged(session);
 }
 
 class AccountEditSessionStore {
@@ -80,7 +92,7 @@ class AccountEditSessionStore {
         workingUsername: output.credentials.username,
         workingPassword: "",
         rules: output.rules.map((rule, index) => ({ rule, originalIndex: index, deleted: false, edited: false })),
-        shortcuts: output.shortcuts,
+        shortcuts: output.shortcuts.map((shortcut, index) => ({ shortcut, originalIndex: index, deleted: false, edited: false })),
       };
       this.sessions.set(accountName, session);
       return session;

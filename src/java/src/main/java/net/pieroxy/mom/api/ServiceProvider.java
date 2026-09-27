@@ -6,6 +6,7 @@ import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
+import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
 import net.pieroxy.mom.utils.CredentialsResolver;
@@ -111,9 +112,10 @@ public class ServiceProvider {
 
   /**
    * Applies every editable part of an account's configuration — the Config fields, the IMAP
-   * credentials and the whole {@code rules} list — and restarts it exactly once. The webapp stages
-   * all of these client-side (see {@code AccountEditSession.ts}) while the user reviews changes
-   * across the Config/Credentials/Rules edit pages, and only calls this, via
+   * credentials, the whole {@code rules} list and the whole {@code learningShortcuts} list — and
+   * restarts it exactly once. The webapp stages all of these client-side (see
+   * {@code AccountEditSession.ts}) while the user reviews changes across the
+   * Config/Credentials/Rules/Shortcuts edit pages, and only calls this, via
    * {@code UpdateAccountApi}, when they click "Save Changes" — so a single restart always covers
    * the whole batch instead of one per section. {@code displayName} is deliberately not
    * settable here: it names every one of this account's on-disk files (state, learned rules,
@@ -127,7 +129,8 @@ public class ServiceProvider {
                                           String classifierSpamFolderName, List<String> classifierExcludedFolders,
                                           int classifierCorpusRetentionDays, int classifierCorpusScanBatchSize,
                                           boolean discoveryTreeDisabled, String username, String password,
-                                          List<MailFilterRuleConfiguration> rules) {
+                                          List<MailFilterRuleConfiguration> rules,
+                                          List<LearningShortcutConfiguration> shortcuts) {
     MailAccountConfiguration config = findAccountConfig(accountName);
     config.setHost(host);
     config.setPort(port);
@@ -138,6 +141,7 @@ public class ServiceProvider {
     config.setClassifierCorpusScanBatchSize(classifierCorpusScanBatchSize);
     config.setDiscoveryTreeDisabled(discoveryTreeDisabled);
     config.setRules(rules);
+    config.setLearningShortcuts(shortcuts);
 
     Credential credential = CredentialsResolver.resolve(config.getCredentials(), credentialsFile,
         "mail account \"" + accountName + "\"");

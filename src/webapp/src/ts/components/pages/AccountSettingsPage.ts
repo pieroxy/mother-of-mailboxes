@@ -1,6 +1,6 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { AccountBasicConfigDto, LearningShortcutConfiguration, RuleType } from "../../auto/pieroxy-mom";
+import { AccountBasicConfigDto, RuleType } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
@@ -12,6 +12,7 @@ import { renderActionNode, renderMatcherNode } from "../RuleTree";
 import {
   AccountEditSession,
   PendingRule,
+  PendingShortcut,
   accountEditSessions,
   isConfigFieldChanged,
   isRuleMoved,
@@ -71,9 +72,13 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       m(".page-card", [
         sectionHeader("Rules"),
         this.renderRulesSection(session),
-        m("button.add-rule-button", { onclick: () => Routing.goToRuleEdit(this.accountName, "new") }, "+ Add rule"),
+        m("button.add-item-button", { onclick: () => Routing.goToRuleEdit(this.accountName, "new") }, "+ Add rule"),
       ]),
-      m(".page-card", [sectionHeader("Shortcuts"), renderShortcutsSection(session.shortcuts)]),
+      m(".page-card", [
+        sectionHeader("Shortcuts"),
+        this.renderShortcutsSection(session),
+        m("button.add-item-button", { onclick: () => Routing.goToShortcutEdit(this.accountName, "new") }, "+ Add shortcut"),
+      ]),
     ]);
   }
 
@@ -150,6 +155,44 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
     pendingRule.deleted = !pendingRule.deleted;
   }
 
+  private renderShortcutsSection(session: AccountEditSession): m.Children {
+    if (session.shortcuts.length === 0) return m(".settings-empty", "No learning shortcuts configured.");
+    return m(".rule-list", session.shortcuts.map((pendingShortcut, index) => this.renderShortcut(pendingShortcut, index)));
+  }
+
+  private renderShortcut(pendingShortcut: PendingShortcut, index: number): m.Children {
+    const shortcut = pendingShortcut.shortcut;
+    const isDeleted = pendingShortcut.deleted;
+    const header = m(".rule-card-header", [
+      m(".rule-card-header-left", [
+        m(".shortcut-name", shortcut.name),
+        this.renderShortcutTags(pendingShortcut),
+      ]),
+      m(".rule-move-controls", [
+        m("span.rule-edit-link" + (isDeleted ? ".disabled" : ""),
+          { title: "Edit this shortcut", onclick: () => Routing.goToShortcutEdit(this.accountName, index) }, m(SettingsIcon)),
+        m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
+          { title: isDeleted ? "Restore this shortcut" : "Delete this shortcut", onclick: () => this.toggleDeleteShortcut(pendingShortcut) }, m(DeleteIcon)),
+      ]),
+    ]);
+    const body = [
+      m(".rule-section", [m(".rule-section-label", "Matcher"), m("ul.tree-root", renderMatcherNode(shortcut.matcher))]),
+      m(".rule-section", [m(".rule-section-label", "Action"), m("ul.tree-root", renderActionNode(shortcut.action))]),
+    ];
+    return m(".rule-card" + (isDeleted ? ".rule-deleted" : ""), { key: index }, [header, ...body]);
+  }
+
+  private renderShortcutTags(pendingShortcut: PendingShortcut): m.Children {
+    const tags: m.Children[] = [];
+    if (pendingShortcut.originalIndex === null) tags.push(m("span.rule-tag", { key: "new" }, "New"));
+    if (pendingShortcut.edited) tags.push(m("span.rule-tag", { key: "edited" }, "Edited"));
+    return tags.length > 0 ? m(".rule-tags", tags) : null;
+  }
+
+  private toggleDeleteShortcut(pendingShortcut: PendingShortcut) {
+    pendingShortcut.deleted = !pendingShortcut.deleted;
+  }
+
   private saveChanges() {
     const session = this.session;
     if (!session) return;
@@ -168,6 +211,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       username: session.workingUsername,
       password: session.workingPassword,
       rules: session.rules.filter((pendingRule) => !pendingRule.deleted).map((pendingRule) => pendingRule.rule),
+      shortcuts: session.shortcuts.filter((pendingShortcut) => !pendingShortcut.deleted).map((pendingShortcut) => pendingShortcut.shortcut),
     })
       .then(() => {
         this.savingChanges = false;
@@ -241,13 +285,4 @@ function renderCredentialsSection(session: AccountEditSession): m.Children {
     configRow("Username", session.workingUsername, session.workingUsername !== session.baselineUsername),
     configRow("Password", session.workingPassword !== "" ? "(will be changed)" : "(unchanged)", session.workingPassword !== ""),
   ]);
-}
-
-function renderShortcutsSection(shortcuts: LearningShortcutConfiguration[]): m.Children {
-  if (shortcuts.length === 0) return m(".settings-empty", "No learning shortcuts configured.");
-  return m(".rule-list", shortcuts.map((shortcut) => m(".rule-card", { key: shortcut.name }, [
-    m(".shortcut-name", shortcut.name),
-    m(".rule-section", [m(".rule-section-label", "Matcher"), m("ul.tree-root", renderMatcherNode(shortcut.matcher))]),
-    m(".rule-section", [m(".rule-section-label", "Action"), m("ul.tree-root", renderActionNode(shortcut.action))]),
-  ])));
 }

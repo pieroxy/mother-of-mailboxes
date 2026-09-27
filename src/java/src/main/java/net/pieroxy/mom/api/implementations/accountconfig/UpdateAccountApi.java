@@ -5,15 +5,17 @@ import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
+import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.mom.learning.RuleLearner;
 
 import java.util.List;
 
 /**
- * Saves everything the account settings page lets you edit — Config, Credentials and Rules — in
- * one call, and restarts the account once. The webapp stages every edit locally (see
- * {@code AccountEditSession.ts}) while the user reviews them on the read-only settings page, and
- * only calls this endpoint when they click "Save Changes"; Cancel/Discard never reaches the
+ * Saves everything the account settings page lets you edit — Config, Credentials, Rules and
+ * Shortcuts — in one call, and restarts the account once. The webapp stages every edit locally
+ * (see {@code AccountEditSession.ts}) while the user reviews them on the read-only settings page,
+ * and only calls this endpoint when they click "Save Changes"; Cancel/Discard never reaches the
  * server at all. Replaces the old one-endpoint-per-section calls (UpdateAccountConfig/
  * UpdateAccountCredentials/UpdateAccountRules), which each restarted the account on their own.
  */
@@ -42,12 +44,14 @@ public class UpdateAccountApi extends AbstractApiEndpoint<UpdateAccountApiInput,
     if (input.getRules() == null) {
       throw new IllegalArgumentException("rules must not be null.");
     }
+    List<LearningShortcutConfiguration> shortcuts = input.getShortcuts() != null ? input.getShortcuts() : List.of();
+    RuleLearner.validateShortcuts(shortcuts);
 
     serviceProvider.updateAccount(input.getAccountName(), input.getHost(), input.getPort(), input.getRunEvery(),
         blankToNull(input.getClassifierSpamFolderName()),
         input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
         input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),
-        input.isDiscoveryTreeDisabled(), input.getUsername(), input.getPassword(), input.getRules());
+        input.isDiscoveryTreeDisabled(), input.getUsername(), input.getPassword(), input.getRules(), shortcuts);
 
     return new UpdateAccountApiOutput();
   }
@@ -72,6 +76,7 @@ class UpdateAccountApiInput {
   /** Blank means "leave the current password unchanged" — see the class javadoc. */
   private String password;
   private List<MailFilterRuleConfiguration> rules;
+  private List<LearningShortcutConfiguration> shortcuts;
 
   public String getAccountName() {
     return accountName;
@@ -167,6 +172,14 @@ class UpdateAccountApiInput {
 
   public void setRules(List<MailFilterRuleConfiguration> rules) {
     this.rules = rules;
+  }
+
+  public List<LearningShortcutConfiguration> getShortcuts() {
+    return shortcuts;
+  }
+
+  public void setShortcuts(List<LearningShortcutConfiguration> shortcuts) {
+    this.shortcuts = shortcuts;
   }
 }
 
