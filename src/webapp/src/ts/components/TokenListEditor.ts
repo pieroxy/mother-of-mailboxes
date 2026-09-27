@@ -17,9 +17,12 @@ const FILTER_THRESHOLD = 20;
  * is given, a dropdown restricted to that fixed set. Used anywhere a config field is a small set
  * of strings (excluded folders, matcher keys, reputation list ids, ...) — including, potentially,
  * a learned rule's accumulated keys, which can run into the hundreds or thousands (e.g. a
- * long-lived "move to spam" shortcut). Past FILTER_THRESHOLD tokens, a search box appears above
- * the pill list so finding one specific value to remove doesn't mean scrolling through all of
- * them — it narrows the *display* only, never the underlying array `onChange` operates on.
+ * long-lived "move to spam" shortcut). Pills are always shown alphabetically (case-insensitively),
+ * regardless of the order `tokens` was handed in — the underlying array itself keeps whatever
+ * order it already had, only the display is sorted, so a long list of domains/addresses is
+ * actually scannable. Past FILTER_THRESHOLD tokens, a search box also appears above the pill list
+ * so finding one specific value to remove doesn't mean scrolling through all of them — it narrows
+ * the *display* only, never the underlying array `onChange` operates on.
  */
 export class TokenListEditor implements m.ClassComponent<TokenListEditorAttrs> {
   private newToken = "";
@@ -29,9 +32,10 @@ export class TokenListEditor implements m.ClassComponent<TokenListEditorAttrs> {
     const { tokens, onChange, placeholder, disabled, options } = attrs;
     const showFilter = tokens.length > FILTER_THRESHOLD;
     const trimmedFilter = this.filter.trim().toLowerCase();
-    const visibleTokens = showFilter && trimmedFilter
+    const visibleTokens = (showFilter && trimmedFilter
       ? tokens.filter((t) => t.toLowerCase().includes(trimmedFilter))
-      : tokens;
+      : tokens
+    ).slice().sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 
     return m(".token-editor", [
       showFilter ? m("input.token-filter", {
