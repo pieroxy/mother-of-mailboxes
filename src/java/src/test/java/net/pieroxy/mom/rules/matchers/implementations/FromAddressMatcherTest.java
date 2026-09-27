@@ -133,4 +133,35 @@ public class FromAddressMatcherTest {
       // ok
     }
   }
+
+  /**
+   * javax.mail's own InternetAddress constructor happily accepts a domain-less local part (a
+   * historical RFC 822 allowance, e.g. "From: postmaster") — extractAddress() then hands back a
+   * non-null string with no '@' at all, which must never be learned as a matcher key verbatim.
+   */
+  @Test
+  public void extractKeyFromExampleFailsWhenAddressHasNoAtSign() throws Exception {
+    MimeMessage message = new MimeMessage(session);
+    message.setFrom(new InternetAddress("nobody"));
+
+    try {
+      new FromAddressMatcher().extractKeyFromExample(message);
+      fail("should have thrown");
+    } catch (MessagingException expected) {
+      // ok
+    }
+  }
+
+  @Test
+  public void extractKeyFromExampleFailsWhenLocalPartIsEmpty() throws Exception {
+    MimeMessage message = new MimeMessage(session);
+    message.setFrom(new InternetAddress("@example.com"));
+
+    try {
+      new FromAddressMatcher().extractKeyFromExample(message);
+      fail("should have thrown");
+    } catch (MessagingException expected) {
+      // ok
+    }
+  }
 }
