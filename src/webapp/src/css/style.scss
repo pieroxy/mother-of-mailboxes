@@ -1024,6 +1024,59 @@ body {
                       font-style: italic;
                   }
               }
+
+              // MatcherNodeEditor — a leaf's own type dropdown + fields, or a composite's
+              // recursively-nested children (indented like the read-only tree-children above).
+              .matcher-node {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+              }
+
+              .matcher-node-header {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+
+                  select {
+                      flex: 1;
+                      max-width: 320px;
+                  }
+              }
+
+              .matcher-node-remove {
+                  cursor: pointer;
+                  color: $text-faint;
+                  font-weight: bold;
+                  padding: 0 6px;
+
+                  &:hover {
+                      color: $error-color;
+                  }
+              }
+
+              .matcher-node-fields {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding-left: 20px;
+              }
+
+              .matcher-node-children {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                  padding: 12px 0 0 20px;
+                  border-left: 1px solid $bg-color-l3;
+              }
+
+              .matcher-add-condition {
+                  align-self: flex-start;
+                  background-color: $bg-color-d1;
+                  color: $text-muted;
+                  font-size: 13px;
+                  padding: 4px 12px;
+              }
           }
         }
     }

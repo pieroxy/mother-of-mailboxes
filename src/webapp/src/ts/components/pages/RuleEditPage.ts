@@ -1,72 +1,24 @@
 import m from "mithril";
 import {
   ActionType,
-  DkimResult,
-  DmarcPolicy,
-  DmarcResult,
-  FcrdnsResult,
   MailFilterRuleActionConfiguration,
   MailFilterRuleConfiguration,
   MailFilterRuleMatcherConfiguration,
-  MatcherType,
   ReputationListDto,
-  ReputationListType,
   RuleType,
-  SpfResult,
 } from "../../auto/pieroxy-mom";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
-import { TokenListEditor } from "../TokenListEditor";
-import { renderActionNode, renderMatcherNode } from "../RuleTree";
+import { renderActionNode } from "../RuleTree";
 import { AccountEditSession, PendingRule, accountEditSessions } from "../../utils/AccountEditSession";
+import { MatcherNodeEditor, defaultMatcherNode, finalizeMatcherNode, validateMatcherNode } from "../MatcherNodeEditor";
 
 interface RuleEditPageAttrs {
   accountName: string;
   /** "new" to append a rule, or the rule's position in the session's rules list (as a string, straight from the route) to edit it. */
   ruleIndex: string;
 }
-
-type MatcherFieldKind = "keys" | "threshold" | "reputation";
-
-interface MatcherTypeOption {
-  value: MatcherType;
-  label: string;
-  fields: MatcherFieldKind;
-  /** Restricts the "keys" field to this fixed set (an enum's values) — offered via a dropdown instead of free text. */
-  options?: string[];
-  /** For fields === "reputation": which kind of reputation list this matcher can reference — filters the list-id dropdown (see ReputationListsApi). */
-  reputationListType?: ReputationListType;
-}
-
-// These five are @TypeScriptNonConstEnum on the Java side specifically so they have a real
-// runtime object here (a plain TS enum, not the default const enum) — Object.values(...) lists
-// every constant with no separate value list to keep in sync.
-const SPF_RESULT_OPTIONS: string[] = Object.values(SpfResult);
-const DKIM_RESULT_OPTIONS: string[] = Object.values(DkimResult);
-const DMARC_RESULT_OPTIONS: string[] = Object.values(DmarcResult);
-const DMARC_POLICY_OPTIONS: string[] = Object.values(DmarcPolicy);
-const FCRDNS_RESULT_OPTIONS: string[] = Object.values(FcrdnsResult);
-
-// Composite types (AND/OR/NOT) are deliberately excluded: editing a matcher/action tree isn't
-// supported here yet — see COMPOSITE_MATCHER_TYPES/COMPOSITE_ACTION_TYPES below.
-const MATCHER_TYPE_OPTIONS: MatcherTypeOption[] = [
-  { value: MatcherType.FROM_EQUALS, label: "From (full header) equals", fields: "keys" },
-  { value: MatcherType.FROM_ADDRESS_EQUALS, label: "From address equals", fields: "keys" },
-  { value: MatcherType.FROM_DOMAIN_EQUALS, label: "From domain equals", fields: "keys" },
-  { value: MatcherType.FROM_ADDRESS_REGEXP, label: "From address matches regexp", fields: "keys" },
-  { value: MatcherType.SUBJECT_STARTS_WITH, label: "Subject starts with", fields: "keys" },
-  { value: MatcherType.SPF_RESULT_EQUALS, label: "SPF result equals", fields: "keys", options: SPF_RESULT_OPTIONS },
-  { value: MatcherType.DKIM_RESULT_EQUALS, label: "DKIM result equals", fields: "keys", options: DKIM_RESULT_OPTIONS },
-  { value: MatcherType.DMARC_RESULT_EQUALS, label: "DMARC result equals", fields: "keys", options: DMARC_RESULT_OPTIONS },
-  { value: MatcherType.DMARC_POLICY_EQUALS, label: "DMARC policy equals", fields: "keys", options: DMARC_POLICY_OPTIONS },
-  { value: MatcherType.FCRDNS_RESULT_EQUALS, label: "FCrDNS result equals", fields: "keys", options: FCRDNS_RESULT_OPTIONS },
-  { value: MatcherType.SUBJECT_CLASSIFIER_EQUALS, label: "Subject spam score", fields: "threshold" },
-  { value: MatcherType.HEADER_CLASSIFIER_EQUALS, label: "Header spam score", fields: "threshold" },
-  { value: MatcherType.BODY_CLASSIFIER_EQUALS, label: "Body spam score", fields: "threshold" },
-  { value: MatcherType.IP_REPUTATION_EQUALS, label: "IP reputation score", fields: "reputation", reputationListType: ReputationListType.IP_CIDR },
-  { value: MatcherType.FROM_DOMAIN_REPUTATION_EQUALS, label: "From domain reputation score", fields: "reputation", reputationListType: ReputationListType.DOMAIN },
-];
 
 interface ActionTypeOption {
   value: ActionType;
@@ -79,7 +31,8 @@ interface ActionTypeOption {
   isFolderName?: boolean;
 }
 
-// AND/OR excluded, same reasoning as MATCHER_TYPE_OPTIONS.
+// AND/OR excluded: editing a composite action isn't supported here yet (see COMPOSITE_ACTION_TYPES
+// below) — only matchers can be composites now, see MatcherNodeEditor.
 const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
   { value: ActionType.MOVE_TO, label: "Move to folder", needsKey: true, keyLabel: "Destination folder", isFolderName: true },
   { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read", needsKey: true, keyLabel: "Destination folder", isFolderName: true },
@@ -92,19 +45,17 @@ const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
 
 const FOLDER_DATALIST_ID = "destination-folder-options";
 
-const COMPOSITE_MATCHER_TYPES: Set<string> = new Set([MatcherType.AND, MatcherType.OR, MatcherType.NOT]);
 const COMPOSITE_ACTION_TYPES: Set<string> = new Set([ActionType.AND, ActionType.OR]);
-
-const THRESHOLD_PATTERN = /^[<>]=?\d+(\.\d+)?$/;
 
 /**
  * Creates or edits one rule — reused for both, per its own route: "new" appends a rule to the
- * account's list, an index edits the rule already there. Only "leaf" matchers/actions are
- * editable; a rule whose matcher or action is a composite (AND/OR/NOT) shows read-only (see
- * RuleTree) and OK leaves that side untouched, only keepProcessing is still editable for it.
- * Nothing is sent to the backend here: "OK" just writes the edited rule into the account's
- * AccountEditSession and returns to the settings page, where it shows tagged "New"/"Edited" until
- * "Save Changes" persists the whole batch in one call (see AccountSettingsPage/UpdateAccountApi).
+ * account's list, an index edits the rule already there. The matcher side ("When") is a fully
+ * editable tree, including AND/OR/NOT composites — see MatcherNodeEditor. The action side
+ * ("Then") is still leaf-only; a rule whose action is a composite (AND/OR) shows read-only (see
+ * RuleTree) and OK leaves that side untouched. Nothing is sent to the backend here: "OK" just
+ * writes the edited rule into the account's AccountEditSession and returns to the settings page,
+ * where it shows tagged "New"/"Edited" until "Save Changes" persists the whole batch in one call
+ * (see AccountSettingsPage/UpdateAccountApi).
  */
 export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private accountName = "";
@@ -114,12 +65,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
 
   private keepProcessing = false;
 
-  private matcherType: MatcherType = MatcherType.FROM_DOMAIN_EQUALS;
-  private matcherKeys: string[] = [];
-  private matcherThreshold = "";
-  private matcherListIds: string[] = [];
-  private matcherIsComposite = false;
-  private originalMatcher: MailFilterRuleMatcherConfiguration | undefined;
+  private matcherRoot: MailFilterRuleMatcherConfiguration = defaultMatcherNode();
   private reputationLists: ReputationListDto[] = [];
 
   private actionType: ActionType = ActionType.MOVE_TO;
@@ -164,9 +110,13 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     return m(".page-card.edit-form", [
       this.field("Keep processing after this", this.renderKeepProcessingCheckbox()),
       m("h2", "When"),
-      this.matcherIsComposite ? this.renderCompositeNotice("matcher", renderMatcherNode(this.originalMatcher!)) : this.renderMatcherFields(),
+      m(MatcherNodeEditor, {
+        node: this.matcherRoot,
+        onChange: (updated) => (this.matcherRoot = updated),
+        reputationLists: this.reputationLists,
+      }),
       m("h2", "Then"),
-      this.actionIsComposite ? this.renderCompositeNotice("action", renderActionNode(this.originalAction!)) : this.renderActionFields(),
+      this.actionIsComposite ? this.renderCompositeActionNotice() : this.renderActionFields(),
       this.renderActions(),
     ]);
   }
@@ -181,36 +131,11 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     ]);
   }
 
-  private renderCompositeNotice(kind: string, tree: m.Children): m.Children {
+  private renderCompositeActionNotice(): m.Children {
     return m(".composite-notice", [
-      m("p", "This rule's " + kind + " is a composite (AND/OR/NOT) — editing composites isn't supported here yet, so it's shown as-is and OK leaves it untouched."),
-      m("ul.tree-root", tree),
+      m("p", "This rule's action is a composite (AND/OR) — editing composite actions isn't supported here yet, so it's shown as-is and OK leaves it untouched."),
+      m("ul.tree-root", renderActionNode(this.originalAction!)),
     ]);
-  }
-
-  private renderMatcherFields(): m.Children {
-    const option = MATCHER_TYPE_OPTIONS.find((o) => o.value === this.matcherType)!;
-    return [
-      this.field("Matcher", m("select", {
-        value: this.matcherType,
-        onchange: (e: Event) => (this.matcherType = (e.target as HTMLSelectElement).value as MatcherType),
-      }, MATCHER_TYPE_OPTIONS.map((o) => m("option", { value: o.value }, o.label)))),
-      option.fields === "keys" ? this.field("Key(s)", m(TokenListEditor, {
-        tokens: this.matcherKeys,
-        onChange: (keys) => (this.matcherKeys = keys),
-        placeholder: "Value to match",
-        options: option.options,
-      })) : null,
-      option.fields === "threshold" || option.fields === "reputation" ? this.field("Threshold", m("input", {
-        type: "text", value: this.matcherThreshold, placeholder: ">0.9",
-        oninput: (e: Event) => (this.matcherThreshold = (e.target as HTMLInputElement).value),
-      })) : null,
-      option.fields === "reputation" ? this.field("Reputation list IDs", m(TokenListEditor, {
-        tokens: this.matcherListIds,
-        onChange: (ids) => (this.matcherListIds = ids),
-        options: this.reputationLists.filter((l) => l.type === option.reputationListType).map((l) => l.id),
-      })) : null,
-    ];
   }
 
   private renderActionFields(): m.Children {
@@ -293,15 +218,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     this.keepProcessing = rule.keepProcessing;
     if (this.isLearnedRulesMarker) return;
 
-    const matcher = rule.matcher;
-    this.originalMatcher = matcher;
-    this.matcherIsComposite = COMPOSITE_MATCHER_TYPES.has(matcher.type);
-    if (!this.matcherIsComposite) {
-      this.matcherType = matcher.type;
-      this.matcherKeys = matcher.keys && matcher.keys.length > 0 ? matcher.keys : (matcher.key ? [matcher.key] : []);
-      this.matcherThreshold = matcher.key || "";
-      this.matcherListIds = matcher.listIds || [];
-    }
+    this.matcherRoot = rule.matcher;
 
     const action = rule.action;
     this.originalAction = action;
@@ -312,20 +229,6 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     }
   }
 
-  private buildMatcher(): MailFilterRuleMatcherConfiguration {
-    if (this.matcherIsComposite && this.originalMatcher) return this.originalMatcher;
-    const option = MATCHER_TYPE_OPTIONS.find((o) => o.value === this.matcherType)!;
-    const matcher = { type: this.matcherType } as MailFilterRuleMatcherConfiguration;
-    if (option.fields === "keys") {
-      if (this.matcherKeys.length === 1) matcher.key = this.matcherKeys[0];
-      else matcher.keys = this.matcherKeys;
-    } else {
-      matcher.key = this.matcherThreshold.trim();
-      if (option.fields === "reputation") matcher.listIds = this.matcherListIds;
-    }
-    return matcher;
-  }
-
   private buildAction(): MailFilterRuleActionConfiguration {
     if (this.actionIsComposite && this.originalAction) return this.originalAction;
     const option = ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType)!;
@@ -334,21 +237,12 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     return action;
   }
 
-  /** Mirrors the checks the matcher/action implementations themselves make (see e.g. IpReputationMatcher) — catches the common mistakes before they're staged into the session. */
   private validate(): string | undefined {
     if (this.isLearnedRulesMarker) return undefined;
-    if (!this.matcherIsComposite) {
-      const option = MATCHER_TYPE_OPTIONS.find((o) => o.value === this.matcherType)!;
-      if (option.fields === "keys" && this.matcherKeys.length === 0) {
-        return "The matcher needs at least one key.";
-      }
-      if ((option.fields === "threshold" || option.fields === "reputation") && !THRESHOLD_PATTERN.test(this.matcherThreshold.trim())) {
-        return "The threshold must look like \">0.9\" or \"<=0.2\".";
-      }
-      if (option.fields === "reputation" && this.matcherListIds.length === 0) {
-        return "Pick at least one reputation list.";
-      }
-    }
+
+    const matcherError = validateMatcherNode(this.matcherRoot);
+    if (matcherError) return matcherError;
+
     if (!this.actionIsComposite) {
       const option = ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType)!;
       if (option.needsKey && this.actionKey.trim().length === 0) {
@@ -367,7 +261,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
 
     const rule: MailFilterRuleConfiguration = this.isLearnedRulesMarker
       ? ({ type: RuleType.LEARNED_RULES, keepProcessing: this.keepProcessing } as MailFilterRuleConfiguration)
-      : { type: RuleType.MATCHER_ACTION_RULE, keepProcessing: this.keepProcessing, matcher: this.buildMatcher(), action: this.buildAction() };
+      : { type: RuleType.MATCHER_ACTION_RULE, keepProcessing: this.keepProcessing, matcher: finalizeMatcherNode(this.matcherRoot), action: this.buildAction() };
 
     const session = this.session!;
     if (this.ruleIndex === null) {
