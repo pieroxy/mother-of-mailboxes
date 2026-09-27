@@ -1,6 +1,6 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { AccountBasicConfigDto, RuleType } from "../../auto/pieroxy-mom";
+import { AccountBasicConfigDto, MailFilterRuleMatcherConfiguration, RuleType } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
@@ -9,14 +9,22 @@ import { ArrowCircleUpIcon } from "../atoms/icons/ArrowCircleUpIcon";
 import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
+import { TokenListEditor } from "../TokenListEditor";
 import {
   AccountEditSession,
+  PendingLearnedRule,
   PendingRule,
   PendingShortcut,
   accountEditSessions,
+  finalizeLearnedRule,
+  isConfigChanged,
   isConfigFieldChanged,
+  isCredentialsChanged,
+  isLearnedRulesChanged,
   isRuleMoved,
+  isRulesChanged,
   isSessionChanged,
+  isShortcutsChanged,
 } from "../../utils/AccountEditSession";
 
 interface AccountSettingsPageAttrs {
@@ -78,6 +86,10 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         sectionHeader("Shortcuts"),
         this.renderShortcutsSection(session),
         m("button.add-item-button", { onclick: () => Routing.goToShortcutEdit(this.accountName, "new") }, "+ Add shortcut"),
+      ]),
+      m(".page-card", [
+        sectionHeader("Learned Rules"),
+        this.renderLearnedRulesSection(session),
       ]),
     ]);
   }
@@ -193,26 +205,99 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
     pendingShortcut.deleted = !pendingShortcut.deleted;
   }
 
+  private renderLearnedRulesSection(session: AccountEditSession): m.Children {
+    if (session.learnedRules.length === 0) {
+      return m(".settings-empty", "No rules learned yet — drop an example message into mom-rules/ to create one.");
+    }
+    return m(".rule-list", session.learnedRules.map((pending, index) => this.renderLearnedRule(pending, index)));
+  }
+
+  private renderLearnedRule(pending: PendingLearnedRule, index: number): m.Children {
+    const rule = pending.rule;
+    const isDeleted = pending.deleted;
+    const keys = rule.matcher.keys && rule.matcher.keys.length > 0 ? rule.matcher.keys : (rule.matcher.key ? [rule.matcher.key] : []);
+    const header = m(".rule-card-header", [
+      m(".rule-card-header-left", [
+        m(".rule-index", rule.matcher.type),
+        this.renderLearnedRuleTags(pending),
+      ]),
+      m(".rule-move-controls", [
+        m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
+          { title: isDeleted ? "Restore this learned rule" : "Delete this learned rule", onclick: () => this.toggleDeleteLearnedRule(pending) }, m(DeleteIcon)),
+      ]),
+    ]);
+    const body = [
+      m(".rule-section", [
+        m(".rule-section-label", "Keys"),
+        m(TokenListEditor, {
+          tokens: keys,
+          onChange: (updatedKeys) => this.updateLearnedRuleKeys(pending, updatedKeys),
+          placeholder: "Add a value",
+          disabled: isDeleted,
+        }),
+      ]),
+      m(".rule-section", [m(".rule-section-label", "Action"), m("ul.tree-root", renderActionNode(rule.action))]),
+    ];
+    return m(".rule-card" + (isDeleted ? ".rule-deleted" : ""), { key: index }, [header, ...body]);
+  }
+
+  private renderLearnedRuleTags(pending: PendingLearnedRule): m.Children {
+    return pending.edited ? m(".rule-tags", m("span.rule-tag", "Edited")) : null;
+  }
+
+  private toggleDeleteLearnedRule(pending: PendingLearnedRule) {
+    pending.deleted = !pending.deleted;
+  }
+
+  private updateLearnedRuleKeys(pending: PendingLearnedRule, keys: string[]) {
+    const matcher = { type: pending.rule.matcher.type, keys } as MailFilterRuleMatcherConfiguration;
+    pending.rule = { ...pending.rule, matcher };
+    pending.edited = true;
+  }
+
   private saveChanges() {
     const session = this.session;
     if (!session) return;
+
+    const survivingLearnedRules = session.learnedRules.filter((pending) => !pending.deleted);
+    if (survivingLearnedRules.some((pending) => (pending.rule.matcher.keys || []).length === 0 && !pending.rule.matcher.key)) {
+      this.error = "A learned rule needs at least one key — remove it instead if it should no longer apply to anything.";
+      return;
+    }
+
     this.savingChanges = true;
     this.error = undefined;
-    ApiEndpoints.UpdateAccount.call({
-      accountName: this.accountName,
-      host: session.workingConfig.host,
-      port: session.workingConfig.port,
-      runEvery: session.workingConfig.runEvery,
-      classifierSpamFolderName: session.workingConfig.classifierSpamFolderName,
-      classifierExcludedFolders: session.workingConfig.classifierExcludedFolders,
-      classifierCorpusRetentionDays: session.workingConfig.classifierCorpusRetentionDays,
-      classifierCorpusScanBatchSize: session.workingConfig.classifierCorpusScanBatchSize,
-      discoveryTreeDisabled: session.workingConfig.discoveryTreeDisabled,
-      username: session.workingUsername,
-      password: session.workingPassword,
-      rules: session.rules.filter((pendingRule) => !pendingRule.deleted).map((pendingRule) => pendingRule.rule),
-      shortcuts: session.shortcuts.filter((pendingShortcut) => !pendingShortcut.deleted).map((pendingShortcut) => pendingShortcut.shortcut),
-    })
+
+    // Two independent calls: UpdateAccount restarts the account (needed for config/credentials/
+    // rules/shortcuts), while learned rules apply immediately with no restart — see
+    // ServiceProvider#updateLearnedRules. Each only fires if its own part of the session actually
+    // changed, so e.g. fixing a single learned-rule key never forces an unnecessary IMAP reconnect.
+    const calls: Promise<unknown>[] = [];
+    if (isConfigChanged(session) || isCredentialsChanged(session) || isRulesChanged(session) || isShortcutsChanged(session)) {
+      calls.push(ApiEndpoints.UpdateAccount.call({
+        accountName: this.accountName,
+        host: session.workingConfig.host,
+        port: session.workingConfig.port,
+        runEvery: session.workingConfig.runEvery,
+        classifierSpamFolderName: session.workingConfig.classifierSpamFolderName,
+        classifierExcludedFolders: session.workingConfig.classifierExcludedFolders,
+        classifierCorpusRetentionDays: session.workingConfig.classifierCorpusRetentionDays,
+        classifierCorpusScanBatchSize: session.workingConfig.classifierCorpusScanBatchSize,
+        discoveryTreeDisabled: session.workingConfig.discoveryTreeDisabled,
+        username: session.workingUsername,
+        password: session.workingPassword,
+        rules: session.rules.filter((pendingRule) => !pendingRule.deleted).map((pendingRule) => pendingRule.rule),
+        shortcuts: session.shortcuts.filter((pendingShortcut) => !pendingShortcut.deleted).map((pendingShortcut) => pendingShortcut.shortcut),
+      }));
+    }
+    if (isLearnedRulesChanged(session)) {
+      calls.push(ApiEndpoints.UpdateLearnedRules.call({
+        accountName: this.accountName,
+        rules: survivingLearnedRules.map((pending) => finalizeLearnedRule(pending.rule)),
+      }));
+    }
+
+    Promise.all(calls)
       .then(() => {
         this.savingChanges = false;
         accountEditSessions.discard(this.accountName);

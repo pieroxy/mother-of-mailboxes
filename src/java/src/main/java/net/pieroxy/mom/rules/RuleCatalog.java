@@ -18,7 +18,11 @@ public class RuleCatalog {
   private final List<MailFilterRuleConfiguration> manualRules;
   private final LearnedRulesStore learnedRulesStore;
   private final RuleContext context;
-  private List<RuleInterface> rules;
+  // volatile: invalidate() is now also called from Tomcat's request-handling threads (see
+  // MailAccount#updateLearnedRules, used by UpdateLearnedRulesApi to apply an edit without a full
+  // account restart) while get() keeps being read from the account's own background thread —
+  // same single-writer-per-direction reasoning as MailAccount's own dashboard fields.
+  private volatile List<RuleInterface> rules;
   private LearnedRulesGroupRule learnedRulesFallback;
 
   /** Equivalent to {@link #RuleCatalog(List, LearnedRulesStore, RuleContext)} with no account context available. */
@@ -86,10 +90,26 @@ public class RuleCatalog {
   }
 
   private List<RuleInterface> build() {
+    validateRules(manualRules);
     learnedRulesFallback = new LearnedRulesGroupRule(learnedRulesStore, context);
     List<RuleInterface> result = new ArrayList<>();
-    boolean learnedRulesEntrySeen = false;
     for (MailFilterRuleConfiguration c : manualRules) {
+      RuleType type = c.getType() != null ? c.getType() : RuleType.MATCHER_ACTION_RULE;
+      result.add(type == RuleType.LEARNED_RULES ? learnedRulesFallback : new Rule(c, context));
+    }
+    return result;
+  }
+
+  /**
+   * A LEARNED_RULES entry may carry neither a matcher nor an action (it's a marker, not a rule of
+   * its own), and at most one may appear per account. Public and static — besides {@link #build},
+   * {@code UpdateAccountApi} calls this directly so a bad rules list is rejected synchronously, in
+   * the API response, rather than only surfacing later when this account's background thread next
+   * tries to build its RuleCatalog (see {@code MailAccount#run}) and silently fails from then on.
+   */
+  public static void validateRules(List<MailFilterRuleConfiguration> rules) {
+    boolean learnedRulesEntrySeen = false;
+    for (MailFilterRuleConfiguration c : rules != null ? rules : List.<MailFilterRuleConfiguration>of()) {
       RuleType type = c.getType() != null ? c.getType() : RuleType.MATCHER_ACTION_RULE;
       if (type == RuleType.LEARNED_RULES) {
         if (c.getMatcher() != null || c.getAction() != null) {
@@ -99,11 +119,7 @@ public class RuleCatalog {
           throw new IllegalStateException("Only one LEARNED_RULES entry is allowed per account");
         }
         learnedRulesEntrySeen = true;
-        result.add(learnedRulesFallback);
-      } else {
-        result.add(new Rule(c, context));
       }
     }
-    return result;
   }
 }

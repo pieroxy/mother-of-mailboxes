@@ -8,6 +8,7 @@ import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.learning.RuleLearner;
+import net.pieroxy.mom.rules.RuleCatalog;
 
 import java.util.List;
 
@@ -44,6 +45,7 @@ public class UpdateAccountApi extends AbstractApiEndpoint<UpdateAccountApiInput,
     if (input.getRules() == null) {
       throw new IllegalArgumentException("rules must not be null.");
     }
+    RuleCatalog.validateRules(input.getRules());
     List<LearningShortcutConfiguration> shortcuts = input.getShortcuts() != null ? input.getShortcuts() : List.of();
     RuleLearner.validateShortcuts(shortcuts);
 

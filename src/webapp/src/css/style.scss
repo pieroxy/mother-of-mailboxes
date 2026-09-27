@@ -255,6 +255,8 @@ body {
               display: flex;
               flex-direction: column;
               gap: 8px;
+              max-height: 100px;
+              overflow-y: auto;
 
               .token-list {
                   display: flex;
@@ -281,6 +283,24 @@ body {
                   &:hover {
                       color: $error-color;
                   }
+
+                  &.disabled {
+                      opacity: 0.3;
+                      cursor: default;
+                      pointer-events: none;
+                  }
+              }
+
+              // Past FILTER_THRESHOLD tokens (see TokenListEditor) — a learned rule can easily
+              // accumulate hundreds of keys, and scrolling through all of them to find one to
+              // remove doesn't scale.
+              .token-filter {
+                  font-size: 13px;
+              }
+
+              .token-filter-count {
+                  font-size: 11px;
+                  color: $text-faint;
               }
 
               .token-editor-add {

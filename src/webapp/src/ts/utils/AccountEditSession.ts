@@ -1,5 +1,5 @@
 import { ApiEndpoints } from "../auto/ApiEndpoints";
-import { AccountBasicConfigDto, LearningShortcutConfiguration, MailFilterRuleConfiguration } from "../auto/pieroxy-mom";
+import { AccountBasicConfigDto, LearningShortcutConfiguration, MailFilterRuleConfiguration, MailFilterRuleMatcherConfiguration } from "../auto/pieroxy-mom";
 
 /** One rule in a session's working list, tracking enough to render "Moved"/"Deleted"/"New" tags and to rebuild the final rules array on save. */
 export interface PendingRule {
@@ -14,6 +14,18 @@ export interface PendingRule {
 export interface PendingShortcut {
   shortcut: LearningShortcutConfiguration;
   originalIndex: number | null;
+  deleted: boolean;
+  edited: boolean;
+}
+
+/**
+ * One entry of the account's learned-by-example rules (see LearnedRulesApi) — the settings page
+ * lets its key list be reviewed and corrected (e.g. a message dropped in the wrong mom-rules/
+ * folder by mistake). No "new"/"moved" concept: entries are only ever learned by example or
+ * deleted here, never hand-created, and their order is meaningless (unlike Rules).
+ */
+export interface PendingLearnedRule {
+  rule: MailFilterRuleConfiguration;
   deleted: boolean;
   edited: boolean;
 }
@@ -35,6 +47,7 @@ export interface AccountEditSession {
   workingPassword: string;
   rules: PendingRule[];
   shortcuts: PendingShortcut[];
+  learnedRules: PendingLearnedRule[];
 }
 
 function isDeepEqual(a: unknown, b: unknown): boolean {
@@ -65,8 +78,28 @@ export function isShortcutsChanged(session: AccountEditSession): boolean {
   return session.shortcuts.some((s) => s.deleted || s.edited || s.originalIndex === null);
 }
 
+export function isLearnedRulesChanged(session: AccountEditSession): boolean {
+  return session.learnedRules.some((r) => r.deleted || r.edited);
+}
+
 export function isSessionChanged(session: AccountEditSession): boolean {
-  return isConfigChanged(session) || isCredentialsChanged(session) || isRulesChanged(session) || isShortcutsChanged(session);
+  return isConfigChanged(session) || isCredentialsChanged(session) || isRulesChanged(session)
+    || isShortcutsChanged(session) || isLearnedRulesChanged(session);
+}
+
+/**
+ * Normalizes a learned rule's matcher right before it's saved: collapses a single-element "keys"
+ * array down to "key", matching the shape LearnedRulesStore itself uses for a scalar match (and
+ * keeping the hand-editable JSON file it owns exactly as readable as it already is). Editing
+ * itself always works with the array form — see AccountSettingsPage's TokenListEditor binding.
+ */
+export function finalizeLearnedRule(rule: MailFilterRuleConfiguration): MailFilterRuleConfiguration {
+  const keys = rule.matcher.keys && rule.matcher.keys.length > 0 ? rule.matcher.keys
+    : (rule.matcher.key ? [rule.matcher.key] : []);
+  const matcher = keys.length === 1
+    ? ({ type: rule.matcher.type, key: keys[0] } as MailFilterRuleMatcherConfiguration)
+    : ({ type: rule.matcher.type, keys } as MailFilterRuleMatcherConfiguration);
+  return { ...rule, matcher };
 }
 
 class AccountEditSessionStore {
@@ -82,7 +115,10 @@ class AccountEditSessionStore {
     const existing = this.sessions.get(accountName);
     if (existing) return Promise.resolve(existing);
 
-    return ApiEndpoints.AccountConfig.call({ accountName }).then((output) => {
+    return Promise.all([
+      ApiEndpoints.AccountConfig.call({ accountName }),
+      ApiEndpoints.LearnedRules.call({ accountName }),
+    ]).then(([output, learnedRulesOutput]) => {
       const session: AccountEditSession = {
         accountName,
         baselineConfig: output.config,
@@ -93,6 +129,7 @@ class AccountEditSessionStore {
         workingPassword: "",
         rules: output.rules.map((rule, index) => ({ rule, originalIndex: index, deleted: false, edited: false })),
         shortcuts: output.shortcuts.map((shortcut, index) => ({ shortcut, originalIndex: index, deleted: false, edited: false })),
+        learnedRules: learnedRulesOutput.rules.map((rule) => ({ rule, deleted: false, edited: false })),
       };
       this.sessions.set(accountName, session);
       return session;

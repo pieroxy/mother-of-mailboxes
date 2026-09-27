@@ -154,6 +154,21 @@ public class ServiceProvider {
     restartAccount(accountName);
   }
 
+  /**
+   * Replaces one account's learned rules and applies the change right away (see
+   * {@link MailAccount#updateLearnedRules}) — deliberately separate from {@link #updateAccount},
+   * and not folded into it: learned rules live in their own per-account file, not config.json, and
+   * applying an edit needs no restart, so batching it with a config/credentials/rules/shortcuts
+   * save would only cost an unnecessary IMAP reconnect.
+   */
+  public synchronized void updateLearnedRules(String accountName, List<MailFilterRuleConfiguration> rules) {
+    MailAccount account = accounts.stream()
+        .filter(a -> a.getAccountLabel().equals(accountName))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("No such account: " + accountName));
+    account.updateLearnedRules(rules);
+  }
+
   private void persistConfig() {
     try (Writer w = new FileWriter(configFile)) {
       GSON.toJson(config, w);

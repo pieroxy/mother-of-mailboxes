@@ -102,12 +102,14 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private renderForm(): m.Children {
     if (this.isLearnedRulesMarker) {
       return m(".page-card.edit-form", [
+        this.renderRuleKindField(),
         m(".rule-learned-marker", "This is the account's \"learned rules\" marker — it has no matcher or action of its own."),
         this.field("Keep processing after this", this.renderKeepProcessingCheckbox()),
         this.renderActions(),
       ]);
     }
     return m(".page-card.edit-form", [
+      this.renderRuleKindField(),
       this.field("Keep processing after this", this.renderKeepProcessingCheckbox()),
       m("h2", "When"),
       m(MatcherNodeEditor, {
@@ -119,6 +121,22 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
       this.actionIsComposite ? this.renderCompositeActionNotice() : this.renderActionFields(),
       this.renderActions(),
     ]);
+  }
+
+  /**
+   * Lets a rule be created (or converted) as the account's "learned rules" marker instead of a
+   * plain matcher/action rule — see RuleType.LEARNED_RULES. Only one may exist per account (see
+   * RuleCatalog.validateRules), enforced in validate() below, not here: the dropdown itself stays
+   * simple and always offers both options.
+   */
+  private renderRuleKindField(): m.Children {
+    return this.field("Rule type", m("select", {
+      value: this.isLearnedRulesMarker ? "LEARNED_RULES" : "MATCHER_ACTION_RULE",
+      onchange: (e: Event) => (this.isLearnedRulesMarker = (e.target as HTMLSelectElement).value === "LEARNED_RULES"),
+    }, [
+      m("option", { value: "MATCHER_ACTION_RULE" }, "Matcher / Action"),
+      m("option", { value: "LEARNED_RULES" }, "Run learned rules here"),
+    ]));
   }
 
   private renderKeepProcessingCheckbox(): m.Children {
@@ -237,8 +255,15 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     return action;
   }
 
+  /** Mirrors RuleCatalog.validateRules — catches the common mistakes before they're staged into the session instead of only surfacing them at "Save Changes" time. */
   private validate(): string | undefined {
-    if (this.isLearnedRulesMarker) return undefined;
+    if (this.isLearnedRulesMarker) {
+      const session = this.session!;
+      const collides = session.rules.some((pending, index) =>
+        index !== this.ruleIndex && !pending.deleted && pending.rule.type === RuleType.LEARNED_RULES);
+      if (collides) return "Only one \"Run learned rules here\" entry is allowed per account.";
+      return undefined;
+    }
 
     const matcherError = validateMatcherNode(this.matcherRoot);
     if (matcherError) return matcherError;

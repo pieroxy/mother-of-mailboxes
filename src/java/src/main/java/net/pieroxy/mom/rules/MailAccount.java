@@ -183,6 +183,23 @@ public class MailAccount implements Runnable {
     return credential;
   }
 
+  /** The account's rules learned by example (see LearnedRulesStore) — read by the webapp's Learned Rules section. */
+  public List<MailFilterRuleConfiguration> getLearnedRules() {
+    return learnedRulesStore.load();
+  }
+
+  /**
+   * Replaces the account's learned rules and makes the change effective immediately — unlike
+   * config/credentials/rules/shortcuts, this needs no restart: the account never keeps its own
+   * copy of this list, it re-reads {@code learnedRulesStore} fresh every time {@link RuleCatalog}
+   * rebuilds (see {@link RuleCatalog#get}), and {@code invalidate()} just forces that rebuild
+   * before the next message is processed instead of waiting for the next learned example.
+   */
+  public void updateLearnedRules(List<MailFilterRuleConfiguration> rules) {
+    learnedRulesStore.save(rules);
+    ruleCatalog.invalidate();
+  }
+
   public AccountStatus getStatus() {
     return status;
   }
