@@ -332,23 +332,47 @@ body {
                           height: 18px;
                       }
                   }
+              }
+          }
 
-                  .rule-changes-actions {
-                      display: flex;
-                      gap: 8px;
-                      margin-left: auto;
+          // The account settings page's own top banner — appears whenever any section (Config,
+          // Credentials, Rules) has a pending, unsaved edit staged in its AccountEditSession.
+          .settings-changes-bar {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 16px;
+              background-color: $value-changed;
+              color: $text-color;
+              border-radius: 8px;
+              padding: 10px 16px;
+              margin-bottom: 16px;
+              font-size: 13px;
 
-                      button {
-                          font-size: 12px;
-                          padding: 4px 12px;
-                      }
+              .changes-actions {
+                  display: flex;
+                  gap: 8px;
+                  flex-shrink: 0;
 
-                      .cancel-changes-button {
-                          background-color: $bg-color-d1;
-                          color: $text-muted;
-                      }
+                  button {
+                      font-size: 12px;
+                      padding: 4px 14px;
+                  }
+
+                  .discard-changes-button {
+                      background-color: $bg-color-d1;
+                      color: $text-muted;
                   }
               }
+          }
+
+          // The hint next to an edit page's input when a pending change (already staged from an
+          // earlier visit) differs from what's on the backend.
+          .field-original {
+              display: block;
+              font-size: 11px;
+              color: $value-changed;
+              font-style: italic;
           }
 
           .accounts {
@@ -781,6 +805,11 @@ body {
                       .config-row-value {
                           color: $text-color;
 
+                          &.value-changed {
+                              color: $value-changed;
+                              font-weight: bold;
+                          }
+
                           .token-list {
                               display: flex;
                               flex-wrap: wrap;
@@ -852,6 +881,21 @@ body {
                       color: $text-faint;
                       text-transform: uppercase;
                       letter-spacing: 0.03em;
+                  }
+
+                  .rule-tags {
+                      display: flex;
+                      gap: 6px;
+                  }
+
+                  .rule-tag {
+                      font-size: 10px;
+                      text-transform: uppercase;
+                      letter-spacing: 0.03em;
+                      padding: 2px 8px;
+                      border-radius: 8px;
+                      background-color: $value-changed;
+                      color: $text-color;
                   }
 
                   .rule-move-controls {

@@ -1,12 +1,6 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import {
-  AccountBasicConfigDto,
-  CredentialsInfoDto,
-  LearningShortcutConfiguration,
-  MailFilterRuleConfiguration,
-  RuleType,
-} from "../../auto/pieroxy-mom";
+import { AccountBasicConfigDto, LearningShortcutConfiguration, RuleType } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
@@ -15,27 +9,31 @@ import { ArrowCircleUpIcon } from "../atoms/icons/ArrowCircleUpIcon";
 import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
+import {
+  AccountEditSession,
+  PendingRule,
+  accountEditSessions,
+  isConfigFieldChanged,
+  isRuleMoved,
+  isSessionChanged,
+} from "../../utils/AccountEditSession";
 
 interface AccountSettingsPageAttrs {
   accountName: string;
 }
 
 /**
- * Read-only view of one account's whole configuration (everything config.json holds for it,
- * except the actual credentials — see AccountConfigApi/CredentialsInfoDto), in four sections:
- * Config, Credentials, Rules, Shortcuts. Editing/saving/restarting/deleting the account come
- * later — this is display only for now.
+ * One account's whole configuration, in four sections: Config, Credentials, Rules, Shortcuts.
+ * Nothing here calls the backend directly — every edit (Config/Credentials fields, rule reorder/
+ * delete/edit/add) is staged locally in an AccountEditSession (see AccountEditSession.ts) and
+ * shown highlighted (see the CSS's $value-changed) until "Save Changes" flushes the whole batch
+ * in one call (UpdateAccountApi) and restarts the account once; "Discard Changes" just throws the
+ * session away and reloads the real, unmodified state from the backend.
  */
 export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> {
   private accountName = "";
-  private config: AccountBasicConfigDto | undefined;
-  private credentials: CredentialsInfoDto | undefined;
-  private rules: MailFilterRuleConfiguration[] = [];
-  private savedRulesSnapshot: MailFilterRuleConfiguration[] = [];
-  private deletedRules = new Set<MailFilterRuleConfiguration>();
-  private rulesDirty = false;
-  private savingRuleChanges = false;
-  private shortcuts: LearningShortcutConfiguration[] = [];
+  private session: AccountEditSession | undefined;
+  private savingChanges = false;
   private loading = true;
   private error: string | undefined;
 
@@ -55,52 +53,58 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         m("h1.page-title", this.accountName),
       ]),
       this.error ? m(".settings-error.errorMessage", this.error) : null,
-      this.loading ? m(".page-loading", "Loading…") : this.renderContent(),
+      this.loading || !this.session ? m(".page-loading", "Loading…") : this.renderContent(this.session),
     ]);
   }
 
-  private renderContent(): m.Children {
-    if (!this.config || !this.credentials) return null;
+  private renderContent(session: AccountEditSession): m.Children {
     return m(".settings-content", [
+      isSessionChanged(session) ? this.renderChangesBar() : null,
       m(".page-card", [
         sectionHeader("Config", () => Routing.goToAccountConfigEdit(this.accountName)),
-        renderConfigSection(this.config),
+        renderConfigSection(session),
       ]),
       m(".page-card", [
         sectionHeader("Credentials", () => Routing.goToAccountCredentialsEdit(this.accountName)),
-        renderCredentialsSection(this.credentials),
+        renderCredentialsSection(session),
       ]),
       m(".page-card", [
-        m(".section-header", [
-          m("h2", "Rules"),
-          this.rulesDirty ? m(".rule-changes-actions", [
-            m("button.save-changes-button", { onclick: () => this.saveRuleChanges(), disabled: this.savingRuleChanges },
-              this.savingRuleChanges ? "Saving…" : "Save Changes"),
-            m("button.cancel-changes-button", { onclick: () => this.cancelRuleChanges(), disabled: this.savingRuleChanges }, "Cancel"),
-          ]) : null,
-        ]),
-        this.renderRulesSection(),
+        sectionHeader("Rules"),
+        this.renderRulesSection(session),
         m("button.add-rule-button", { onclick: () => Routing.goToRuleEdit(this.accountName, "new") }, "+ Add rule"),
       ]),
-      m(".page-card", [sectionHeader("Shortcuts"), renderShortcutsSection(this.shortcuts)]),
+      m(".page-card", [sectionHeader("Shortcuts"), renderShortcutsSection(session.shortcuts)]),
     ]);
   }
 
-  private renderRulesSection(): m.Children {
-    if (this.rules.length === 0) return m(".settings-empty", "No rules configured.");
-    return m(".rule-list", this.rules.map((rule, index) => this.renderRule(rule, index)));
+  private renderChangesBar(): m.Children {
+    return m(".settings-changes-bar", [
+      m("span", "You have unsaved changes."),
+      m(".changes-actions", [
+        m("button.save-changes-button", { onclick: () => this.saveChanges(), disabled: this.savingChanges },
+          this.savingChanges ? "Saving…" : "Save Changes"),
+        m("button.discard-changes-button", { onclick: () => this.discardChanges(), disabled: this.savingChanges }, "Discard Changes"),
+      ]),
+    ]);
   }
 
-  private renderRule(rule: MailFilterRuleConfiguration, index: number): m.Children {
-    const isDeleted = this.deletedRules.has(rule);
+  private renderRulesSection(session: AccountEditSession): m.Children {
+    if (session.rules.length === 0) return m(".settings-empty", "No rules configured.");
+    return m(".rule-list", session.rules.map((pendingRule, index) => this.renderRule(session, pendingRule, index)));
+  }
+
+  private renderRule(session: AccountEditSession, pendingRule: PendingRule, index: number): m.Children {
+    const rule = pendingRule.rule;
+    const isDeleted = pendingRule.deleted;
     const header = m(".rule-card-header", [
       m(".rule-card-header-left", [
         m("span.rule-edit-link" + (isDeleted ? ".disabled" : ""),
           { title: "Edit this rule", onclick: () => Routing.goToRuleEdit(this.accountName, index) }, m(SettingsIcon)),
         m(".rule-index", rule.type === RuleType.LEARNED_RULES ? "#" + (index + 1)
           : "#" + (index + 1) + (rule.keepProcessing ? " · keeps processing" : "")),
+        this.renderRuleTags(session, pendingRule),
       ]),
-      this.renderRuleControls(rule, index),
+      this.renderRuleControls(session, pendingRule, index),
     ]);
     const body = rule.type === RuleType.LEARNED_RULES
       ? [m(".rule-learned-marker", "Learned rules run here")]
@@ -111,77 +115,83 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
     return m(".rule-card" + (isDeleted ? ".rule-deleted" : ""), { key: index }, [header, ...body]);
   }
 
-  private renderRuleControls(rule: MailFilterRuleConfiguration, index: number): m.Children {
-    const isDeleted = this.deletedRules.has(rule);
+  private renderRuleTags(session: AccountEditSession, pendingRule: PendingRule): m.Children {
+    const tags: m.Children[] = [];
+    if (pendingRule.originalIndex === null) tags.push(m("span.rule-tag", { key: "new" }, "New"));
+    else if (isRuleMoved(session, pendingRule)) tags.push(m("span.rule-tag", { key: "moved" }, "Moved"));
+    if (pendingRule.edited) tags.push(m("span.rule-tag", { key: "edited" }, "Edited"));
+    return tags.length > 0 ? m(".rule-tags", tags) : null;
+  }
+
+  private renderRuleControls(session: AccountEditSession, pendingRule: PendingRule, index: number): m.Children {
+    const isDeleted = pendingRule.deleted;
     const isFirst = index === 0;
-    const isLast = index === this.rules.length - 1;
+    const isLast = index === session.rules.length - 1;
     return m(".rule-move-controls", [
       m("span.rule-move-button" + (isFirst || isDeleted ? ".disabled" : ""),
-        { title: "Move up", onclick: () => this.moveRule(index, -1) }, m(ArrowCircleUpIcon)),
+        { title: "Move up", onclick: () => this.moveRule(session, index, -1) }, m(ArrowCircleUpIcon)),
       m("span.rule-move-button" + (isLast || isDeleted ? ".disabled" : ""),
-        { title: "Move down", onclick: () => this.moveRule(index, 1) }, m(ArrowCircleDownIcon)),
+        { title: "Move down", onclick: () => this.moveRule(session, index, 1) }, m(ArrowCircleDownIcon)),
       m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
-        { title: isDeleted ? "Restore this rule" : "Delete this rule", onclick: () => this.toggleDeleteRule(rule) }, m(DeleteIcon)),
+        { title: isDeleted ? "Restore this rule" : "Delete this rule", onclick: () => this.toggleDeleteRule(pendingRule) }, m(DeleteIcon)),
     ]);
   }
 
-  private moveRule(index: number, delta: number) {
-    if (this.deletedRules.has(this.rules[index])) return;
+  private moveRule(session: AccountEditSession, index: number, delta: number) {
+    if (session.rules[index].deleted) return;
     const target = index + delta;
-    if (target < 0 || target >= this.rules.length) return;
-    const reordered = [...this.rules];
+    if (target < 0 || target >= session.rules.length) return;
+    const reordered = [...session.rules];
     [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-    this.rules = reordered;
-    this.rulesDirty = true;
+    session.rules = reordered;
   }
 
-  private toggleDeleteRule(rule: MailFilterRuleConfiguration) {
-    if (this.deletedRules.has(rule)) {
-      this.deletedRules.delete(rule);
-    } else {
-      this.deletedRules.add(rule);
-    }
-    this.rulesDirty = true;
+  private toggleDeleteRule(pendingRule: PendingRule) {
+    pendingRule.deleted = !pendingRule.deleted;
   }
 
-  private cancelRuleChanges() {
-    this.rules = [...this.savedRulesSnapshot];
-    this.deletedRules.clear();
-    this.rulesDirty = false;
-  }
-
-  private saveRuleChanges() {
-    this.savingRuleChanges = true;
+  private saveChanges() {
+    const session = this.session;
+    if (!session) return;
+    this.savingChanges = true;
     this.error = undefined;
-    const survivingRules = this.rules.filter((rule) => !this.deletedRules.has(rule));
-    ApiEndpoints.UpdateAccountRules.call({ accountName: this.accountName, rules: survivingRules })
+    ApiEndpoints.UpdateAccount.call({
+      accountName: this.accountName,
+      host: session.workingConfig.host,
+      port: session.workingConfig.port,
+      runEvery: session.workingConfig.runEvery,
+      classifierSpamFolderName: session.workingConfig.classifierSpamFolderName,
+      classifierExcludedFolders: session.workingConfig.classifierExcludedFolders,
+      classifierCorpusRetentionDays: session.workingConfig.classifierCorpusRetentionDays,
+      classifierCorpusScanBatchSize: session.workingConfig.classifierCorpusScanBatchSize,
+      discoveryTreeDisabled: session.workingConfig.discoveryTreeDisabled,
+      username: session.workingUsername,
+      password: session.workingPassword,
+      rules: session.rules.filter((pendingRule) => !pendingRule.deleted).map((pendingRule) => pendingRule.rule),
+    })
       .then(() => {
-        this.savingRuleChanges = false;
-        this.rulesDirty = false;
-        this.rules = survivingRules;
-        this.savedRulesSnapshot = [...survivingRules];
-        this.deletedRules.clear();
-        m.redraw();
+        this.savingChanges = false;
+        accountEditSessions.discard(this.accountName);
+        this.load();
       })
       .catch((err: Error) => {
-        this.savingRuleChanges = false;
+        this.savingChanges = false;
         this.error = err.message;
         m.redraw();
       });
   }
 
+  private discardChanges() {
+    accountEditSessions.discard(this.accountName);
+    this.load();
+  }
+
   private load() {
     this.loading = true;
     this.error = undefined;
-    ApiEndpoints.AccountConfig.call({ accountName: this.accountName })
-      .then((output) => {
-        this.config = output.config;
-        this.credentials = output.credentials;
-        this.rules = output.rules;
-        this.savedRulesSnapshot = [...output.rules];
-        this.deletedRules.clear();
-        this.rulesDirty = false;
-        this.shortcuts = output.shortcuts;
+    accountEditSessions.load(this.accountName)
+      .then((session) => {
+        this.session = session;
         this.loading = false;
         m.redraw();
       })
@@ -200,8 +210,8 @@ function sectionHeader(title: string, onEdit?: () => void): m.Children {
   ]);
 }
 
-function configRow(label: string, value: m.Children): m.Children {
-  return m(".config-row", [m(".config-row-label", label), m(".config-row-value", value)]);
+function configRow(label: string, value: m.Children, changed: boolean): m.Children {
+  return m(".config-row", [m(".config-row-label", label), m(".config-row-value" + (changed ? ".value-changed" : ""), value)]);
 }
 
 function renderTokenList(items: string[]): m.Children {
@@ -209,24 +219,27 @@ function renderTokenList(items: string[]): m.Children {
   return m(".token-list", items.map((item) => m(".token", { key: item }, item)));
 }
 
-function renderConfigSection(config: AccountBasicConfigDto): m.Children {
+function renderConfigSection(session: AccountEditSession): m.Children {
+  const config: AccountBasicConfigDto = session.workingConfig;
+  const changed = (field: keyof AccountBasicConfigDto) => isConfigFieldChanged(session, field);
   return m(".config-grid", [
-    configRow("Display name", config.displayName),
-    configRow("Host", config.host),
-    configRow("Port", String(config.port)),
-    configRow("Run every", config.runEvery + "s"),
-    configRow("Spam folder", config.classifierSpamFolderName || "Spam (default)"),
-    configRow("Classifier excluded folders", renderTokenList(config.classifierExcludedFolders)),
-    configRow("Classifier corpus retention", config.classifierCorpusRetentionDays > 0 ? config.classifierCorpusRetentionDays + " day(s)" : "disabled"),
-    configRow("Classifier scan batch size", config.classifierCorpusScanBatchSize > 0 ? String(config.classifierCorpusScanBatchSize) : "default"),
-    configRow("Discovery tree", config.discoveryTreeDisabled ? "disabled" : "enabled"),
+    configRow("Display name", config.displayName, false),
+    configRow("Host", config.host, changed("host")),
+    configRow("Port", String(config.port), changed("port")),
+    configRow("Run every", config.runEvery + "s", changed("runEvery")),
+    configRow("Spam folder", config.classifierSpamFolderName || "Spam (default)", changed("classifierSpamFolderName")),
+    configRow("Classifier excluded folders", renderTokenList(config.classifierExcludedFolders), changed("classifierExcludedFolders")),
+    configRow("Classifier corpus retention", config.classifierCorpusRetentionDays > 0 ? config.classifierCorpusRetentionDays + " day(s)" : "disabled", changed("classifierCorpusRetentionDays")),
+    configRow("Classifier scan batch size", config.classifierCorpusScanBatchSize > 0 ? String(config.classifierCorpusScanBatchSize) : "default", changed("classifierCorpusScanBatchSize")),
+    configRow("Discovery tree", config.discoveryTreeDisabled ? "disabled" : "enabled", changed("discoveryTreeDisabled")),
   ]);
 }
 
-function renderCredentialsSection(credentials: CredentialsInfoDto): m.Children {
+function renderCredentialsSection(session: AccountEditSession): m.Children {
   return m(".config-grid", [
-    configRow("Credentials key", credentials.credentialsKey),
-    configRow("Username", credentials.username),
+    configRow("Credentials key", session.credentialsKey, false),
+    configRow("Username", session.workingUsername, session.workingUsername !== session.baselineUsername),
+    configRow("Password", session.workingPassword !== "" ? "(will be changed)" : "(unchanged)", session.workingPassword !== ""),
   ]);
 }
 
@@ -238,4 +251,3 @@ function renderShortcutsSection(shortcuts: LearningShortcutConfiguration[]): m.C
     m(".rule-section", [m(".rule-section-label", "Action"), m("ul.tree-root", renderActionNode(shortcut.action))]),
   ])));
 }
-

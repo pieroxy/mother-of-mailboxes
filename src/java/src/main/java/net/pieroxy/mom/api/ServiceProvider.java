@@ -110,14 +110,35 @@ public class ServiceProvider {
   }
 
   /**
-   * Updates the account's stored IMAP username/password and restarts it so the change takes
-   * effect right away — see {@link #restartAccount}. A blank {@code password} leaves the current
-   * one unchanged (the browser is never shown the real password to begin with — see
-   * {@code AccountConfigApi}'s {@code CredentialsInfoDto} — so "unchanged" has to be the only
-   * thing a blank field can mean here, never "set it to empty").
+   * Applies every editable part of an account's configuration — the Config fields, the IMAP
+   * credentials and the whole {@code rules} list — and restarts it exactly once. The webapp stages
+   * all of these client-side (see {@code AccountEditSession.ts}) while the user reviews changes
+   * across the Config/Credentials/Rules edit pages, and only calls this, via
+   * {@code UpdateAccountApi}, when they click "Save Changes" — so a single restart always covers
+   * the whole batch instead of one per section. {@code displayName} is deliberately not
+   * settable here: it names every one of this account's on-disk files (state, learned rules,
+   * classifier corpus, stats — see {@code FileNameValidator}'s callers), so renaming it would
+   * silently orphan that history instead of migrating it. A blank {@code password} leaves the
+   * current one unchanged, the same convention {@code CredentialsInfoDto} relies on (the browser
+   * is never shown the real password to begin with, so "unchanged" is the only thing a blank
+   * field can mean here).
    */
-  public synchronized void updateCredentials(String accountName, String username, String password) {
+  public synchronized void updateAccount(String accountName, String host, int port, int runEvery,
+                                          String classifierSpamFolderName, List<String> classifierExcludedFolders,
+                                          int classifierCorpusRetentionDays, int classifierCorpusScanBatchSize,
+                                          boolean discoveryTreeDisabled, String username, String password,
+                                          List<MailFilterRuleConfiguration> rules) {
     MailAccountConfiguration config = findAccountConfig(accountName);
+    config.setHost(host);
+    config.setPort(port);
+    config.setRunEvery(runEvery);
+    config.setClassifierSpamFolderName(classifierSpamFolderName);
+    config.setClassifierExcludedFolders(classifierExcludedFolders != null ? classifierExcludedFolders : List.of());
+    config.setClassifierCorpusRetentionDays(classifierCorpusRetentionDays);
+    config.setClassifierCorpusScanBatchSize(classifierCorpusScanBatchSize);
+    config.setDiscoveryTreeDisabled(discoveryTreeDisabled);
+    config.setRules(rules);
+
     Credential credential = CredentialsResolver.resolve(config.getCredentials(), credentialsFile,
         "mail account \"" + accountName + "\"");
     credential.setUsername(username);
@@ -125,16 +146,7 @@ public class ServiceProvider {
       credential.setPassword(password);
     }
     persistCredentialsFile();
-    restartAccount(accountName);
-  }
 
-  /**
-   * Replaces the account's whole {@code rules} list (as of writing, only ever a reordering of the
-   * same rules the client already fetched — see {@code UpdateAccountRulesApi}) and restarts it.
-   */
-  public synchronized void updateRules(String accountName, List<MailFilterRuleConfiguration> rules) {
-    MailAccountConfiguration config = findAccountConfig(accountName);
-    config.setRules(rules);
     restartAccount(accountName);
   }
 

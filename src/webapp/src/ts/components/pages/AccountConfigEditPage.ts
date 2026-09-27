@@ -1,9 +1,8 @@
 import m from "mithril";
-import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { AccountBasicConfigDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { TokenListEditor } from "../TokenListEditor";
+import { AccountEditSession, accountEditSessions, isConfigFieldChanged } from "../../utils/AccountEditSession";
 
 interface AccountConfigEditPageAttrs {
   accountName: string;
@@ -13,11 +12,13 @@ interface AccountConfigEditPageAttrs {
  * Edits the Config section's fields (see AccountSettingsPage/AccountBasicConfigDto) — everything
  * except displayName, which stays read-only: it names every one of this account's on-disk files
  * (state, learned rules, classifier corpus, stats), so editing it here would silently orphan that
- * history instead of migrating it (see UpdateAccountConfigApi). Saving restarts the account so
- * the change takes effect right away; both Save and Cancel return to the read-only settings page.
+ * history instead of migrating it. Nothing is sent to the backend here: "OK" just writes the
+ * edited fields into the account's AccountEditSession and returns to the settings page, where
+ * they show highlighted until "Save Changes" persists the whole batch in one call.
  */
 export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAttrs> {
   private accountName = "";
+  private session: AccountEditSession | undefined;
   private displayName = "";
   private host = "";
   private port = 0;
@@ -28,7 +29,6 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
   private classifierCorpusScanBatchSize = 0;
   private discoveryTreeDisabled = false;
   private loading = true;
-  private saving = false;
   private error: string | undefined;
 
   getPageTitle(): string {
@@ -52,54 +52,59 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
   }
 
   private renderForm(): m.Children {
+    const session = this.session!;
+    const baseline = session.baselineConfig;
     return m(".page-card.edit-form", [
-      this.field("Display name", m("input", { type: "text", value: this.displayName, disabled: true })),
-      this.field("Host", m("input", {
-        type: "text", value: this.host, disabled: this.saving,
+      this.field("Display name", null, m("input", { type: "text", value: this.displayName, disabled: true })),
+      this.field("Host", this.originalHint(session, "host", baseline.host), m("input", {
+        type: "text", value: this.host,
         oninput: (e: Event) => (this.host = (e.target as HTMLInputElement).value),
       })),
-      this.field("Port", m("input", {
-        type: "number", value: this.port, disabled: this.saving,
+      this.field("Port", this.originalHint(session, "port", String(baseline.port)), m("input", {
+        type: "number", value: this.port,
         oninput: (e: Event) => (this.port = Number((e.target as HTMLInputElement).value)),
       })),
-      this.field("Run every (seconds)", m("input", {
-        type: "number", value: this.runEvery, disabled: this.saving,
+      this.field("Run every (seconds)", this.originalHint(session, "runEvery", String(baseline.runEvery)), m("input", {
+        type: "number", value: this.runEvery,
         oninput: (e: Event) => (this.runEvery = Number((e.target as HTMLInputElement).value)),
       })),
-      this.field("Spam folder", m("input", {
-        type: "text", value: this.classifierSpamFolderName, placeholder: "Spam (default)", disabled: this.saving,
+      this.field("Spam folder", this.originalHint(session, "classifierSpamFolderName", baseline.classifierSpamFolderName || "Spam (default)"), m("input", {
+        type: "text", value: this.classifierSpamFolderName, placeholder: "Spam (default)",
         oninput: (e: Event) => (this.classifierSpamFolderName = (e.target as HTMLInputElement).value),
       })),
-      this.field("Classifier excluded folders", m(TokenListEditor, {
+      this.field("Classifier excluded folders", this.originalHint(session, "classifierExcludedFolders", baseline.classifierExcludedFolders.join(", ") || "none"), m(TokenListEditor, {
         tokens: this.classifierExcludedFolders,
         onChange: (folders) => (this.classifierExcludedFolders = folders),
         placeholder: "Folder name",
-        disabled: this.saving,
       })),
-      this.field("Classifier corpus retention (days, 0 = disabled)", m("input", {
-        type: "number", value: this.classifierCorpusRetentionDays, disabled: this.saving,
+      this.field("Classifier corpus retention (days, 0 = disabled)", this.originalHint(session, "classifierCorpusRetentionDays", String(baseline.classifierCorpusRetentionDays)), m("input", {
+        type: "number", value: this.classifierCorpusRetentionDays,
         oninput: (e: Event) => (this.classifierCorpusRetentionDays = Number((e.target as HTMLInputElement).value)),
       })),
-      this.field("Classifier scan batch size (0 = default)", m("input", {
-        type: "number", value: this.classifierCorpusScanBatchSize, disabled: this.saving,
+      this.field("Classifier scan batch size (0 = default)", this.originalHint(session, "classifierCorpusScanBatchSize", String(baseline.classifierCorpusScanBatchSize)), m("input", {
+        type: "number", value: this.classifierCorpusScanBatchSize,
         oninput: (e: Event) => (this.classifierCorpusScanBatchSize = Number((e.target as HTMLInputElement).value)),
       })),
-      this.field("Discovery tree", m("label.checkbox-field", [
+      this.field("Discovery tree", this.originalHint(session, "discoveryTreeDisabled", baseline.discoveryTreeDisabled ? "disabled" : "enabled"), m("label.checkbox-field", [
         m("input", {
-          type: "checkbox", checked: this.discoveryTreeDisabled, disabled: this.saving,
+          type: "checkbox", checked: this.discoveryTreeDisabled,
           onchange: (e: Event) => (this.discoveryTreeDisabled = (e.target as HTMLInputElement).checked),
         }),
         "Disabled",
       ])),
       m(".edit-actions", [
-        m("button.save-button", { onclick: () => this.save(), disabled: this.saving }, this.saving ? "Saving…" : "Save"),
-        m("button.cancel-button", { onclick: () => this.cancel(), disabled: this.saving }, "Cancel"),
+        m("button.ok-button", { onclick: () => this.apply() }, "OK"),
+        m("button.cancel-button", { onclick: () => this.cancel() }, "Cancel"),
       ]),
     ]);
   }
 
-  private field(label: string, control: m.Children): m.Children {
-    return m(".edit-field", [m("label", label), control]);
+  private originalHint(session: AccountEditSession, field: keyof AccountEditSession["baselineConfig"], baselineText: string): string | null {
+    return isConfigFieldChanged(session, field) ? "originally: " + baselineText : null;
+  }
+
+  private field(label: string, originalHint: string | null, control: m.Children): m.Children {
+    return m(".edit-field", [m("label", label), control, originalHint ? m("span.field-original", originalHint) : null]);
   }
 
   private cancel() {
@@ -109,9 +114,10 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
   private load() {
     this.loading = true;
     this.error = undefined;
-    ApiEndpoints.AccountConfig.call({ accountName: this.accountName })
-      .then((output) => {
-        this.applyConfig(output.config);
+    accountEditSessions.load(this.accountName)
+      .then((session) => {
+        this.session = session;
+        this.applyFromWorkingConfig(session);
         this.loading = false;
         m.redraw();
       })
@@ -122,7 +128,8 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
       });
   }
 
-  private applyConfig(config: AccountBasicConfigDto) {
+  private applyFromWorkingConfig(session: AccountEditSession) {
+    const config = session.workingConfig;
     this.displayName = config.displayName;
     this.host = config.host;
     this.port = config.port;
@@ -134,11 +141,23 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
     this.discoveryTreeDisabled = config.discoveryTreeDisabled;
   }
 
-  private save() {
-    this.saving = true;
-    this.error = undefined;
-    ApiEndpoints.UpdateAccountConfig.call({
-      accountName: this.accountName,
+  /** Mirrors the checks UpdateAccountApi itself makes — catches the common mistakes before they're staged into the session instead of only surfacing them at "Save Changes" time. */
+  private validate(): string | undefined {
+    if (!this.host.trim()) return "Host must not be blank.";
+    if (this.port <= 0 || this.port > 65535) return "Port must be between 1 and 65535.";
+    if (this.runEvery <= 0) return "\"Run every\" must be a positive number of seconds.";
+    return undefined;
+  }
+
+  private apply() {
+    const validationError = this.validate();
+    if (validationError) {
+      this.error = validationError;
+      return;
+    }
+    const session = this.session!;
+    session.workingConfig = {
+      ...session.workingConfig,
       host: this.host,
       port: this.port,
       runEvery: this.runEvery,
@@ -147,15 +166,7 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
       classifierCorpusRetentionDays: this.classifierCorpusRetentionDays,
       classifierCorpusScanBatchSize: this.classifierCorpusScanBatchSize,
       discoveryTreeDisabled: this.discoveryTreeDisabled,
-    })
-      .then(() => {
-        this.saving = false;
-        Routing.goToAccountSettings(this.accountName);
-      })
-      .catch((err: Error) => {
-        this.saving = false;
-        this.error = err.message;
-        m.redraw();
-      });
+    };
+    Routing.goToAccountSettings(this.accountName);
   }
 }

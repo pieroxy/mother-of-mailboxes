@@ -5,29 +5,28 @@ import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
-import net.pieroxy.mom.config.general.MailAccountConfiguration;
+import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 
 import java.util.List;
 
 /**
- * Saves the editable fields of the Config section (see {@code AccountConfigApi}'s
- * {@code AccountBasicConfigDto}) and restarts the account so the change takes effect right away
- * — see {@link ServiceProvider#restartAccount}. Deliberately excludes {@code displayName}: it
- * names every one of this account's on-disk files (state, learned rules, classifier corpus,
- * stats — see {@code FileNameValidator}'s callers), so renaming it here would silently orphan
- * that history instead of migrating it. Credentials, rules and learning shortcuts are edited
- * elsewhere (or not yet, for rules/shortcuts).
+ * Saves everything the account settings page lets you edit — Config, Credentials and Rules — in
+ * one call, and restarts the account once. The webapp stages every edit locally (see
+ * {@code AccountEditSession.ts}) while the user reviews them on the read-only settings page, and
+ * only calls this endpoint when they click "Save Changes"; Cancel/Discard never reaches the
+ * server at all. Replaces the old one-endpoint-per-section calls (UpdateAccountConfig/
+ * UpdateAccountCredentials/UpdateAccountRules), which each restarted the account on their own.
  */
 @Endpoint(method = ApiMethod.POST)
-public class UpdateAccountConfigApi extends AbstractApiEndpoint<UpdateAccountConfigApiInput, UpdateAccountConfigApiOutput> {
+public class UpdateAccountApi extends AbstractApiEndpoint<UpdateAccountApiInput, UpdateAccountApiOutput> {
   private final ServiceProvider serviceProvider;
 
-  public UpdateAccountConfigApi(ServiceProvider serviceProvider) {
+  public UpdateAccountApi(ServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 
   @Override
-  public UpdateAccountConfigApiOutput process(UpdateAccountConfigApiInput input) {
+  public UpdateAccountApiOutput process(UpdateAccountApiInput input) {
     if (input.getHost() == null || input.getHost().isBlank()) {
       throw new IllegalArgumentException("Host must not be blank.");
     }
@@ -37,20 +36,20 @@ public class UpdateAccountConfigApi extends AbstractApiEndpoint<UpdateAccountCon
     if (input.getRunEvery() <= 0) {
       throw new IllegalArgumentException("\"Run every\" must be a positive number of seconds.");
     }
+    if (input.getUsername() == null || input.getUsername().isBlank()) {
+      throw new IllegalArgumentException("Username must not be blank.");
+    }
+    if (input.getRules() == null) {
+      throw new IllegalArgumentException("rules must not be null.");
+    }
 
-    MailAccountConfiguration config = serviceProvider.findAccountConfig(input.getAccountName());
-    config.setHost(input.getHost());
-    config.setPort(input.getPort());
-    config.setRunEvery(input.getRunEvery());
-    config.setClassifierSpamFolderName(blankToNull(input.getClassifierSpamFolderName()));
-    config.setClassifierExcludedFolders(input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of());
-    config.setClassifierCorpusRetentionDays(input.getClassifierCorpusRetentionDays());
-    config.setClassifierCorpusScanBatchSize(input.getClassifierCorpusScanBatchSize());
-    config.setDiscoveryTreeDisabled(input.isDiscoveryTreeDisabled());
+    serviceProvider.updateAccount(input.getAccountName(), input.getHost(), input.getPort(), input.getRunEvery(),
+        blankToNull(input.getClassifierSpamFolderName()),
+        input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
+        input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),
+        input.isDiscoveryTreeDisabled(), input.getUsername(), input.getPassword(), input.getRules());
 
-    serviceProvider.restartAccount(input.getAccountName());
-
-    return new UpdateAccountConfigApiOutput();
+    return new UpdateAccountApiOutput();
   }
 
   private static String blankToNull(String s) {
@@ -59,7 +58,7 @@ public class UpdateAccountConfigApi extends AbstractApiEndpoint<UpdateAccountCon
 }
 
 @TypeScriptType
-class UpdateAccountConfigApiInput {
+class UpdateAccountApiInput {
   private String accountName;
   private String host;
   private int port;
@@ -69,6 +68,10 @@ class UpdateAccountConfigApiInput {
   private int classifierCorpusRetentionDays;
   private int classifierCorpusScanBatchSize;
   private boolean discoveryTreeDisabled;
+  private String username;
+  /** Blank means "leave the current password unchanged" — see the class javadoc. */
+  private String password;
+  private List<MailFilterRuleConfiguration> rules;
 
   public String getAccountName() {
     return accountName;
@@ -141,8 +144,32 @@ class UpdateAccountConfigApiInput {
   public void setDiscoveryTreeDisabled(boolean discoveryTreeDisabled) {
     this.discoveryTreeDisabled = discoveryTreeDisabled;
   }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  public List<MailFilterRuleConfiguration> getRules() {
+    return rules;
+  }
+
+  public void setRules(List<MailFilterRuleConfiguration> rules) {
+    this.rules = rules;
+  }
 }
 
 @TypeScriptType
-class UpdateAccountConfigApiOutput {
+class UpdateAccountApiOutput {
 }

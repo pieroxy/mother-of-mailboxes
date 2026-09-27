@@ -31,7 +31,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 
 /**
- * {@link ServiceProvider#restartAccount}/{@link ServiceProvider#updateCredentials} are exercised
+ * {@link ServiceProvider#restartAccount}/{@link ServiceProvider#updateAccount} are exercised
  * here, in {@code net.pieroxy.mom.rules} rather than {@code net.pieroxy.mom.api} (where
  * {@link ServiceProvider} itself lives), only to reach {@link MailAccount}'s package-private test
  * constructor for the *original* account (so it never dials out for real) — both methods under
@@ -134,12 +134,12 @@ public class ServiceProviderRestartAccountTest {
   }
 
   @Test
-  public void updateCredentialsChangesUsernameAndPasswordAndRestarts() throws Exception {
+  public void updateAccountChangesUsernameAndPasswordAndRestarts() throws Exception {
     Setup setup = setUp();
     MailAccount original = setup.accounts.get(0);
 
     try {
-      setup.serviceProvider.updateCredentials("test-account", "new-username", "new-password");
+      updateAccount(setup, "new-username", "new-password", List.of());
 
       CredentialsFile reloaded = new Gson().fromJson(new FileReader(setup.credentialsFilePath), CredentialsFile.class);
       Credential persisted = reloaded.getCredentials().get(CREDENTIALS_KEY);
@@ -153,11 +153,11 @@ public class ServiceProviderRestartAccountTest {
   }
 
   @Test
-  public void updateCredentialsLeavesThePasswordUnchangedWhenBlank() throws Exception {
+  public void updateAccountLeavesThePasswordUnchangedWhenBlank() throws Exception {
     Setup setup = setUp();
 
     try {
-      setup.serviceProvider.updateCredentials("test-account", "new-username", "");
+      updateAccount(setup, "new-username", "", List.of());
 
       CredentialsFile reloaded = new Gson().fromJson(new FileReader(setup.credentialsFilePath), CredentialsFile.class);
       Credential persisted = reloaded.getCredentials().get(CREDENTIALS_KEY);
@@ -170,16 +170,15 @@ public class ServiceProviderRestartAccountTest {
   }
 
   @Test
-  public void updateRulesReplacesTheOrderAndRestarts() throws Exception {
+  public void updateAccountReplacesTheRuleOrderAndRestarts() throws Exception {
     Setup setup = setUp();
     MailAccount original = setup.accounts.get(0);
     MailFilterRuleConfiguration first = rule("spam.example.com", "Spam");
     MailFilterRuleConfiguration second = rule("newsletter.example.com", "Newsletter");
-    setup.config.setRules(new ArrayList<>(List.of(first, second)));
 
     try {
       // The "reorder" a client actually sends: the same rules, swapped.
-      setup.serviceProvider.updateRules("test-account", List.of(second, first));
+      updateAccount(setup, "test-user", "", List.of(second, first));
 
       Configuration reloaded = new Gson().fromJson(new FileReader(setup.configFile), Configuration.class);
       List<MailFilterRuleConfiguration> persistedRules = reloaded.getConfigurations().get(0).getRules();
@@ -190,6 +189,14 @@ public class ServiceProviderRestartAccountTest {
     } finally {
       stopReplacedAccount(setup);
     }
+  }
+
+  /** Passes the setup's current config fields straight through, only exercising the username/password/rules under test — mirrors the one combined save the settings page now sends (see UpdateAccountApi). */
+  private static void updateAccount(Setup setup, String username, String password, List<MailFilterRuleConfiguration> rules) {
+    setup.serviceProvider.updateAccount("test-account", setup.config.getHost(), setup.config.getPort(), setup.config.getRunEvery(),
+        setup.config.getClassifierSpamFolderName(), setup.config.getClassifierExcludedFolders(),
+        setup.config.getClassifierCorpusRetentionDays(), setup.config.getClassifierCorpusScanBatchSize(),
+        setup.config.isDiscoveryTreeDisabled(), username, password, rules);
   }
 
   private static MailFilterRuleConfiguration rule(String fromDomain, String moveToFolder) {
