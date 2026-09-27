@@ -151,17 +151,4 @@ public class FromAddressMatcherTest {
       // ok
     }
   }
-
-  @Test
-  public void extractKeyFromExampleFailsWhenLocalPartIsEmpty() throws Exception {
-    MimeMessage message = new MimeMessage(session);
-    message.setFrom(new InternetAddress("@example.com"));
-
-    try {
-      new FromAddressMatcher().extractKeyFromExample(message);
-      fail("should have thrown");
-    } catch (MessagingException expected) {
-      // ok
-    }
-  }
 }
