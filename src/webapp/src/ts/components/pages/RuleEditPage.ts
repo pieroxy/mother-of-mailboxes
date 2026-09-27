@@ -1,11 +1,16 @@
 import m from "mithril";
 import {
   ActionType,
+  DkimResult,
+  DmarcPolicy,
+  DmarcResult,
+  FcrdnsResult,
   MailFilterRuleActionConfiguration,
   MailFilterRuleConfiguration,
   MailFilterRuleMatcherConfiguration,
   MatcherType,
   RuleType,
+  SpfResult,
 } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
@@ -25,7 +30,18 @@ interface MatcherTypeOption {
   value: MatcherType;
   label: string;
   fields: MatcherFieldKind;
+  /** Restricts the "keys" field to this fixed set (an enum's values) — offered via a dropdown instead of free text. */
+  options?: string[];
 }
+
+// These five are @TypeScriptNonConstEnum on the Java side specifically so they have a real
+// runtime object here (a plain TS enum, not the default const enum) — Object.values(...) lists
+// every constant with no separate value list to keep in sync.
+const SPF_RESULT_OPTIONS: string[] = Object.values(SpfResult);
+const DKIM_RESULT_OPTIONS: string[] = Object.values(DkimResult);
+const DMARC_RESULT_OPTIONS: string[] = Object.values(DmarcResult);
+const DMARC_POLICY_OPTIONS: string[] = Object.values(DmarcPolicy);
+const FCRDNS_RESULT_OPTIONS: string[] = Object.values(FcrdnsResult);
 
 // Composite types (AND/OR/NOT) are deliberately excluded: editing a matcher/action tree isn't
 // supported here yet — see COMPOSITE_MATCHER_TYPES/COMPOSITE_ACTION_TYPES below.
@@ -35,11 +51,11 @@ const MATCHER_TYPE_OPTIONS: MatcherTypeOption[] = [
   { value: MatcherType.FROM_DOMAIN_EQUALS, label: "From domain equals", fields: "keys" },
   { value: MatcherType.FROM_ADDRESS_REGEXP, label: "From address matches regexp", fields: "keys" },
   { value: MatcherType.SUBJECT_STARTS_WITH, label: "Subject starts with", fields: "keys" },
-  { value: MatcherType.SPF_RESULT_EQUALS, label: "SPF result equals", fields: "keys" },
-  { value: MatcherType.DKIM_RESULT_EQUALS, label: "DKIM result equals", fields: "keys" },
-  { value: MatcherType.DMARC_RESULT_EQUALS, label: "DMARC result equals", fields: "keys" },
-  { value: MatcherType.DMARC_POLICY_EQUALS, label: "DMARC policy equals", fields: "keys" },
-  { value: MatcherType.FCRDNS_RESULT_EQUALS, label: "FCrDNS result equals", fields: "keys" },
+  { value: MatcherType.SPF_RESULT_EQUALS, label: "SPF result equals", fields: "keys", options: SPF_RESULT_OPTIONS },
+  { value: MatcherType.DKIM_RESULT_EQUALS, label: "DKIM result equals", fields: "keys", options: DKIM_RESULT_OPTIONS },
+  { value: MatcherType.DMARC_RESULT_EQUALS, label: "DMARC result equals", fields: "keys", options: DMARC_RESULT_OPTIONS },
+  { value: MatcherType.DMARC_POLICY_EQUALS, label: "DMARC policy equals", fields: "keys", options: DMARC_POLICY_OPTIONS },
+  { value: MatcherType.FCRDNS_RESULT_EQUALS, label: "FCrDNS result equals", fields: "keys", options: FCRDNS_RESULT_OPTIONS },
   { value: MatcherType.SUBJECT_CLASSIFIER_EQUALS, label: "Subject spam score", fields: "threshold" },
   { value: MatcherType.HEADER_CLASSIFIER_EQUALS, label: "Header spam score", fields: "threshold" },
   { value: MatcherType.BODY_CLASSIFIER_EQUALS, label: "Body spam score", fields: "threshold" },
@@ -172,6 +188,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
         tokens: this.matcherKeys,
         onChange: (keys) => (this.matcherKeys = keys),
         placeholder: "Value to match",
+        options: option.options,
       })) : null,
       option.fields === "threshold" || option.fields === "reputation" ? this.field("Threshold", m("input", {
         type: "text", value: this.matcherThreshold, placeholder: ">0.9",

@@ -1,10 +1,19 @@
 package net.pieroxy.mom.detection.fcrdns;
 
+import net.pieroxy.mom.api.metadata.TypeScriptNonConstEnum;
+import net.pieroxy.mom.api.metadata.TypeScriptType;
+
 /**
  * Result of an FCrDNS (Forward-Confirmed reverse DNS) check on a connecting IP.
  * Unlike SPF/DKIM/DMARC, there is no dedicated authentication RFC defining this vocabulary —
- * these four values are an MOM-internal convention, not a standard.
+ * these four values are an MOM-internal convention, not a standard. Exposed to the webapp so the
+ * FCRDNS_RESULT_EQUALS matcher's value picker (RuleEditPage) can offer these directly — the
+ * comparison against a configured key is case-insensitive, so there's no need to go through
+ * {@link #getCode()} first. {@code @TypeScriptNonConstEnum} so the webapp can populate that
+ * dropdown via {@code Object.values(FcrdnsResult)} instead of hand-listing every constant.
  */
+@TypeScriptType
+@TypeScriptNonConstEnum
 public enum FcrdnsResult {
   /** The IP has a PTR record, and that PTR is confirmed (an A/AAAA lookup of the hostname resolves back to the IP). */
   PASS,

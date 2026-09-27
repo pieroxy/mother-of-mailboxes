@@ -230,6 +230,12 @@
           <outputFile>${project.build.directory}/typescript-generator/pieroxy-mom.ts</outputFile>
           <outputFileType>implementationFile</outputFileType>
           <mapEnum>asEnum</mapEnum>
+          <!-- Enums the webapp needs to enumerate at runtime (e.g. Object.values(...) to build a
+               dropdown) rather than just compare against a single value — see
+               TypeScriptNonConstEnum's javadoc. Everything else stays the default const enum. -->
+          <nonConstEnumAnnotations>
+            <nonConstEnumAnnotation>net.pieroxy.mom.api.metadata.TypeScriptNonConstEnum</nonConstEnumAnnotation>
+          </nonConstEnumAnnotations>
         </configuration>
       </plugin>
       <plugin>
