@@ -98,8 +98,6 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
     const isDeleted = pendingRule.deleted;
     const header = m(".rule-card-header", [
       m(".rule-card-header-left", [
-        m("span.rule-edit-link" + (isDeleted ? ".disabled" : ""),
-          { title: "Edit this rule", onclick: () => Routing.goToRuleEdit(this.accountName, index) }, m(SettingsIcon)),
         m(".rule-index", rule.type === RuleType.LEARNED_RULES ? "#" + (index + 1)
           : "#" + (index + 1) + (rule.keepProcessing ? " · keeps processing" : "")),
         this.renderRuleTags(session, pendingRule),
@@ -132,6 +130,8 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         { title: "Move up", onclick: () => this.moveRule(session, index, -1) }, m(ArrowCircleUpIcon)),
       m("span.rule-move-button" + (isLast || isDeleted ? ".disabled" : ""),
         { title: "Move down", onclick: () => this.moveRule(session, index, 1) }, m(ArrowCircleDownIcon)),
+      m("span.rule-edit-link" + (isDeleted ? ".disabled" : ""),
+        { title: "Edit this rule", onclick: () => Routing.goToRuleEdit(this.accountName, index) }, m(SettingsIcon)),
       m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
         { title: isDeleted ? "Restore this rule" : "Delete this rule", onclick: () => this.toggleDeleteRule(pendingRule) }, m(DeleteIcon)),
     ]);
