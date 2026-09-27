@@ -21,4 +21,9 @@ export class Routing {
   static goToAccountCredentialsEdit(accountName: string) {
     m.route.set(Endpoints.ACCOUNT_CREDENTIALS_EDIT, { accountName });
   }
+
+  /** ruleIndex is the rule's position in the account's rules array, or "new" to create one. */
+  static goToRuleEdit(accountName: string, ruleIndex: number | "new") {
+    m.route.set(Endpoints.RULE_EDIT, { accountName, ruleIndex });
+  }
 }

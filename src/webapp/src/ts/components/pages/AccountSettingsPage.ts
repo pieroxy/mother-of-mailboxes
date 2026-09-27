@@ -4,9 +4,7 @@ import {
   AccountBasicConfigDto,
   CredentialsInfoDto,
   LearningShortcutConfiguration,
-  MailFilterRuleActionConfiguration,
   MailFilterRuleConfiguration,
-  MailFilterRuleMatcherConfiguration,
   RuleType,
 } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
@@ -16,6 +14,7 @@ import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 import { ArrowCircleUpIcon } from "../atoms/icons/ArrowCircleUpIcon";
 import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
+import { renderActionNode, renderMatcherNode } from "../RuleTree";
 
 interface AccountSettingsPageAttrs {
   accountName: string;
@@ -81,6 +80,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
           ]) : null,
         ]),
         this.renderRulesSection(),
+        m("button.add-rule-button", { onclick: () => Routing.goToRuleEdit(this.accountName, "new") }, "+ Add rule"),
       ]),
       m(".page-card", [sectionHeader("Shortcuts"), renderShortcutsSection(this.shortcuts)]),
     ]);
@@ -94,8 +94,12 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   private renderRule(rule: MailFilterRuleConfiguration, index: number): m.Children {
     const isDeleted = this.deletedRules.has(rule);
     const header = m(".rule-card-header", [
-      m(".rule-index", rule.type === RuleType.LEARNED_RULES ? "#" + (index + 1)
-        : "#" + (index + 1) + (rule.keepProcessing ? " · keeps processing" : "")),
+      m(".rule-card-header-left", [
+        m("span.rule-edit-link" + (isDeleted ? ".disabled" : ""),
+          { title: "Edit this rule", onclick: () => Routing.goToRuleEdit(this.accountName, index) }, m(SettingsIcon)),
+        m(".rule-index", rule.type === RuleType.LEARNED_RULES ? "#" + (index + 1)
+          : "#" + (index + 1) + (rule.keepProcessing ? " · keeps processing" : "")),
+      ]),
       this.renderRuleControls(rule, index),
     ]);
     const body = rule.type === RuleType.LEARNED_RULES
@@ -235,26 +239,3 @@ function renderShortcutsSection(shortcuts: LearningShortcutConfiguration[]): m.C
   ])));
 }
 
-function renderMatcherNode(node: MailFilterRuleMatcherConfiguration): m.Children {
-  const details: string[] = [];
-  if (node.key) details.push(node.key);
-  if (node.keys && node.keys.length > 0) details.push("{" + node.keys.join(", ") + "}");
-  if (node.listIds && node.listIds.length > 0) details.push("lists: " + node.listIds.join(", "));
-  return m("li.tree-node", [
-    m(".tree-node-label", [
-      m("span.tree-node-type", node.type),
-      details.length > 0 ? m("span.tree-node-detail", ": " + details.join(", ")) : null,
-    ]),
-    node.children && node.children.length > 0 ? m("ul.tree-children", node.children.map(renderMatcherNode)) : null,
-  ]);
-}
-
-function renderActionNode(node: MailFilterRuleActionConfiguration): m.Children {
-  return m("li.tree-node", [
-    m(".tree-node-label", [
-      m("span.tree-node-type", node.type),
-      node.key ? m("span.tree-node-detail", ": " + node.key) : null,
-    ]),
-    node.children && node.children.length > 0 ? m("ul.tree-children", node.children.map(renderActionNode)) : null,
-  ]);
-}

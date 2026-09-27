@@ -3,6 +3,7 @@ import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { AccountBasicConfigDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
+import { TokenListEditor } from "../TokenListEditor";
 
 interface AccountConfigEditPageAttrs {
   accountName: string;
@@ -23,7 +24,6 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
   private runEvery = 0;
   private classifierSpamFolderName = "";
   private classifierExcludedFolders: string[] = [];
-  private newFolder = "";
   private classifierCorpusRetentionDays = 0;
   private classifierCorpusScanBatchSize = 0;
   private discoveryTreeDisabled = false;
@@ -70,7 +70,12 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
         type: "text", value: this.classifierSpamFolderName, placeholder: "Spam (default)", disabled: this.saving,
         oninput: (e: Event) => (this.classifierSpamFolderName = (e.target as HTMLInputElement).value),
       })),
-      this.field("Classifier excluded folders", this.renderFolderEditor()),
+      this.field("Classifier excluded folders", m(TokenListEditor, {
+        tokens: this.classifierExcludedFolders,
+        onChange: (folders) => (this.classifierExcludedFolders = folders),
+        placeholder: "Folder name",
+        disabled: this.saving,
+      })),
       this.field("Classifier corpus retention (days, 0 = disabled)", m("input", {
         type: "number", value: this.classifierCorpusRetentionDays, disabled: this.saving,
         oninput: (e: Event) => (this.classifierCorpusRetentionDays = Number((e.target as HTMLInputElement).value)),
@@ -93,42 +98,8 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
     ]);
   }
 
-  private renderFolderEditor(): m.Children {
-    return m(".folder-editor", [
-      m(".token-list", this.classifierExcludedFolders.map((folder) => m(".token", { key: folder }, [
-        folder,
-        m("span.token-remove", { onclick: () => this.removeFolder(folder) }, "×"),
-      ]))),
-      m(".folder-editor-add", [
-        m("input", {
-          type: "text", value: this.newFolder, placeholder: "Folder name", disabled: this.saving,
-          oninput: (e: Event) => (this.newFolder = (e.target as HTMLInputElement).value),
-          onkeydown: (e: KeyboardEvent) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              this.addFolder();
-            }
-          },
-        }),
-        m("button.add-folder-button", { onclick: () => this.addFolder(), disabled: this.saving }, "Add"),
-      ]),
-    ]);
-  }
-
   private field(label: string, control: m.Children): m.Children {
     return m(".edit-field", [m("label", label), control]);
-  }
-
-  private addFolder() {
-    const folder = this.newFolder.trim();
-    if (folder && !this.classifierExcludedFolders.includes(folder)) {
-      this.classifierExcludedFolders = [...this.classifierExcludedFolders, folder];
-    }
-    this.newFolder = "";
-  }
-
-  private removeFolder(folder: string) {
-    this.classifierExcludedFolders = this.classifierExcludedFolders.filter((f) => f !== folder);
   }
 
   private cancel() {

@@ -193,6 +193,87 @@ body {
               }
           }
 
+          // Recursive read-only matcher/action tree (RuleTree) — shared by AccountSettingsPage
+          // (viewing a rule/shortcut) and RuleEditPage (viewing a composite it can't edit yet).
+          .tree-root, .tree-children {
+              list-style: none;
+              margin: 0;
+              padding: 0;
+          }
+
+          .tree-children {
+              padding-left: 20px;
+              border-left: 1px solid $bg-color-l3;
+              margin-top: 4px;
+          }
+
+          .tree-node {
+              font-size: 13px;
+
+              .tree-node-label {
+                  padding: 2px 0;
+              }
+
+              .tree-node-type {
+                  color: #00abab;
+                  font-family: monospace;
+              }
+
+              .tree-node-detail {
+                  color: #aaa;
+              }
+          }
+
+          // A removable-pill list + "add" input (TokenListEditor) — excluded folders, matcher
+          // keys, reputation list ids, ...
+          .token-editor {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+
+              .token-list {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 6px;
+              }
+
+              .token {
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  background-color: $bg-color-d1;
+                  color: #fff;
+                  font-size: 12px;
+                  padding: 2px 8px 2px 10px;
+                  border-radius: 10px;
+              }
+
+              .token-remove {
+                  cursor: pointer;
+                  color: #aaa8;
+                  font-weight: bold;
+
+                  &:hover {
+                      color: #F96E46;
+                  }
+              }
+
+              .token-editor-add {
+                  display: flex;
+                  gap: 8px;
+
+                  input {
+                      flex: 1;
+                      font-size: 13px;
+                  }
+
+                  button {
+                      font-size: 13px;
+                      padding: 4px 14px;
+                  }
+              }
+          }
+
           .page-card {
               background-color: $bg-color-l3;
               border-radius: 10px;
@@ -650,6 +731,14 @@ body {
                   font-style: italic;
               }
 
+              .add-rule-button {
+                  margin-top: 12px;
+                  background-color: $bg-color-d1;
+                  color: #aaa;
+                  font-size: 13px;
+                  padding: 6px 16px;
+              }
+
               .config-grid {
                   display: flex;
                   flex-direction: column;
@@ -704,6 +793,34 @@ body {
                       align-items: center;
                       justify-content: space-between;
                       gap: 12px;
+                  }
+
+                  .rule-card-header-left {
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                  }
+
+                  .rule-edit-link {
+                      cursor: pointer;
+                      opacity: 0.5;
+                      display: flex;
+                      transition: opacity 0.15s linear;
+
+                      &:hover {
+                          opacity: 1;
+                      }
+
+                      &.disabled {
+                          opacity: 0.2;
+                          cursor: default;
+                          pointer-events: none;
+                      }
+
+                      svg.icon {
+                          width: 16px;
+                          height: 16px;
+                      }
                   }
 
                   .rule-index {
@@ -806,92 +923,36 @@ body {
                   }
               }
 
-              .tree-root, .tree-children {
-                  list-style: none;
-                  margin: 0;
-                  padding: 0;
-              }
-
-              .tree-children {
-                  padding-left: 20px;
-                  border-left: 1px solid $bg-color-l3;
-                  margin-top: 4px;
-              }
-
-              .tree-node {
-                  font-size: 13px;
-
-                  .tree-node-label {
-                      padding: 2px 0;
-                  }
-
-                  .tree-node-type {
-                      color: #00abab;
-                      font-family: monospace;
-                  }
-
-                  .tree-node-detail {
-                      color: #aaa;
-                  }
-              }
-          }
-
-          &.accountconfigeditpage {
-              display: block;
-              color: #aaa;
-
-              .folder-editor {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 8px;
-
-                  .token-list {
-                      display: flex;
-                      flex-wrap: wrap;
-                      gap: 6px;
-                  }
-
-                  .token {
-                      display: flex;
-                      align-items: center;
-                      gap: 6px;
-                      background-color: $bg-color-d1;
-                      color: #fff;
-                      font-size: 12px;
-                      padding: 2px 8px 2px 10px;
-                      border-radius: 10px;
-                  }
-
-                  .token-remove {
-                      cursor: pointer;
-                      color: #aaa8;
-                      font-weight: bold;
-
-                      &:hover {
-                          color: #F96E46;
-                      }
-                  }
-
-                  .folder-editor-add {
-                      display: flex;
-                      gap: 8px;
-
-                      input {
-                          flex: 1;
-                          font-size: 13px;
-                      }
-
-                      button {
-                          font-size: 13px;
-                          padding: 4px 14px;
-                      }
-                  }
-              }
           }
 
           &.accountcredentialseditpage {
               display: block;
               color: #aaa;
+          }
+
+          &.ruleeditpage {
+              display: block;
+              color: #aaa;
+
+              .edit-form h2 {
+                  margin: 8px 0 0 0;
+                  font-size: 14px;
+                  color: #fff;
+                  font-weight: normal;
+              }
+
+              .composite-notice {
+                  background-color: $bg-color-d1;
+                  border-radius: 8px;
+                  padding: 12px 16px;
+
+                  p {
+                      margin: 0 0 8px 0;
+                      font-size: 12px;
+                      color: #aaa8;
+                      font-style: italic;
+                  }
+              }
           }
         }
     }
@@ -1000,12 +1061,16 @@ svg.icon {
 }
 
 
-input {
+input, select {
     padding: 5px;
     background-color: black;
     font-size: 18px;
     color: #aaa;
     border: 2px solid #444;
+}
+
+select {
+    color-scheme: dark;
 }
 
 button {
