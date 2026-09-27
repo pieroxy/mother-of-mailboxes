@@ -1,8 +1,33 @@
+// Background surfaces (dark purple theme, darkest to lightest)
 $bg-color: #300a24;
 $bg-color-l1: #360b29;
 $bg-color-l2: #3a112d;
 $bg-color-l3: #3f1933;
 $bg-color-d1: #200414;
+
+// Text
+$text-color: #fff;
+$text-muted: #aaa;
+$text-faint: #aaa8;
+$text-on-accent: #000;
+
+// Accent & status
+$accent-color: #00abab;
+$error-color: #F96E46;
+$status-ok: #0a0;
+$status-ok-faint: #0a08;
+$status-info: #aaf;
+$status-warning: #fa4;
+$status-error: #f00;
+$value-changed: #7272AB;
+
+// Misc
+$border-color: #444;
+$input-bg: #000;
+$white-glow: #fff8;
+$white-faint: #fff7;
+$shadow-light: rgba(255, 255, 255, .1);
+$shadow-dark: rgba(0, 0, 0, .1);
 
 @mixin media-max($_max-width) {
   @media screen and (max-width: $_max-width) {
@@ -20,7 +45,7 @@ $bg-color-d1: #200414;
 }
 
 body {
-    background-color: #300a24;
+    background-color: $bg-color;
     margin:0;
     padding: 0;
 
@@ -32,7 +57,7 @@ body {
             box-sizing: border-box;
             width: 100%;
             height: 3em;
-            background-color: #200414;
+            background-color: $bg-color-d1;
             z-index: 100;
             align-items: center;
             padding: 0 5%;
@@ -40,7 +65,7 @@ body {
             gap: 16px;
 
             .logo {
-                color:#fff8;
+                color: $white-glow;
                 svg {
                     height: 2em;
                 }
@@ -76,7 +101,7 @@ body {
                 box-sizing: border-box;
                 display: flex;
                 font-size: 20px;
-                box-shadow: 2px 2px 15px rgb(0 0 0 / 10%);
+                box-shadow: 2px 2px 15px $shadow-dark;
 
                 @include media-max(768px) {
                     width: 95%;
@@ -85,7 +110,7 @@ body {
 
                 .content {
                     flex:1;
-                    color:#aaa;
+                    color: $text-muted;
                     text-align: left;
                     padding: 0 20px;
                 }
@@ -114,24 +139,24 @@ body {
               margin-bottom: 16px;
 
               .page-back {
-                  color: #aaa8;
+                  color: $text-faint;
                   cursor: pointer;
                   font-size: 14px;
 
                   &:hover {
-                      color: #aaa;
+                      color: $text-muted;
                   }
               }
 
               .page-title {
                   margin: 0;
                   font-size: 24px;
-                  color: #fff;
+                  color: $text-color;
               }
           }
 
           .page-loading {
-              color: #aaa8;
+              color: $text-faint;
               font-style: italic;
           }
 
@@ -150,7 +175,7 @@ body {
 
               label {
                   font-size: 11px;
-                  color: #aaa8;
+                  color: $text-faint;
                   text-transform: uppercase;
                   letter-spacing: 0.03em;
               }
@@ -163,7 +188,7 @@ body {
 
               .field-hint {
                   font-size: 11px;
-                  color: #aaa8;
+                  color: $text-faint;
                   text-transform: none;
                   letter-spacing: normal;
               }
@@ -174,7 +199,7 @@ body {
                   gap: 8px;
                   text-transform: none;
                   font-size: 13px;
-                  color: #aaa;
+                  color: $text-muted;
 
                   input {
                       width: auto;
@@ -189,7 +214,7 @@ body {
 
               .cancel-button {
                   background-color: $bg-color-d1;
-                  color: #aaa;
+                  color: $text-muted;
               }
           }
 
@@ -215,12 +240,12 @@ body {
               }
 
               .tree-node-type {
-                  color: #00abab;
+                  color: $accent-color;
                   font-family: monospace;
               }
 
               .tree-node-detail {
-                  color: #aaa;
+                  color: $text-muted;
               }
           }
 
@@ -242,7 +267,7 @@ body {
                   align-items: center;
                   gap: 6px;
                   background-color: $bg-color-d1;
-                  color: #fff;
+                  color: $text-color;
                   font-size: 12px;
                   padding: 2px 8px 2px 10px;
                   border-radius: 10px;
@@ -250,11 +275,11 @@ body {
 
               .token-remove {
                   cursor: pointer;
-                  color: #aaa8;
+                  color: $text-faint;
                   font-weight: bold;
 
                   &:hover {
-                      color: #F96E46;
+                      color: $error-color;
                   }
               }
 
@@ -282,7 +307,7 @@ body {
               h2 {
                   margin: 0;
                   font-size: 16px;
-                  color: #fff;
+                  color: $text-color;
                   font-weight: normal;
               }
 
@@ -320,7 +345,7 @@ body {
 
                       .cancel-changes-button {
                           background-color: $bg-color-d1;
-                          color: #aaa;
+                          color: $text-muted;
                       }
                   }
               }
@@ -332,8 +357,7 @@ body {
 
               .account {
                   background-color: $bg-color-l3;
-                  background-color: #3f1933;
-                  color: #aaa;
+                  color: $text-muted;
                   margin: 10px;
                   padding: 10px;
                   border-radius: 10px;
@@ -382,7 +406,7 @@ body {
                       margin-top: 4px;
 
                       &.cycle-progress-pending {
-                          color: #aaa8;
+                          color: $text-faint;
                           font-style: italic;
                       }
 
@@ -395,7 +419,7 @@ body {
 
                           .cycle-progress-bar-fill {
                               height: 100%;
-                              background-color: #00abab;
+                              background-color: $accent-color;
                               transition: width 0.1s linear;
                           }
                       }
@@ -404,7 +428,7 @@ body {
                           display: flex;
                           justify-content: space-between;
                           font-size: 12px;
-                          color: #aaa8;
+                          color: $text-faint;
                       }
                   }
 
@@ -416,7 +440,7 @@ body {
 
                       .classifier-training-counts {
                           font-size: 12px;
-                          color: #aaa8;
+                          color: $text-faint;
                       }
 
                       .classifier-training-models {
@@ -439,11 +463,11 @@ body {
                               }
 
                               .classifier-badge-status {
-                                  color: #aaa8;
+                                  color: $text-faint;
                               }
 
                               &.classifier-badge-trained .classifier-badge-status {
-                                  color: #0a08;
+                                  color: $status-ok-faint;
                               }
                           }
                       }
@@ -465,7 +489,7 @@ body {
               > svg {
                   width: 50%;
                   max-width: 200px;
-                  color: #fff7;
+                  color: $white-faint;
               }
 
               > form {
@@ -477,7 +501,7 @@ body {
 
           &.statspage {
               display: block;
-              color: #aaa;
+              color: $text-muted;
 
               .stats-filters {
                   display: flex;
@@ -493,14 +517,14 @@ body {
 
                       .stats-preset {
                           background-color: $bg-color-l3;
-                          color: #aaa;
+                          color: $text-muted;
                           box-shadow: none;
                           font-size: 13px;
                           padding: 6px 14px;
 
                           &.active {
-                              background-color: #00abab;
-                              color: #000;
+                              background-color: $accent-color;
+                              color: $text-on-accent;
                           }
 
                           &:hover:not(.active) {
@@ -518,7 +542,7 @@ body {
                           flex-direction: column;
                           gap: 4px;
                           font-size: 11px;
-                          color: #aaa8;
+                          color: $text-faint;
                           text-transform: uppercase;
                           letter-spacing: 0.03em;
                       }
@@ -555,12 +579,12 @@ body {
 
                       .stat-tile-value {
                           font-size: 28px;
-                          color: #fff;
+                          color: $text-color;
                       }
 
                       .stat-tile-label {
                           font-size: 12px;
-                          color: #aaa8;
+                          color: $text-faint;
                           margin-top: 4px;
                       }
                   }
@@ -571,7 +595,7 @@ body {
                   gap: 16px;
                   margin-bottom: 8px;
                   font-size: 12px;
-                  color: #aaa8;
+                  color: $text-faint;
 
                   .legend-item {
                       display: flex;
@@ -598,13 +622,13 @@ body {
                       }
 
                       text {
-                          fill: #aaa8;
+                          fill: $text-faint;
                           font-size: 11px;
                       }
                   }
 
                   .chart-x-label {
-                      fill: #aaa8;
+                      fill: $text-faint;
                       font-size: 11px;
                   }
 
@@ -620,7 +644,7 @@ body {
               .stats-table-toggle {
                   margin-top: 12px;
                   background-color: transparent;
-                  color: #00abab;
+                  color: $accent-color;
                   box-shadow: none;
                   padding: 4px 0;
                   font-size: 13px;
@@ -643,7 +667,7 @@ body {
                   }
 
                   th {
-                      color: #aaa8;
+                      color: $text-faint;
                       font-weight: normal;
                   }
               }
@@ -655,14 +679,14 @@ body {
 
                   .matcher-mode-option {
                       background-color: $bg-color-d1;
-                      color: #aaa;
+                      color: $text-muted;
                       box-shadow: none;
                       font-size: 12px;
                       padding: 4px 12px;
 
                       &.active {
-                          background-color: #00abab;
-                          color: #000;
+                          background-color: $accent-color;
+                          color: $text-on-accent;
                       }
 
                       &:hover:not(.active) {
@@ -677,7 +701,7 @@ body {
                   gap: 8px;
 
                   &.top-matchers-empty {
-                      color: #aaa8;
+                      color: $text-faint;
                       font-style: italic;
                   }
 
@@ -703,12 +727,12 @@ body {
 
                       .matcher-bar-fill {
                           height: 100%;
-                          background-color: #00abab;
+                          background-color: $accent-color;
                           border-radius: 3px;
                       }
 
                       .matcher-count {
-                          color: #aaa8;
+                          color: $text-faint;
                           text-align: right;
                           min-width: 32px;
                       }
@@ -718,7 +742,7 @@ body {
 
           &.accountsettingspage {
               display: block;
-              color: #aaa;
+              color: $text-muted;
 
               .settings-content {
                   display: flex;
@@ -727,14 +751,14 @@ body {
               }
 
               .settings-empty {
-                  color: #aaa8;
+                  color: $text-faint;
                   font-style: italic;
               }
 
               .add-rule-button {
                   margin-top: 12px;
                   background-color: $bg-color-d1;
-                  color: #aaa;
+                  color: $text-muted;
                   font-size: 13px;
                   padding: 6px 16px;
               }
@@ -751,11 +775,11 @@ body {
                       font-size: 13px;
 
                       .config-row-label {
-                          color: #aaa8;
+                          color: $text-faint;
                       }
 
                       .config-row-value {
-                          color: #fff;
+                          color: $text-color;
 
                           .token-list {
                               display: flex;
@@ -765,7 +789,7 @@ body {
 
                           .token {
                               background-color: $bg-color-d1;
-                              color: #fff;
+                              color: $text-color;
                               font-size: 12px;
                               padding: 2px 10px;
                               border-radius: 10px;
@@ -825,7 +849,7 @@ body {
 
                   .rule-index {
                       font-size: 12px;
-                      color: #aaa8;
+                      color: $text-faint;
                       text-transform: uppercase;
                       letter-spacing: 0.03em;
                   }
@@ -868,10 +892,10 @@ body {
 
                           &:hover {
                               opacity: 1;
-                              color: #F96E46;
+                              color: $error-color;
 
                               svg.icon path.primaryfill {
-                                  fill: #F96E46;
+                                  fill: $error-color;
                               }
                           }
 
@@ -879,7 +903,7 @@ body {
                               opacity: 1;
 
                               svg.icon path.primaryfill {
-                                  fill: #F96E46;
+                                  fill: $error-color;
                               }
                           }
 
@@ -901,12 +925,12 @@ body {
                   .shortcut-name {
                       font-size: 13px;
                       font-weight: bold;
-                      color: #fff;
+                      color: $text-color;
                   }
 
                   .rule-learned-marker {
                       font-style: italic;
-                      color: #aaa;
+                      color: $text-muted;
                   }
 
                   .rule-section {
@@ -916,7 +940,7 @@ body {
 
                       .rule-section-label {
                           font-size: 11px;
-                          color: #aaa8;
+                          color: $text-faint;
                           text-transform: uppercase;
                           letter-spacing: 0.03em;
                       }
@@ -927,17 +951,17 @@ body {
 
           &.accountcredentialseditpage {
               display: block;
-              color: #aaa;
+              color: $text-muted;
           }
 
           &.ruleeditpage {
               display: block;
-              color: #aaa;
+              color: $text-muted;
 
               .edit-form h2 {
                   margin: 8px 0 0 0;
                   font-size: 14px;
-                  color: #fff;
+                  color: $text-color;
                   font-weight: normal;
               }
 
@@ -949,7 +973,7 @@ body {
                   p {
                       margin: 0 0 8px 0;
                       font-size: 12px;
-                      color: #aaa8;
+                      color: $text-faint;
                       font-style: italic;
                   }
               }
@@ -977,15 +1001,15 @@ svg.icon {
   &.info {
     > * {
       &.primary {
-        stroke: #aaf;
+        stroke: $status-info;
       }
-  
+
       &.primaryfill {
-        fill: #aaf;
+        fill: $status-info;
       }
-  
+
       &.secondary {
-        fill:#aaf;
+        fill: $status-info;
       }
     }
   }
@@ -993,15 +1017,15 @@ svg.icon {
   &.ok {
     > * {
       &.primary {
-        stroke: #0a0;
+        stroke: $status-ok;
       }
-  
+
       &.primaryfill {
-        fill: #0a0;
+        fill: $status-ok;
       }
-  
+
       &.secondary {
-        fill:#0a0;
+        fill: $status-ok;
       }
     }
   }
@@ -1009,15 +1033,15 @@ svg.icon {
   &.warning {
     > * {
       &.primary {
-        stroke: #fa4;
+        stroke: $status-warning;
       }
-  
+
       &.primaryfill {
-        fill: #fa4;
+        fill: $status-warning;
       }
-  
+
       &.secondary {
-        fill:#fa4;
+        fill: $status-warning;
       }
     }
   }
@@ -1025,15 +1049,15 @@ svg.icon {
   &.error {
     > * {
       &.primary {
-        stroke: #f00;
+        stroke: $status-error;
       }
-  
+
       &.primaryfill {
-        fill: #f00;
+        fill: $status-error;
       }
-  
+
       &.secondary {
-        fill:#f00;
+        fill: $status-error;
       }
     }
   }
@@ -1041,20 +1065,20 @@ svg.icon {
   > * {
 
     &.primary {
-      stroke: white;
+      stroke: $text-color;
       stroke-width:1.5;
       stroke-linecap:round;
       stroke-linejoin:round;
     }
 
     &.primaryfill {
-      fill: white;
+      fill: $text-color;
       stroke-linecap:round;
       stroke-linejoin:round;
     }
 
     &.secondary {
-      fill:white;
+      fill: $text-color;
       opacity: 0.4;
     }
   }
@@ -1063,10 +1087,10 @@ svg.icon {
 
 input, select {
     padding: 5px;
-    background-color: black;
+    background-color: $input-bg;
     font-size: 18px;
-    color: #aaa;
-    border: 2px solid #444;
+    color: $text-muted;
+    border: 2px solid $border-color;
 }
 
 select {
@@ -1077,14 +1101,14 @@ button {
     padding: 3px 20px;
     font-size: 18px;
     border: none;
-    background-color: #00abab;
+    background-color: $accent-color;
     border-radius: 5px;
-    box-shadow: inset 3px 3px 5px rgba(255, 255, 255, .1), inset -3px -3px 5px rgba(0, 0, 0, .1);
-    color: #000;
+    box-shadow: inset 3px 3px 5px $shadow-light, inset -3px -3px 5px $shadow-dark;
+    color: $text-on-accent;
 }
 
 .errorMessage, .account-error {
-    color: #F96E46;
+    color: $error-color;
 }
 
 
@@ -1111,4 +1135,3 @@ button {
     opacity:0;
   }
 }
-
