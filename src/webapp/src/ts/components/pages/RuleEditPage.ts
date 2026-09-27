@@ -75,18 +75,22 @@ interface ActionTypeOption {
   /** What the key field means for this action — shown as its label, since "key" means something different per type (a folder vs. a log message). */
   keyLabel?: string;
   keyPlaceholder?: string;
+  /** The key is an existing (or not-yet-created) IMAP folder name — offered as an editable dropdown (a text input backed by a datalist of the account's real folders, see AccountFoldersApi) instead of plain free text. */
+  isFolderName?: boolean;
 }
 
 // AND/OR excluded, same reasoning as MATCHER_TYPE_OPTIONS.
 const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
-  { value: ActionType.MOVE_TO, label: "Move to folder", needsKey: true, keyLabel: "Destination folder" },
-  { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read", needsKey: true, keyLabel: "Destination folder" },
+  { value: ActionType.MOVE_TO, label: "Move to folder", needsKey: true, keyLabel: "Destination folder", isFolderName: true },
+  { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read", needsKey: true, keyLabel: "Destination folder", isFolderName: true },
   { value: ActionType.READ, label: "Mark as read", needsKey: false },
   {
     value: ActionType.NOOP, label: "Do nothing (log only)", needsKey: true,
     keyLabel: "Log message", keyPlaceholder: "What to log when this rule matches",
   },
 ];
+
+const FOLDER_DATALIST_ID = "destination-folder-options";
 
 const COMPOSITE_MATCHER_TYPES: Set<string> = new Set([MatcherType.AND, MatcherType.OR, MatcherType.NOT]);
 const COMPOSITE_ACTION_TYPES: Set<string> = new Set([ActionType.AND, ActionType.OR]);
@@ -122,6 +126,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private actionKey = "";
   private actionIsComposite = false;
   private originalAction: MailFilterRuleActionConfiguration | undefined;
+  private accountFolders: string[] = [];
 
   private loading = true;
   private error: string | undefined;
@@ -215,10 +220,21 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
         value: this.actionType,
         onchange: (e: Event) => (this.actionType = (e.target as HTMLSelectElement).value as ActionType),
       }, ACTION_TYPE_OPTIONS.map((o) => m("option", { value: o.value }, o.label)))),
-      option.needsKey ? this.field(option.keyLabel || "Value", m("input", {
+      option.needsKey ? this.field(option.keyLabel || "Value", option.isFolderName ? this.renderFolderField() : m("input", {
         type: "text", value: this.actionKey, placeholder: option.keyPlaceholder,
         oninput: (e: Event) => (this.actionKey = (e.target as HTMLInputElement).value),
       })) : null,
+    ];
+  }
+
+  /** A text input backed by a datalist (an "editable dropdown"): pick an existing folder from the account's real IMAP tree, or type one that doesn't exist yet — either way it's still free text underneath, so a typo just becomes a new folder name rather than a validation error. */
+  private renderFolderField(): m.Children {
+    return [
+      m("input", {
+        type: "text", value: this.actionKey, list: FOLDER_DATALIST_ID, placeholder: "Folder name",
+        oninput: (e: Event) => (this.actionKey = (e.target as HTMLInputElement).value),
+      }),
+      m("datalist#" + FOLDER_DATALIST_ID, this.accountFolders.map((folder) => m("option", { key: folder, value: folder }))),
     ];
   }
 
@@ -240,10 +256,18 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private load() {
     this.loading = true;
     this.error = undefined;
-    Promise.all([accountEditSessions.load(this.accountName), ApiEndpoints.ReputationLists.call({})])
-      .then(([session, reputationLists]) => {
+    Promise.all([
+      accountEditSessions.load(this.accountName),
+      ApiEndpoints.ReputationLists.call({}),
+      // Listing folders needs a live IMAP connection (see AccountFoldersApi) — if that fails
+      // (account temporarily unreachable, ...) the folder field should just fall back to plain
+      // free text, not block editing an otherwise-unrelated rule.
+      ApiEndpoints.AccountFolders.call({ accountName: this.accountName }).catch(() => ({ folders: [] as string[] })),
+    ])
+      .then(([session, reputationLists, accountFolders]) => {
         this.session = session;
         this.reputationLists = reputationLists.lists;
+        this.accountFolders = accountFolders.folders;
         if (this.ruleIndex !== null) {
           const pendingRule = session.rules[this.ruleIndex];
           if (!pendingRule) {

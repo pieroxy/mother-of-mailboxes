@@ -173,6 +173,16 @@ public class MailAccount implements Runnable {
     return credential.getUsername();
   }
 
+  /**
+   * The full resolved credential (including the password), for server-side code that needs to
+   * open its own IMAP connection — e.g. {@code AccountFoldersApi}, listing folders for the
+   * webapp's destination-folder picker. Never put this on an API response DTO directly; see
+   * {@link #getCredentialUsername()} for what's safe to expose to the browser.
+   */
+  public Credential getCredential() {
+    return credential;
+  }
+
   public AccountStatus getStatus() {
     return status;
   }
