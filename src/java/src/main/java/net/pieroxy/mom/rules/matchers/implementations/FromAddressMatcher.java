@@ -48,13 +48,25 @@ public class FromAddressMatcher extends Matcher {
       throw new MessagingException("Cannot learn a FROM_ADDRESS_EQUALS rule: message must have exactly one From address");
     }
     String address = extractAddress(froms[0]);
-    if (address == null) {
-      throw new MessagingException("Cannot learn a FROM_ADDRESS_EQUALS rule: From address has no email part");
+    if (address == null || !looksLikeAnEmailAddress(address)) {
+      throw new MessagingException("Cannot learn a FROM_ADDRESS_EQUALS rule: \"" + address + "\" is not a valid email address");
     }
     return address;
   }
 
   private static String extractAddress(Address address) {
     return address instanceof InternetAddress ? ((InternetAddress) address).getAddress() : address.toString();
+  }
+
+  /**
+   * A minimal sanity check, not a full RFC 5322 validator: exactly one '@', with at least one
+   * character on either side of it. Guards against a malformed From header that javax.mail's
+   * lenient parser still manages to turn into a non-null {@link InternetAddress#getAddress()}
+   * result that isn't actually an email address (e.g. ":&gt;:;;") — learning that verbatim would
+   * silently produce a matcher that can never legitimately fire again.
+   */
+  private static boolean looksLikeAnEmailAddress(String address) {
+    int at = address.indexOf('@');
+    return at > 0 && at == address.lastIndexOf('@') && at < address.length() - 1;
   }
 }

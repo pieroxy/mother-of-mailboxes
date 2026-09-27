@@ -226,6 +226,15 @@ public class RuleLearner {
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to learn a rule from example message for " + matcherType + "/" + actionType
               + "(" + actionKey + ")", e);
+      try {
+        // Extraction failed before the action ever ran, so the example is guaranteed not
+        // \Deleted yet: move it out of the way regardless, so it's filed away once instead of
+        // being retried — and rewarned about — on every single cycle forever with no way out
+        // short of moving it by hand.
+        moveToDone(example);
+      } catch (MessagingException moveException) {
+        LOGGER.log(Level.WARNING, "Also failed to move the unlearnable example to " + ROOT_FOLDER + "/" + DONE_FOLDER, moveException);
+      }
       return false;
     }
   }
