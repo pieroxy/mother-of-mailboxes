@@ -15,6 +15,7 @@ import { Endpoints } from "../../utils/navigation/Endpoints";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 import { ArrowCircleUpIcon } from "../atoms/icons/ArrowCircleUpIcon";
 import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
+import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 
 interface AccountSettingsPageAttrs {
   accountName: string;
@@ -31,9 +32,10 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   private config: AccountBasicConfigDto | undefined;
   private credentials: CredentialsInfoDto | undefined;
   private rules: MailFilterRuleConfiguration[] = [];
-  private savedRulesOrder: MailFilterRuleConfiguration[] = [];
+  private savedRulesSnapshot: MailFilterRuleConfiguration[] = [];
+  private deletedRules = new Set<MailFilterRuleConfiguration>();
   private rulesDirty = false;
-  private savingRulesOrder = false;
+  private savingRuleChanges = false;
   private shortcuts: LearningShortcutConfiguration[] = [];
   private loading = true;
   private error: string | undefined;
@@ -72,10 +74,10 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       m(".page-card", [
         m(".section-header", [
           m("h2", "Rules"),
-          this.rulesDirty ? m(".rules-order-actions", [
-            m("button.save-order-button", { onclick: () => this.saveRulesOrder(), disabled: this.savingRulesOrder },
-              this.savingRulesOrder ? "Saving…" : "Save Order"),
-            m("button.cancel-order-button", { onclick: () => this.cancelRulesOrder(), disabled: this.savingRulesOrder }, "Cancel"),
+          this.rulesDirty ? m(".rule-changes-actions", [
+            m("button.save-changes-button", { onclick: () => this.saveRuleChanges(), disabled: this.savingRuleChanges },
+              this.savingRuleChanges ? "Saving…" : "Save Changes"),
+            m("button.cancel-changes-button", { onclick: () => this.cancelRuleChanges(), disabled: this.savingRuleChanges }, "Cancel"),
           ]) : null,
         ]),
         this.renderRulesSection(),
@@ -90,33 +92,37 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   }
 
   private renderRule(rule: MailFilterRuleConfiguration, index: number): m.Children {
+    const isDeleted = this.deletedRules.has(rule);
     const header = m(".rule-card-header", [
       m(".rule-index", rule.type === RuleType.LEARNED_RULES ? "#" + (index + 1)
         : "#" + (index + 1) + (rule.keepProcessing ? " · keeps processing" : "")),
-      this.renderMoveControls(index),
+      this.renderRuleControls(rule, index),
     ]);
-    if (rule.type === RuleType.LEARNED_RULES) {
-      return m(".rule-card", { key: index }, [header, m(".rule-learned-marker", "Learned rules run here")]);
-    }
-    return m(".rule-card", { key: index }, [
-      header,
-      m(".rule-section", [m(".rule-section-label", "When"), m("ul.tree-root", renderMatcherNode(rule.matcher))]),
-      m(".rule-section", [m(".rule-section-label", "Then"), m("ul.tree-root", renderActionNode(rule.action))]),
-    ]);
+    const body = rule.type === RuleType.LEARNED_RULES
+      ? [m(".rule-learned-marker", "Learned rules run here")]
+      : [
+        m(".rule-section", [m(".rule-section-label", "When"), m("ul.tree-root", renderMatcherNode(rule.matcher))]),
+        m(".rule-section", [m(".rule-section-label", "Then"), m("ul.tree-root", renderActionNode(rule.action))]),
+      ];
+    return m(".rule-card" + (isDeleted ? ".rule-deleted" : ""), { key: index }, [header, ...body]);
   }
 
-  private renderMoveControls(index: number): m.Children {
+  private renderRuleControls(rule: MailFilterRuleConfiguration, index: number): m.Children {
+    const isDeleted = this.deletedRules.has(rule);
     const isFirst = index === 0;
     const isLast = index === this.rules.length - 1;
     return m(".rule-move-controls", [
-      m("span.rule-move-button" + (isFirst ? ".disabled" : ""),
+      m("span.rule-move-button" + (isFirst || isDeleted ? ".disabled" : ""),
         { title: "Move up", onclick: () => this.moveRule(index, -1) }, m(ArrowCircleUpIcon)),
-      m("span.rule-move-button" + (isLast ? ".disabled" : ""),
+      m("span.rule-move-button" + (isLast || isDeleted ? ".disabled" : ""),
         { title: "Move down", onclick: () => this.moveRule(index, 1) }, m(ArrowCircleDownIcon)),
+      m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
+        { title: isDeleted ? "Restore this rule" : "Delete this rule", onclick: () => this.toggleDeleteRule(rule) }, m(DeleteIcon)),
     ]);
   }
 
   private moveRule(index: number, delta: number) {
+    if (this.deletedRules.has(this.rules[index])) return;
     const target = index + delta;
     if (target < 0 || target >= this.rules.length) return;
     const reordered = [...this.rules];
@@ -125,23 +131,36 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
     this.rulesDirty = true;
   }
 
-  private cancelRulesOrder() {
-    this.rules = [...this.savedRulesOrder];
+  private toggleDeleteRule(rule: MailFilterRuleConfiguration) {
+    if (this.deletedRules.has(rule)) {
+      this.deletedRules.delete(rule);
+    } else {
+      this.deletedRules.add(rule);
+    }
+    this.rulesDirty = true;
+  }
+
+  private cancelRuleChanges() {
+    this.rules = [...this.savedRulesSnapshot];
+    this.deletedRules.clear();
     this.rulesDirty = false;
   }
 
-  private saveRulesOrder() {
-    this.savingRulesOrder = true;
+  private saveRuleChanges() {
+    this.savingRuleChanges = true;
     this.error = undefined;
-    ApiEndpoints.UpdateAccountRules.call({ accountName: this.accountName, rules: this.rules })
+    const survivingRules = this.rules.filter((rule) => !this.deletedRules.has(rule));
+    ApiEndpoints.UpdateAccountRules.call({ accountName: this.accountName, rules: survivingRules })
       .then(() => {
-        this.savingRulesOrder = false;
+        this.savingRuleChanges = false;
         this.rulesDirty = false;
-        this.savedRulesOrder = [...this.rules];
+        this.rules = survivingRules;
+        this.savedRulesSnapshot = [...survivingRules];
+        this.deletedRules.clear();
         m.redraw();
       })
       .catch((err: Error) => {
-        this.savingRulesOrder = false;
+        this.savingRuleChanges = false;
         this.error = err.message;
         m.redraw();
       });
@@ -155,7 +174,8 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         this.config = output.config;
         this.credentials = output.credentials;
         this.rules = output.rules;
-        this.savedRulesOrder = [...output.rules];
+        this.savedRulesSnapshot = [...output.rules];
+        this.deletedRules.clear();
         this.rulesDirty = false;
         this.shortcuts = output.shortcuts;
         this.loading = false;
