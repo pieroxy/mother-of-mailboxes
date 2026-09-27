@@ -119,6 +119,25 @@ public class ReputationRegistryTest {
   }
 
   @Test
+  public void getConfiguredListsExposesEveryDeclaredList() {
+    String dataFolder = tempFolder.getRoot().getAbsolutePath();
+    ReputationRegistry registry = new ReputationRegistry(List.of(
+        list("blocklist", ReputationListType.IP_CIDR, 1.0),
+        list("domain-list", ReputationListType.DOMAIN, 0.5)), dataFolder);
+
+    List<ReputationListConfig> configured = registry.getConfiguredLists();
+
+    assertEquals(2, configured.size());
+    assertTrue(configured.stream().anyMatch(c -> c.getId().equals("blocklist") && c.getType() == ReputationListType.IP_CIDR));
+    assertTrue(configured.stream().anyMatch(c -> c.getId().equals("domain-list") && c.getType() == ReputationListType.DOMAIN));
+  }
+
+  @Test
+  public void getConfiguredListsIsEmptyForAnEmptyRegistry() {
+    assertTrue(ReputationRegistry.empty().getConfiguredLists().isEmpty());
+  }
+
+  @Test
   public void noPriorCacheYieldsEmptyScoreUntilFirstRefresh() {
     String dataFolder = tempFolder.getRoot().getAbsolutePath();
     ReputationRegistry registry = new ReputationRegistry(

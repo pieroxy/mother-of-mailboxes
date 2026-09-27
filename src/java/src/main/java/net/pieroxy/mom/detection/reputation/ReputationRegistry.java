@@ -65,6 +65,11 @@ public final class ReputationRegistry {
     return new ReputationRegistry(List.of(), null);
   }
 
+  /** Every list declared in the global config, id + type only — see {@code ReputationListsApi}. */
+  public List<ReputationListConfig> getConfiguredLists() {
+    return List.copyOf(configsById.values());
+  }
+
   /**
    * Starts the periodic refresh (one task per list, on its own refreshHours). No effect if no
    * list is configured, or already started.

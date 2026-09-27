@@ -9,9 +9,12 @@ import {
   MailFilterRuleConfiguration,
   MailFilterRuleMatcherConfiguration,
   MatcherType,
+  ReputationListDto,
+  ReputationListType,
   RuleType,
   SpfResult,
 } from "../../auto/pieroxy-mom";
+import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { TokenListEditor } from "../TokenListEditor";
@@ -32,6 +35,8 @@ interface MatcherTypeOption {
   fields: MatcherFieldKind;
   /** Restricts the "keys" field to this fixed set (an enum's values) — offered via a dropdown instead of free text. */
   options?: string[];
+  /** For fields === "reputation": which kind of reputation list this matcher can reference — filters the list-id dropdown (see ReputationListsApi). */
+  reputationListType?: ReputationListType;
 }
 
 // These five are @TypeScriptNonConstEnum on the Java side specifically so they have a real
@@ -59,8 +64,8 @@ const MATCHER_TYPE_OPTIONS: MatcherTypeOption[] = [
   { value: MatcherType.SUBJECT_CLASSIFIER_EQUALS, label: "Subject spam score", fields: "threshold" },
   { value: MatcherType.HEADER_CLASSIFIER_EQUALS, label: "Header spam score", fields: "threshold" },
   { value: MatcherType.BODY_CLASSIFIER_EQUALS, label: "Body spam score", fields: "threshold" },
-  { value: MatcherType.IP_REPUTATION_EQUALS, label: "IP reputation score", fields: "reputation" },
-  { value: MatcherType.FROM_DOMAIN_REPUTATION_EQUALS, label: "From domain reputation score", fields: "reputation" },
+  { value: MatcherType.IP_REPUTATION_EQUALS, label: "IP reputation score", fields: "reputation", reputationListType: ReputationListType.IP_CIDR },
+  { value: MatcherType.FROM_DOMAIN_REPUTATION_EQUALS, label: "From domain reputation score", fields: "reputation", reputationListType: ReputationListType.DOMAIN },
 ];
 
 interface ActionTypeOption {
@@ -111,6 +116,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private matcherListIds: string[] = [];
   private matcherIsComposite = false;
   private originalMatcher: MailFilterRuleMatcherConfiguration | undefined;
+  private reputationLists: ReputationListDto[] = [];
 
   private actionType: ActionType = ActionType.MOVE_TO;
   private actionKey = "";
@@ -197,7 +203,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
       option.fields === "reputation" ? this.field("Reputation list IDs", m(TokenListEditor, {
         tokens: this.matcherListIds,
         onChange: (ids) => (this.matcherListIds = ids),
-        placeholder: "List ID",
+        options: this.reputationLists.filter((l) => l.type === option.reputationListType).map((l) => l.id),
       })) : null,
     ];
   }
@@ -234,9 +240,10 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private load() {
     this.loading = true;
     this.error = undefined;
-    accountEditSessions.load(this.accountName)
-      .then((session) => {
+    Promise.all([accountEditSessions.load(this.accountName), ApiEndpoints.ReputationLists.call({})])
+      .then(([session, reputationLists]) => {
         this.session = session;
+        this.reputationLists = reputationLists.lists;
         if (this.ruleIndex !== null) {
           const pendingRule = session.rules[this.ruleIndex];
           if (!pendingRule) {
