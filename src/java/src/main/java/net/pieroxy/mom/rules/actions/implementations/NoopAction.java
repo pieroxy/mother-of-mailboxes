@@ -8,7 +8,11 @@ import javax.mail.Message;
  * Does nothing to the message, always succeeds. Useful to log/observe a match (via the action's
  * own {@code logLevel}, or as one branch of an {@code AND}/{@code OR}) without actually acting on
  * the mail — e.g. a rule built only to compare against another matcher's verdict, combined with
- * {@code "keepProcessing": true} so the real rules further down still get evaluated.
+ * {@code "keepProcessing": true} so the real rules further down still get evaluated. Telling
+ * several NOOP rules apart needs no special handling here: {@code Rule#apply} already logs
+ * {@code action.describe()} — which includes the configured key, same as every other action type
+ * — at INFO level on every application (see the webapp's RuleEditPage, which now requires the key
+ * for NOOP specifically, asking for it as "Log message").
  */
 public class NoopAction extends Action {
   @Override

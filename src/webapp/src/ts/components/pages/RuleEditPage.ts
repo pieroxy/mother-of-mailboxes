@@ -51,14 +51,20 @@ interface ActionTypeOption {
   value: ActionType;
   label: string;
   needsKey: boolean;
+  /** What the key field means for this action — shown as its label, since "key" means something different per type (a folder vs. a log message). */
+  keyLabel?: string;
+  keyPlaceholder?: string;
 }
 
 // AND/OR excluded, same reasoning as MATCHER_TYPE_OPTIONS.
 const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
-  { value: ActionType.MOVE_TO, label: "Move to folder", needsKey: true },
-  { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read", needsKey: true },
+  { value: ActionType.MOVE_TO, label: "Move to folder", needsKey: true, keyLabel: "Destination folder" },
+  { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read", needsKey: true, keyLabel: "Destination folder" },
   { value: ActionType.READ, label: "Mark as read", needsKey: false },
-  { value: ActionType.NOOP, label: "Do nothing (log only)", needsKey: false },
+  {
+    value: ActionType.NOOP, label: "Do nothing (log only)", needsKey: true,
+    keyLabel: "Log message", keyPlaceholder: "What to log when this rule matches",
+  },
 ];
 
 const COMPOSITE_MATCHER_TYPES: Set<string> = new Set([MatcherType.AND, MatcherType.OR, MatcherType.NOT]);
@@ -186,8 +192,8 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
         value: this.actionType,
         onchange: (e: Event) => (this.actionType = (e.target as HTMLSelectElement).value as ActionType),
       }, ACTION_TYPE_OPTIONS.map((o) => m("option", { value: o.value }, o.label)))),
-      option.needsKey ? this.field("Destination folder", m("input", {
-        type: "text", value: this.actionKey,
+      option.needsKey ? this.field(option.keyLabel || "Value", m("input", {
+        type: "text", value: this.actionKey, placeholder: option.keyPlaceholder,
         oninput: (e: Event) => (this.actionKey = (e.target as HTMLInputElement).value),
       })) : null,
     ];
@@ -298,7 +304,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     if (!this.actionIsComposite) {
       const option = ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType)!;
       if (option.needsKey && this.actionKey.trim().length === 0) {
-        return "The action needs a destination folder.";
+        return "The action needs a " + (option.keyLabel || "value").toLowerCase() + ".";
       }
     }
     return undefined;
