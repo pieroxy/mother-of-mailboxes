@@ -47,6 +47,7 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
 
   oninit({ attrs }: m.Vnode<StatsPageAttrs>) {
     this.accountName = attrs.accountName;
+    this.refreshData = () => this.load();
     this.selectPreset(7);
   }
 
