@@ -1,12 +1,10 @@
 package net.pieroxy.mom.services;
 
 /**
- * What a piece of code that only needs to fetch a service is allowed to see. {@link ServiceProvider}
- * (the concrete class) implements this without restriction — everything else that's handed one,
- * an API endpoint at request time or a {@link Service#init} during startup, gets a view that in
- * general may be narrowed to a specific service's own declared {@link Service#getDependencies()}
- * (see {@link ServiceProvider}'s scoped proxy) — so depend on this interface, not the concrete
- * class, unless you specifically need {@link ServiceProvider#init()}/{@link ServiceProvider#destroy()}.
+ * Read access to the running services. {@link ServiceProvider} implements this without
+ * restriction; a {@link Service#init} receives a view narrowed to that service's own
+ * {@link Service#getDependencies()} instead. Depend on this interface rather than the concrete
+ * class unless you need {@link ServiceProvider#init()}/{@link ServiceProvider#destroy()}.
  */
 public interface IServiceProvider {
   SettingsService getSettingsService();

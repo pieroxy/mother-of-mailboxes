@@ -53,13 +53,9 @@ public class SettingsService implements Service {
   }
 
   /**
-   * Resolves the web server's own login credential (if a {@code webServer} section is configured
-   * and enabled) and migrates a plaintext password to a hashed one, one time, if it finds one —
-   * see {@link #migrateWebServerPasswordIfNeeded}. No declared dependencies (see
-   * {@link Service#getDependencies}): everything this needs came in through the constructor
-   * already — but {@link WebServerService} depends on this service, so this still has to be done by
-   * the end of this method, not deferred anywhere later, so it's guaranteed ready before Tomcat's
-   * own {@code start()} ever runs.
+   * Resolves the web server's login credential (if {@code webServer} is configured and enabled)
+   * and migrates a plaintext password to a hashed one — see
+   * {@link #migrateWebServerPasswordIfNeeded}.
    */
   @Override
   public void start() {
@@ -119,15 +115,11 @@ public class SettingsService implements Service {
   }
 
   /**
-   * Applies every field the general settings page offers. The web server's own login (its
-   * {@code Credential}, resolved and mutated in place, same "blank password = unchanged"
-   * convention as an account's) and the whole {@code reputationLists} list take effect immediately
-   * — the login on the next request, the lists via a hot-swapped {@link ReputationRegistry} (built
-   * — cheap, disk-cache only, no network I/O — then started before the old one is stopped, so
-   * there's no window with no registry at all). {@code dataFolder}, {@code keepLogFiles} and the
-   * web server's own connection settings ({@code enabled}/{@code httpPort}/{@code address}) are
-   * only ever persisted to {@code config.json} here: this process keeps using the values it
-   * started with (see {@link #dataFolder}) until someone restarts it by hand.
+   * Applies every field the general settings page offers. The web server's own login and the
+   * whole {@code reputationLists} list take effect immediately (login on the next request; lists
+   * via a hot-swapped {@link ReputationRegistry}). {@code dataFolder}, {@code keepLogFiles} and
+   * the web server's own connection settings are persisted to {@code config.json} but only take
+   * effect once the process is restarted by hand.
    */
   public synchronized void updateGeneralSettings(String newDataFolder, int keepLogFiles, boolean webServerEnabled,
                                                   int webServerHttpPort, String webServerAddress,
@@ -163,11 +155,9 @@ public class SettingsService implements Service {
   }
 
   /**
-   * One-time: if {@link #webServerCredential} still has a plaintext password and no hash yet,
-   * hashes it, clears the plaintext, and persists credentials.json so the plaintext never sits on
-   * disk past this first boot. A write failure (read-only mount, permissions) is logged and
-   * skipped rather than blocking startup — the in-memory hash still works for this run, and the
-   * migration just retries on the next one.
+   * If the credential still has a plaintext password and no hash, hashes it, clears the
+   * plaintext, and persists credentials.json. A write failure is logged and skipped rather than
+   * blocking startup; the in-memory hash still works this run, and migration retries next boot.
    */
   private void migrateWebServerPasswordIfNeeded() {
     if (webServerCredential.getPassword() == null || webServerCredential.getPasswordHash() != null) return;

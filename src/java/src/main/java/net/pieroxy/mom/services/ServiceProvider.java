@@ -6,18 +6,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Hosts every service instance the API layer depends on ({@link SettingsService},
- * {@link AccountService}, {@link SessionService}, {@link WebServerService}), and manages their
- * startup/shutdown lifecycle — nothing else. Actual behavior lives on the services themselves; an
- * API endpoint asks {@link IServiceProvider} only for the one it needs, never through a method on
- * this class directly.
+ * Hosts the running {@link SettingsService}, {@link AccountService}, {@link SessionService} and
+ * {@link WebServerService}, and manages their startup/shutdown lifecycle.
  * <p>
- * {@link #init()} topologically sorts the services by each one's declared
- * {@link Service#getDependencies()} (Kahn's algorithm) and, for each in turn, calls
- * {@link Service#init(IServiceProvider)} (with a view scoped to only what it declared — see
- * {@link #scopedFor}) then {@link Service#start()}, before moving to the next — so a service is
- * never started until every service it depends on already has been, fully. {@link #destroy()}
- * unwinds in the reverse of whatever order things actually started in.
+ * {@link #init()} topologically sorts them by declared {@link Service#getDependencies()}, then for
+ * each in turn calls {@link Service#init(IServiceProvider)} (scoped to what it declared — see
+ * {@link #scopedFor}) and {@link Service#start()}. {@link #destroy()} stops them in the reverse of
+ * that order.
  */
 public class ServiceProvider implements IServiceProvider {
   private final SettingsService settingsService;
@@ -71,11 +66,10 @@ public class ServiceProvider implements IServiceProvider {
   }
 
   /**
-   * A view of this provider exposing only the services {@code service} actually declared via
-   * {@link Service#getDependencies()} — anything else throws. Since every {@link IServiceProvider}
-   * getter's return type *is* the service class it hands back, the check needs no separate
-   * method-to-class table: {@code method.getReturnType()} is exactly what to check. Package-private
-   * (instead of private): lets ServiceProviderTest exercise it directly.
+   * A view exposing only the services {@code service} declared via {@link Service#getDependencies()};
+   * anything else throws. The check is just {@code method.getReturnType()}, since that's exactly
+   * the service class each {@link IServiceProvider} getter returns. Package-private: exercised
+   * directly by ServiceProviderTest.
    */
   IServiceProvider scopedFor(Service service) {
     Set<Class<? extends Service>> allowed = Set.copyOf(service.getDependencies());

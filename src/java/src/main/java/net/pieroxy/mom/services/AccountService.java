@@ -10,12 +10,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Owns the accounts actually running in this process: builds and starts one {@link MailAccount}
- * per {@code config.json} entry (see {@link #start}), and applies every edit an API endpoint makes
- * that needs one restarted. Not config.json/credentials.json themselves — see
- * {@link SettingsService}, which every persist/credential-lookup here delegates to (via plain
- * constructor injection, not {@link Service#getDependencies}: there's no circularity here to
- * resolve, so there's nothing declaring a dependency would add over just holding the reference).
+ * Owns the accounts running in this process: builds and starts one {@link MailAccount} per
+ * {@code config.json} entry (see {@link #start}), and applies edits that need one restarted.
+ * Delegates all config/credential persistence to {@link SettingsService}.
  */
 public class AccountService implements Service {
   // Generous: an in-progress IMAP cycle (blocking socket I/O) won't be interrupted on the spot —
@@ -51,11 +48,8 @@ public class AccountService implements Service {
   }
 
   /**
-   * Interrupts every account's thread — which ends the wait between cycles and prevents a new one
-   * from starting (see {@link MailAccount#requestStop}) — then waits up to
-   * {@code SHUTDOWN_JOIN_TIMEOUT_MS}, shared (not per account): accounts die concurrently in the
-   * background regardless of which one we're currently join()ing, so budgeting per-account would
-   * let a slow one after a fast one add its own full timeout on top for nothing.
+   * Interrupts every account's thread (see {@link MailAccount#requestStop}), then waits up to a
+   * shared {@code SHUTDOWN_JOIN_TIMEOUT_MS} for all of them, not per account.
    */
   @Override
   public void destroy() {
@@ -77,12 +71,8 @@ public class AccountService implements Service {
   }
 
   /**
-   * Persists config.json (with whatever in-place edits an endpoint already made via
-   * {@link SettingsService#findAccountConfig}), then stops the account's current thread and
-   * starts a fresh one built from the updated configuration, replacing it in {@link #getAccounts()}
-   * at the same position. {@code synchronized}: this is rare and slow (an IMAP round trip, a full
-   * account stop/start) compared to every other read-only API call, so a single coarse lock across
-   * all accounts is simpler than per-account locking and costs nothing in practice.
+   * Persists config.json, then stops the account's current thread and starts a fresh one built
+   * from the updated configuration, replacing it in {@link #getAccounts()} at the same position.
    */
   public synchronized void restartAccount(String accountName) {
     int index = -1;
@@ -114,19 +104,10 @@ public class AccountService implements Service {
   }
 
   /**
-   * Applies every editable part of an account's configuration — the Config fields, the IMAP
-   * credentials, the whole {@code rules} list and the whole {@code learningShortcuts} list — and
-   * restarts it exactly once. The webapp stages all of these client-side (see
-   * {@code AccountEditSession.ts}) while the user reviews changes across the
-   * Config/Credentials/Rules/Shortcuts edit pages, and only calls this, via
-   * {@code UpdateAccountApi}, when they click "Save Changes" — so a single restart always covers
-   * the whole batch instead of one per section. {@code displayName} is deliberately not
-   * settable here: it names every one of this account's on-disk files (state, learned rules,
-   * classifier corpus, stats — see {@code FileNameValidator}'s callers), so renaming it would
-   * silently orphan that history instead of migrating it. A blank {@code password} leaves the
-   * current one unchanged, the same convention {@code CredentialsInfoDto} relies on (the browser
-   * is never shown the real password to begin with, so "unchanged" is the only thing a blank
-   * field can mean here).
+   * Applies every editable part of an account's configuration — Config fields, IMAP credentials,
+   * rules and learning shortcuts — and restarts it once. {@code displayName} isn't settable here
+   * (it names the account's on-disk files). A blank {@code password} leaves the current one
+   * unchanged.
    */
   public synchronized void updateAccount(String accountName, String host, int port, int runEvery,
                                           String classifierSpamFolderName, List<String> classifierExcludedFolders,
@@ -157,11 +138,9 @@ public class AccountService implements Service {
   }
 
   /**
-   * Replaces one account's learned rules and applies the change right away (see
-   * {@link MailAccount#updateLearnedRules}) — deliberately separate from {@link #updateAccount},
-   * and not folded into it: learned rules live in their own per-account file, not config.json, and
-   * applying an edit needs no restart, so batching it with a config/credentials/rules/shortcuts
-   * save would only cost an unnecessary IMAP reconnect.
+   * Replaces one account's learned rules and applies the change immediately (see
+   * {@link MailAccount#updateLearnedRules}) — no restart, since learned rules live in their own
+   * file, not config.json.
    */
   public synchronized void updateLearnedRules(String accountName, List<MailFilterRuleConfiguration> rules) {
     MailAccount account = accounts.stream()

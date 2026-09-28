@@ -10,11 +10,7 @@ import java.util.stream.Collectors;
 
 /**
  * Topologically sorts a list of {@link Service}s by each one's declared
- * {@link Service#getDependencies()} — Kahn's algorithm: repeatedly take any not-yet-ordered
- * service whose dependencies are all already ordered. Extracted out of {@link ServiceProvider}
- * (which is itself fixed-shape, not generic over an arbitrary service list) purely so this pure
- * ordering logic is testable on its own, with lightweight fakes, instead of only through the real
- * services.
+ * {@link Service#getDependencies()} (Kahn's algorithm).
  */
 final class ServiceOrdering {
   private ServiceOrdering() {}

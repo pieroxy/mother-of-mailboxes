@@ -17,16 +17,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Embedded Tomcat serving the webapp's static files and {@code /api/*}, débrayable via
- * {@code webServer.enabled} — {@link #start()} is a no-op if it isn't. Depends on
- * {@link SettingsService}, {@link AccountService} and {@link SessionService} not because its own
- * startup logic reads anything from them directly, but because {@link ApiServlet} — wired up
- * here — hands *any* endpoint the {@link IServiceProvider} it's given, and any endpoint might
- * need any of them at request time; declaring all three is what makes that view genuinely
- * complete rather than accidentally missing one. Can't get that view through a plain constructor
- * like {@link AccountService} does with {@link SettingsService}: {@link ServiceProvider} is the
- * thing hosting this service, so it doesn't exist yet at construction time — only once
- * {@link #init(IServiceProvider)} runs, after every service it depends on is already up.
+ * Embedded Tomcat serving the webapp's static files and {@code /api/*}. A no-op if
+ * {@code webServer.enabled} is false. Depends on every other service since {@link ApiServlet},
+ * wired up in {@link #start()}, may hand any endpoint any of them at request time.
  */
 public class WebServerService implements Service {
   private final static Logger LOGGER = Logger.getLogger(WebServerService.class.getName());
