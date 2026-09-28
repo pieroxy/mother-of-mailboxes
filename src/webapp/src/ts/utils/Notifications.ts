@@ -8,7 +8,7 @@ export class Notifications {
     if (this.current) {
       this.content.push(n);
       this.dismiss();
-    } else 
+    } else
       this.current = n;
   }
   public static getTopNotification():null|Notification {

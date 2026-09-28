@@ -6,7 +6,6 @@ import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
 import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
 import { StatusWarningIcon } from "../atoms/icons/StatusWarningIcon";
-import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 import { CycleProgressBar } from "../CycleProgressBar";
 import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
 import { StatsIcon } from "../atoms/icons/StatsIcon";
@@ -54,6 +53,8 @@ export class HomePage extends AbstractPage {
   }
 
   private loadData() {
+    // A transport-level failure (offline, server down, ...) already gets its own generic
+    // notification from Api.call — this only needs to keep the page's own inline error in sync.
     Promise.all([ApiEndpoints.Accounts.call({}), ApiEndpoints.ReputationLists.call({})])
       .then(([accountsOutput, reputationListsOutput]) => {
         this.error = undefined;
@@ -63,7 +64,6 @@ export class HomePage extends AbstractPage {
       })
       .catch((err: Error) => {
         this.error = err.message;
-        Notifications.addNotification(new Notification(NotificationsClass.SERVER_UNREACHABLE, NotificationsType.ERROR, "Failed to contact server", 5))
         m.redraw();
       });
   }
