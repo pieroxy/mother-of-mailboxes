@@ -3,8 +3,9 @@ package net.pieroxy.mom.api.implementations.generalsettings;
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.services.SettingsService;
 import net.pieroxy.mom.api.implementations.reputation.ReputationListDto;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.ReputationListConfig;
@@ -22,15 +23,13 @@ import java.util.stream.Collectors;
  * {@code GeneralSettingsApi}'s class javadoc.
  */
 @Endpoint(method = ApiMethod.POST)
-public class UpdateGeneralSettingsApi extends AbstractApiEndpoint<UpdateGeneralSettingsApiInput, UpdateGeneralSettingsApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class UpdateGeneralSettingsApi extends AbstractAuthenticatedEndpoint<UpdateGeneralSettingsApiInput, UpdateGeneralSettingsApiOutput> {
   public UpdateGeneralSettingsApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public UpdateGeneralSettingsApiOutput process(UpdateGeneralSettingsApiInput input) {
+  public UpdateGeneralSettingsApiOutput processAuthenticated(UpdateGeneralSettingsApiInput input) {
     if (input.getDataFolder() == null || input.getDataFolder().isBlank()) {
       throw new IllegalArgumentException("The data folder must not be blank.");
     }
@@ -77,7 +76,7 @@ public class UpdateGeneralSettingsApi extends AbstractApiEndpoint<UpdateGeneralS
 }
 
 @TypeScriptType
-class UpdateGeneralSettingsApiInput {
+class UpdateGeneralSettingsApiInput extends AuthenticatedApiInput {
   private String dataFolder;
   private int keepLogFiles;
   private boolean webServerEnabled;

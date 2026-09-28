@@ -1,8 +1,9 @@
 package net.pieroxy.mom.api.implementations.accounts;
 
 import net.pieroxy.mom.services.IServiceProvider;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.detection.classifier.BodyClassifierTrainer;
@@ -17,15 +18,13 @@ import java.util.stream.Collectors;
 
 /** The live status of every configured {@link MailAccount}, for the logged-in homepage. */
 @Endpoint(method = ApiMethod.GET)
-public class AccountsApi extends AbstractApiEndpoint<AccountsApiInput, AccountsApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class AccountsApi extends AbstractAuthenticatedEndpoint<AccountsApiInput, AccountsApiOutput> {
   public AccountsApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public AccountsApiOutput process(AccountsApiInput input) {
+  public AccountsApiOutput processAuthenticated(AccountsApiInput input) {
     List<AccountStatusDto> accounts = serviceProvider.getAccountService().getAccounts().stream()
         .map(AccountsApi::toDto)
         .collect(Collectors.toList());
@@ -57,7 +56,7 @@ public class AccountsApi extends AbstractApiEndpoint<AccountsApiInput, AccountsA
 }
 
 @TypeScriptType
-class AccountsApiInput {
+class AccountsApiInput extends AuthenticatedApiInput {
 }
 
 @TypeScriptType

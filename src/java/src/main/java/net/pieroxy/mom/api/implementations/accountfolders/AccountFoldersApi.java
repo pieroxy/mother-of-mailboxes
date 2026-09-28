@@ -1,8 +1,9 @@
 package net.pieroxy.mom.api.implementations.accountfolders;
 
 import net.pieroxy.mom.services.IServiceProvider;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.rules.MailAccount;
@@ -26,15 +27,13 @@ import java.util.List;
  * existing one to reuse.
  */
 @Endpoint(method = ApiMethod.GET)
-public class AccountFoldersApi extends AbstractApiEndpoint<AccountFoldersApiInput, AccountFoldersApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class AccountFoldersApi extends AbstractAuthenticatedEndpoint<AccountFoldersApiInput, AccountFoldersApiOutput> {
   public AccountFoldersApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public AccountFoldersApiOutput process(AccountFoldersApiInput input) throws MessagingException {
+  public AccountFoldersApiOutput processAuthenticated(AccountFoldersApiInput input) throws MessagingException {
     MailAccount account = serviceProvider.getAccountService().getAccounts().stream()
         .filter(a -> a.getAccountLabel().equals(input.getAccountName()))
         .findFirst()
@@ -71,7 +70,7 @@ public class AccountFoldersApi extends AbstractApiEndpoint<AccountFoldersApiInpu
 }
 
 @TypeScriptType
-class AccountFoldersApiInput {
+class AccountFoldersApiInput extends AuthenticatedApiInput {
   private String accountName;
 
   public String getAccountName() {

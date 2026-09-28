@@ -68,5 +68,6 @@ export enum NotificationsType {
 export enum NotificationsClass {
   LOGIN,
   SERVER_RESPONSE,
-  SERVER_UNREACHABLE
+  SERVER_UNREACHABLE,
+  SESSION_EXPIRED
 }

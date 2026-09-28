@@ -1,8 +1,9 @@
 package net.pieroxy.mom.api.implementations.accountconfig;
 
 import net.pieroxy.mom.services.IServiceProvider;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
@@ -21,15 +22,13 @@ import java.util.List;
  * UpdateAccountCredentials/UpdateAccountRules), which each restarted the account on their own.
  */
 @Endpoint(method = ApiMethod.POST)
-public class UpdateAccountApi extends AbstractApiEndpoint<UpdateAccountApiInput, UpdateAccountApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccountApiInput, UpdateAccountApiOutput> {
   public UpdateAccountApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public UpdateAccountApiOutput process(UpdateAccountApiInput input) {
+  public UpdateAccountApiOutput processAuthenticated(UpdateAccountApiInput input) {
     if (input.getHost() == null || input.getHost().isBlank()) {
       throw new IllegalArgumentException("Host must not be blank.");
     }
@@ -64,7 +63,7 @@ public class UpdateAccountApi extends AbstractApiEndpoint<UpdateAccountApiInput,
 }
 
 @TypeScriptType
-class UpdateAccountApiInput {
+class UpdateAccountApiInput extends AuthenticatedApiInput {
   private String accountName;
   private String host;
   private int port;

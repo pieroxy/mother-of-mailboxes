@@ -1,0 +1,94 @@
+package net.pieroxy.mom.api.metadata;
+
+import net.pieroxy.mom.services.AccountService;
+import net.pieroxy.mom.services.IServiceProvider;
+import net.pieroxy.mom.services.SessionService;
+import net.pieroxy.mom.services.SettingsService;
+import net.pieroxy.mom.services.WebServerService;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+/**
+ * Exercises the session check itself, and — since {@code StubEndpoint} extends
+ * {@link AbstractAuthenticatedEndpoint} rather than {@link AbstractApiEndpoint} directly — also
+ * doubles as a regression test for {@link AbstractApiEndpoint#resolveInputType()}'s handling of an
+ * intermediate generic superclass (the reflection-based walk this whole mechanism depends on to
+ * even find {@code StubInput} at construction time).
+ */
+public class AbstractAuthenticatedEndpointTest {
+  private static final class StubInput extends AuthenticatedApiInput {
+  }
+
+  private static final class StubEndpoint extends AbstractAuthenticatedEndpoint<StubInput, String> {
+    boolean called = false;
+
+    StubEndpoint(IServiceProvider serviceProvider) {
+      super(serviceProvider);
+    }
+
+    @Override
+    public String processAuthenticated(StubInput input) {
+      called = true;
+      return "ok";
+    }
+  }
+
+  private static IServiceProvider serviceProviderWith(SessionService sessionService) {
+    return new IServiceProvider() {
+      @Override public SettingsService getSettingsService() { throw new UnsupportedOperationException(); }
+      @Override public AccountService getAccountService() { throw new UnsupportedOperationException(); }
+      @Override public SessionService getSessionService() { return sessionService; }
+      @Override public WebServerService getWebServerService() { throw new UnsupportedOperationException(); }
+    };
+  }
+
+  @Test
+  public void callsProcessAuthenticatedWhenTheSessionIsValid() throws Exception {
+    SessionService sessionService = new SessionService();
+    String sessionId = sessionService.create();
+    StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(sessionService));
+
+    StubInput input = new StubInput();
+    input.setSessionId(sessionId);
+
+    assertEquals("ok", endpoint.process(input));
+    assertTrue(endpoint.called);
+  }
+
+  @Test
+  public void rejectsAnInvalidSessionWithoutCallingProcessAuthenticated() {
+    StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(new SessionService()));
+
+    StubInput input = new StubInput();
+    input.setSessionId("not-a-real-session");
+
+    try {
+      endpoint.process(input);
+      fail("expected NotAuthenticatedException");
+    } catch (NotAuthenticatedException expected) {
+      // expected
+    } catch (Exception e) {
+      fail("expected NotAuthenticatedException, got " + e);
+    }
+    assertFalse(endpoint.called);
+  }
+
+  @Test
+  public void rejectsAMissingSessionIdWithoutCallingProcessAuthenticated() {
+    StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(new SessionService()));
+
+    try {
+      endpoint.process(new StubInput());
+      fail("expected NotAuthenticatedException");
+    } catch (NotAuthenticatedException expected) {
+      // expected
+    } catch (Exception e) {
+      fail("expected NotAuthenticatedException, got " + e);
+    }
+    assertFalse(endpoint.called);
+  }
+}

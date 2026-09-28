@@ -7,6 +7,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,6 +33,10 @@ public abstract class AbstractApiEndpoint<I, O> implements ApiEndpoint {
     try {
       I input = readInput(req);
       response = ApiResponse.buildOkResult(process(input));
+    } catch (NotAuthenticatedException e) {
+      // Routine (a restart, or just an old tab) — not a bug, so no SEVERE stack trace for it.
+      res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      response = ApiResponse.buildErrResult(e.getMessage());
     } catch (Exception e) {
       logger.log(Level.SEVERE, "Endpoint " + getClass().getSimpleName() + " failed", e);
       response = ApiResponse.buildErrResult(e.getMessage());
@@ -51,14 +59,46 @@ public abstract class AbstractApiEndpoint<I, O> implements ApiEndpoint {
     }
   }
 
+  /**
+   * Walks up from the concrete endpoint class to {@code AbstractApiEndpoint} itself, resolving
+   * {@code I} along the way. A single {@code extends AbstractApiEndpoint<Foo, Bar>} would need
+   * nothing more than reading that class's own type arguments, but an intermediate generic
+   * superclass (e.g. {@link AbstractAuthenticatedEndpoint}{@code <I, O>}) only knows *its own*
+   * type variables at that point, not the leaf class's concrete types — so each level's variables
+   * are bound to whatever the level below supplied, and that binding is consulted once we reach
+   * {@code AbstractApiEndpoint} and find its argument is itself one of those variables.
+   */
   @SuppressWarnings("unchecked")
   private Class<I> resolveInputType() {
-    Class<?> subClass = getClass();
-    while (subClass.getSuperclass() != AbstractApiEndpoint.class) {
-      subClass = subClass.getSuperclass();
-      if (subClass == null) throw new IllegalStateException("Could not resolve input type for " + getClass());
+    Map<TypeVariable<?>, Type> bindings = new HashMap<>();
+    Class<?> current = getClass();
+    while (true) {
+      Class<?> rawSuperclass = current.getSuperclass();
+      if (rawSuperclass == null) {
+        throw new IllegalStateException("Could not resolve input type for " + getClass());
+      }
+      Type genericSuperclass = current.getGenericSuperclass();
+      Type[] actualArgs = (genericSuperclass instanceof ParameterizedType parameterizedType)
+          ? parameterizedType.getActualTypeArguments() : new Type[0];
+
+      if (rawSuperclass == AbstractApiEndpoint.class) {
+        Type inputArg = actualArgs[0];
+        Type resolved = (inputArg instanceof TypeVariable<?>) ? bindings.get(inputArg) : inputArg;
+        if (!(resolved instanceof Class<?>)) {
+          throw new IllegalStateException("Could not resolve a concrete input type for " + getClass() + " (got " + resolved + ")");
+        }
+        return (Class<I>) resolved;
+      }
+
+      TypeVariable<?>[] params = rawSuperclass.getTypeParameters();
+      for (int i = 0; i < params.length && i < actualArgs.length; i++) {
+        Type arg = actualArgs[i];
+        // The argument supplied here may itself be a variable from the level below (not our
+        // case today, since every leaf endpoint supplies concrete types directly, but resolving
+        // through bindings keeps this correct at any depth) rather than a concrete class.
+        bindings.put(params[i], (arg instanceof TypeVariable<?>) ? bindings.getOrDefault(arg, arg) : arg);
+      }
+      current = rawSuperclass;
     }
-    ParameterizedType parameterizedType = (ParameterizedType) subClass.getGenericSuperclass();
-    return (Class<I>) parameterizedType.getActualTypeArguments()[0];
   }
 }

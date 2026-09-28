@@ -2,8 +2,9 @@ package net.pieroxy.mom.api.implementations.learnedrules;
 
 import net.pieroxy.mom.services.AccountService;
 import net.pieroxy.mom.services.IServiceProvider;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
@@ -17,15 +18,13 @@ import java.util.List;
  * an edit here needs no account restart, unlike every other section of the settings page.
  */
 @Endpoint(method = ApiMethod.POST)
-public class UpdateLearnedRulesApi extends AbstractApiEndpoint<UpdateLearnedRulesApiInput, UpdateLearnedRulesApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class UpdateLearnedRulesApi extends AbstractAuthenticatedEndpoint<UpdateLearnedRulesApiInput, UpdateLearnedRulesApiOutput> {
   public UpdateLearnedRulesApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public UpdateLearnedRulesApiOutput process(UpdateLearnedRulesApiInput input) {
+  public UpdateLearnedRulesApiOutput processAuthenticated(UpdateLearnedRulesApiInput input) {
     List<MailFilterRuleConfiguration> rules = input.getRules() != null ? input.getRules() : List.of();
     for (MailFilterRuleConfiguration rule : rules) {
       if (rule.getMatcher() == null || rule.getMatcher().getType() == null) {
@@ -47,7 +46,7 @@ public class UpdateLearnedRulesApi extends AbstractApiEndpoint<UpdateLearnedRule
 }
 
 @TypeScriptType
-class UpdateLearnedRulesApiInput {
+class UpdateLearnedRulesApiInput extends AuthenticatedApiInput {
   private String accountName;
   private List<MailFilterRuleConfiguration> rules;
 

@@ -1,8 +1,9 @@
 package net.pieroxy.mom.api.implementations.stats;
 
 import net.pieroxy.mom.services.IServiceProvider;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.rules.MailAccount;
@@ -16,20 +17,18 @@ import java.util.stream.Collectors;
 
 /** One account's daily processing stats over a date range — powers its dedicated stats page. */
 @Endpoint(method = ApiMethod.GET)
-public class StatsApi extends AbstractApiEndpoint<StatsApiInput, StatsApiOutput> {
+public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, StatsApiOutput> {
   // Generous for any real use (over a year), tight enough that a malformed request can't trigger
   // scanning thousands of day files.
   private final static int MAX_RANGE_DAYS = 400;
   private final static int TOP_MATCHERS_LIMIT = 8;
 
-  private final IServiceProvider serviceProvider;
-
   public StatsApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public StatsApiOutput process(StatsApiInput input) {
+  public StatsApiOutput processAuthenticated(StatsApiInput input) {
     MailAccount account = serviceProvider.getAccountService().getAccounts().stream()
         .filter(a -> a.getAccountLabel().equals(input.getAccountName()))
         .findFirst()
@@ -66,7 +65,7 @@ public class StatsApi extends AbstractApiEndpoint<StatsApiInput, StatsApiOutput>
 }
 
 @TypeScriptType
-class StatsApiInput {
+class StatsApiInput extends AuthenticatedApiInput {
   private String accountName;
   /** ISO-8601 (yyyy-MM-dd), inclusive. */
   private String from;

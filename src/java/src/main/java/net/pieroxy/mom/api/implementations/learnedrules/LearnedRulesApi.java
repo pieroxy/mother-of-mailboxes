@@ -1,8 +1,9 @@
 package net.pieroxy.mom.api.implementations.learnedrules;
 
 import net.pieroxy.mom.services.IServiceProvider;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
@@ -16,15 +17,13 @@ import java.util.List;
  * mistake) can be corrected by hand instead of hand-editing the JSON file directly.
  */
 @Endpoint(method = ApiMethod.GET)
-public class LearnedRulesApi extends AbstractApiEndpoint<LearnedRulesApiInput, LearnedRulesApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class LearnedRulesApi extends AbstractAuthenticatedEndpoint<LearnedRulesApiInput, LearnedRulesApiOutput> {
   public LearnedRulesApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public LearnedRulesApiOutput process(LearnedRulesApiInput input) {
+  public LearnedRulesApiOutput processAuthenticated(LearnedRulesApiInput input) {
     MailAccount account = serviceProvider.getAccountService().getAccounts().stream()
         .filter(a -> a.getAccountLabel().equals(input.getAccountName()))
         .findFirst()
@@ -34,7 +33,7 @@ public class LearnedRulesApi extends AbstractApiEndpoint<LearnedRulesApiInput, L
 }
 
 @TypeScriptType
-class LearnedRulesApiInput {
+class LearnedRulesApiInput extends AuthenticatedApiInput {
   private String accountName;
 
   public String getAccountName() {

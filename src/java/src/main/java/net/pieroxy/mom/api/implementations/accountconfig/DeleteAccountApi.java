@@ -1,8 +1,9 @@
 package net.pieroxy.mom.api.implementations.accountconfig;
 
 import net.pieroxy.mom.services.IServiceProvider;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 
@@ -12,15 +13,13 @@ import net.pieroxy.mom.api.metadata.TypeScriptType;
  * the user before ever calling this (see AccountSettingsPage's "Danger Zone" section).
  */
 @Endpoint(method = ApiMethod.POST)
-public class DeleteAccountApi extends AbstractApiEndpoint<DeleteAccountApiInput, DeleteAccountApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class DeleteAccountApi extends AbstractAuthenticatedEndpoint<DeleteAccountApiInput, DeleteAccountApiOutput> {
   public DeleteAccountApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public DeleteAccountApiOutput process(DeleteAccountApiInput input) {
+  public DeleteAccountApiOutput processAuthenticated(DeleteAccountApiInput input) {
     if (input.getAccountName() == null || input.getAccountName().isBlank()) {
       throw new IllegalArgumentException("accountName must not be blank.");
     }
@@ -30,7 +29,7 @@ public class DeleteAccountApi extends AbstractApiEndpoint<DeleteAccountApiInput,
 }
 
 @TypeScriptType
-class DeleteAccountApiInput {
+class DeleteAccountApiInput extends AuthenticatedApiInput {
   private String accountName;
 
   public String getAccountName() {

@@ -2,8 +2,9 @@ package net.pieroxy.mom.api.implementations.generalsettings;
 
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.implementations.reputation.ReputationListDto;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.credentials.Credential;
@@ -23,15 +24,13 @@ import java.util.stream.Collectors;
  * fields. Only the web server's own login and the reputation lists apply immediately.
  */
 @Endpoint(method = ApiMethod.GET)
-public class GeneralSettingsApi extends AbstractApiEndpoint<GeneralSettingsApiInput, GeneralSettingsApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class GeneralSettingsApi extends AbstractAuthenticatedEndpoint<GeneralSettingsApiInput, GeneralSettingsApiOutput> {
   public GeneralSettingsApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public GeneralSettingsApiOutput process(GeneralSettingsApiInput input) {
+  public GeneralSettingsApiOutput processAuthenticated(GeneralSettingsApiInput input) {
     Configuration config = serviceProvider.getSettingsService().getConfiguration();
     WebServerConfiguration webServer = config.getWebServer();
 
@@ -54,7 +53,7 @@ public class GeneralSettingsApi extends AbstractApiEndpoint<GeneralSettingsApiIn
 }
 
 @TypeScriptType
-class GeneralSettingsApiInput {
+class GeneralSettingsApiInput extends AuthenticatedApiInput {
 }
 
 @TypeScriptType

@@ -1,8 +1,9 @@
 package net.pieroxy.mom.api.implementations.accountconfig;
 
 import net.pieroxy.mom.services.IServiceProvider;
-import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
@@ -18,15 +19,13 @@ import java.util.List;
  * the credentials key and the resolved username are shown, never the password).
  */
 @Endpoint(method = ApiMethod.GET)
-public class AccountConfigApi extends AbstractApiEndpoint<AccountConfigApiInput, AccountConfigApiOutput> {
-  private final IServiceProvider serviceProvider;
-
+public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfigApiInput, AccountConfigApiOutput> {
   public AccountConfigApi(IServiceProvider serviceProvider) {
-    this.serviceProvider = serviceProvider;
+    super(serviceProvider);
   }
 
   @Override
-  public AccountConfigApiOutput process(AccountConfigApiInput input) {
+  public AccountConfigApiOutput processAuthenticated(AccountConfigApiInput input) {
     MailAccount account = serviceProvider.getAccountService().getAccounts().stream()
         .filter(a -> a.getAccountLabel().equals(input.getAccountName()))
         .findFirst()
@@ -48,7 +47,7 @@ public class AccountConfigApi extends AbstractApiEndpoint<AccountConfigApiInput,
 }
 
 @TypeScriptType
-class AccountConfigApiInput {
+class AccountConfigApiInput extends AuthenticatedApiInput {
   private String accountName;
 
   public String getAccountName() {
