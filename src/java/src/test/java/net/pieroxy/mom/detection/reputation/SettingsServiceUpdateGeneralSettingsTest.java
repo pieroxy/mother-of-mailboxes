@@ -1,14 +1,13 @@
 package net.pieroxy.mom.detection.reputation;
 
 import com.google.gson.Gson;
-import net.pieroxy.mom.api.ServiceProvider;
-import net.pieroxy.mom.api.SessionStore;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.ReputationListConfig;
 import net.pieroxy.mom.config.general.WebServerConfiguration;
+import net.pieroxy.mom.services.SettingsService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -22,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,14 +28,14 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
- * {@link ServiceProvider#updateGeneralSettings} covers the two things GeneralSettingsPage lets you
- * edit — the web server's own login, and the whole reputation lists list — both of which must take
- * effect immediately, with nothing to restart (unlike {@link ServiceProvider#updateAccount}). In
- * {@code net.pieroxy.mom.detection.reputation} rather than alongside {@link ServiceProvider} itself
- * only to reach {@link ReputationListStore}'s package-private constructor, for seeding a disk
- * cache directly instead of waiting on a real (or fake) network fetch.
+ * {@link SettingsService#updateGeneralSettings} covers the two things GeneralSettingsPage lets
+ * you edit — the web server's own login, and the whole reputation lists list — both of which must
+ * take effect immediately, with nothing to restart (unlike {@code AccountService#updateAccount}).
+ * In {@code net.pieroxy.mom.detection.reputation} rather than alongside {@link SettingsService}
+ * itself only to reach {@link ReputationListStore}'s package-private constructor, for seeding a
+ * disk cache directly instead of waiting on a real (or fake) network fetch.
  */
-public class ServiceProviderUpdateGeneralSettingsTest {
+public class SettingsServiceUpdateGeneralSettingsTest {
   private static final String WEB_SERVER_CREDENTIALS_KEY = "web";
 
   @Rule
@@ -46,7 +44,7 @@ public class ServiceProviderUpdateGeneralSettingsTest {
   private Credential webServerCredential;
   private CredentialsFile credentialsFile;
   private File credentialsFilePath;
-  private ServiceProvider serviceProvider;
+  private SettingsService settingsService;
 
   @Before
   public void setUp() {
@@ -68,8 +66,8 @@ public class ServiceProviderUpdateGeneralSettingsTest {
     config.setDataFolder(tmp.getRoot().getAbsolutePath());
 
     File configFile = new File(tmp.getRoot(), "config.json");
-    serviceProvider = new ServiceProvider(webServerCredential, new SessionStore(), new CopyOnWriteArrayList<>(),
-        config, configFile, credentialsFile, credentialsFilePath, tmp.getRoot().getAbsolutePath());
+    settingsService = new SettingsService(config, configFile, credentialsFile, credentialsFilePath, tmp.getRoot().getAbsolutePath());
+    settingsService.init();
   }
 
   @After
@@ -80,14 +78,14 @@ public class ServiceProviderUpdateGeneralSettingsTest {
 
   @Test
   public void changesTheWebServerLoginInPlaceAndPersistsIt() throws Exception {
-    serviceProvider.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
         "new-admin", "new-password", List.of());
 
     assertEquals("new-admin", webServerCredential.getUsername());
     assertEquals("the plaintext password must never be kept once hashed", null, webServerCredential.getPassword());
     assertTrue(PasswordHasher.verify("new-password", webServerCredential.getPasswordHash()));
     // Takes effect immediately: LoginApi checks against this exact object, not a copy.
-    assertSame(webServerCredential, serviceProvider.getWebServerCredential());
+    assertSame(webServerCredential, settingsService.getWebServerCredential());
 
     CredentialsFile reloaded = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
     Credential reloadedCredential = reloaded.getCredentials().get(WEB_SERVER_CREDENTIALS_KEY);
@@ -98,18 +96,22 @@ public class ServiceProviderUpdateGeneralSettingsTest {
 
   @Test
   public void leavesTheWebServerPasswordUnchangedWhenBlank() throws Exception {
-    serviceProvider.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
+    // setUp()'s own init() call already migrated "old-password" to a hash (see
+    // SettingsServiceTest) before this test ever runs — a blank password here must leave that
+    // hash untouched, not the (long gone) plaintext.
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
         "new-admin", "", List.of());
 
     assertEquals("new-admin", webServerCredential.getUsername());
-    assertEquals("a blank password must leave the original one untouched", "old-password", webServerCredential.getPassword());
+    assertTrue("a blank password must leave the original hash untouched",
+        PasswordHasher.verify("old-password", webServerCredential.getPasswordHash()));
   }
 
   @Test
   public void persistsDataFolderKeepLogFilesAndWebServerConnectionSettingsButDoesNotApplyThem() throws Exception {
     File configFile = new File(tmp.getRoot(), "config.json");
 
-    serviceProvider.updateGeneralSettings("/new/data/folder", 30, false, 9090, "127.0.0.1",
+    settingsService.updateGeneralSettings("/new/data/folder", 30, false, 9090, "127.0.0.1",
         "admin", "", List.of());
 
     Configuration reloaded = new Gson().fromJson(new FileReader(configFile), Configuration.class);
@@ -135,7 +137,7 @@ public class ServiceProviderUpdateGeneralSettingsTest {
     assertFalse("nothing configured yet: the default empty registry must not match",
         ReputationRegistryHolder.get().ipScore("1.2.3.4", Set.of("blocklist")).isPresent());
 
-    serviceProvider.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
         "admin", "", List.of(blocklist));
 
     Optional<ReputationMatch> match = ReputationRegistryHolder.get().ipScore("1.2.3.4", Set.of("blocklist"));

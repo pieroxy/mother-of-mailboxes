@@ -1,6 +1,7 @@
 package net.pieroxy.mom.api.implementations.learnedrules;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.AccountService;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -11,7 +12,7 @@ import java.util.List;
 
 /**
  * Saves an account's whole learned-rules list (see {@code LearnedRulesStore}) and applies it
- * right away — see {@link ServiceProvider#updateLearnedRules}. Deliberately its own endpoint,
+ * right away — see {@link AccountService#updateLearnedRules}. Deliberately its own endpoint,
  * separate from {@code UpdateAccountApi}: learned rules aren't part of config.json, and applying
  * an edit here needs no account restart, unlike every other section of the settings page.
  */
@@ -40,7 +41,7 @@ public class UpdateLearnedRulesApi extends AbstractApiEndpoint<UpdateLearnedRule
       }
     }
 
-    serviceProvider.updateLearnedRules(input.getAccountName(), rules);
+    serviceProvider.getAccountService().updateLearnedRules(input.getAccountName(), rules);
     return new UpdateLearnedRulesApiOutput();
   }
 }

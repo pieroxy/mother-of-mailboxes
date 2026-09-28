@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.accounts;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -26,7 +26,7 @@ public class AccountsApi extends AbstractApiEndpoint<AccountsApiInput, AccountsA
 
   @Override
   public AccountsApiOutput process(AccountsApiInput input) {
-    List<AccountStatusDto> accounts = serviceProvider.getAccounts().stream()
+    List<AccountStatusDto> accounts = serviceProvider.getAccountService().getAccounts().stream()
         .map(AccountsApi::toDto)
         .collect(Collectors.toList());
     return new AccountsApiOutput(accounts);

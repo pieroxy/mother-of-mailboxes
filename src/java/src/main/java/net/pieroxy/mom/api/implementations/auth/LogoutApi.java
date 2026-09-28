@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.auth;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -16,7 +16,7 @@ public class LogoutApi extends AbstractApiEndpoint<LogoutApiInput, LogoutApiOutp
 
   @Override
   public LogoutApiOutput process(LogoutApiInput input) {
-    serviceProvider.getSessionStore().invalidate(input.getSessionId());
+    serviceProvider.getSessionService().invalidate(input.getSessionId());
     return new LogoutApiOutput(true);
   }
 }

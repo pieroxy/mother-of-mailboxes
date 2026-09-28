@@ -1,40 +1,31 @@
 package net.pieroxy.mom.standalone;
 
 import com.google.gson.Gson;
-import net.pieroxy.mom.api.ServiceProvider;
-import net.pieroxy.mom.api.SessionStore;
+import net.pieroxy.mom.services.AccountService;
+import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.SessionService;
+import net.pieroxy.mom.services.SettingsService;
 import net.pieroxy.mom.config.general.Configuration;
-import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
-import net.pieroxy.mom.config.credentials.CredentialsFileStore;
-import net.pieroxy.mom.config.credentials.PasswordHasher;
-import net.pieroxy.mom.utils.CredentialsResolver;
 import net.pieroxy.mom.utils.logging.LoggingBootstrap;
 import net.pieroxy.mom.detection.reputation.ReputationRegistry;
 import net.pieroxy.mom.detection.reputation.ReputationRegistryHolder;
-import net.pieroxy.mom.rules.MailAccount;
 import net.pieroxy.mom.webserver.WebServerRunner;
 import org.apache.catalina.startup.Tomcat;
 
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Runner {
   private final static Logger LOGGER = Logger.getLogger(Runner.class.getName());
-  private final static long SHUTDOWN_JOIN_TIMEOUT_MS = 5000;
   private final static String GIT_REV;
   private final static String MVN_VER;
   private static Configuration config;
   private static String logFile;
-  // CopyOnWriteArrayList, not a plain ArrayList: ServiceProvider#restartAccount replaces an entry
-  // from an API request thread while other request threads (AccountsApi, StatsApi, ...) may be
-  // iterating this same list concurrently.
-  private static final List<MailAccount> accounts = new CopyOnWriteArrayList<>();
+  private static ServiceProvider serviceProvider;
   private static ReputationRegistry reputationRegistry;
   private static Tomcat webServer;
 
@@ -66,18 +57,12 @@ public class Runner {
     reputationRegistry.start();
     ReputationRegistryHolder.set(reputationRegistry);
 
-    config.getConfigurations().forEach(conf -> {
-      Credential credential = CredentialsResolver.resolve(conf.getCredentials(), credentialsFile, "mail account \"" + conf.getDisplayName() + "\"");
-      MailAccount account = new MailAccount(conf, credential, config.getDataFolder());
-      accounts.add(account);
-      account.start();
-    });
+    SettingsService settingsService = new SettingsService(config, configFile, credentialsFile, credentialsFilePath, config.getDataFolder());
+    AccountService accountService = new AccountService(settingsService);
+    serviceProvider = new ServiceProvider(settingsService, accountService, new SessionService());
+    serviceProvider.init();
 
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
-      Credential webServerCredential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
-      migrateToHashedPasswordIfNeeded(webServerCredential, credentialsFile, credentialsFilePath);
-      ServiceProvider serviceProvider = new ServiceProvider(webServerCredential, new SessionStore(), accounts,
-          config, configFile, credentialsFile, credentialsFilePath, config.getDataFolder());
       webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder(), serviceProvider);
     }
 
@@ -85,52 +70,18 @@ public class Runner {
     LOGGER.info("Started MOM (Mother Of Mailboxes) version " + MVN_VER + " rev " + GIT_REV);
   }
 
-  /**
-   * One-time, on the web server's own login credential only (never a mail account's — see
-   * {@link Credential}): if it still has a plaintext {@code password} and no {@code passwordHash}
-   * yet, hashes it, clears the plaintext, and persists credentials.json so the plaintext never
-   * sits on disk past this first boot. A write failure (read-only mount, permissions) is logged
-   * and skipped rather than blocking startup — the in-memory hash still works for this run, and
-   * the migration just retries on the next one.
-   * <p>
-   * Package-private (instead of private): lets RunnerTest call it directly without going through
-   * the whole of main() — see MailAccount#processMessages for the same convention.
-   */
-  static void migrateToHashedPasswordIfNeeded(Credential webServerCredential, CredentialsFile credentialsFile, File credentialsFilePath) {
-    if (webServerCredential.getPassword() == null || webServerCredential.getPasswordHash() != null) return;
-    webServerCredential.setPasswordHash(PasswordHasher.hash(webServerCredential.getPassword()));
-    webServerCredential.setPassword(null);
-    try {
-      CredentialsFileStore.save(credentialsFilePath, credentialsFile);
-      LOGGER.info("webServer credential: migrated plaintext password to a hashed one in " + credentialsFilePath);
-    } catch (IOException e) {
-      LOGGER.log(Level.WARNING, "webServer credential: hashed the password but could not persist " + credentialsFilePath
-          + " — will retry on next startup", e);
-    }
-  }
-
   private static void shutdown() {
-    logDirectly("Shutting down, interrupting " + accounts.size() + " account thread(s)...");
+    logDirectly("Shutting down...");
     // An IMAP cycle already in progress (blocking socket I/O) won't be interrupted on the spot;
     // this only prevents a new cycle from starting and lets an in-progress cycle finish within
-    // the timeout below (see MailAccount#requestStop for the IMAP IDLE case).
-    accounts.forEach(MailAccount::requestStop);
-    // One shared deadline, not SHUTDOWN_JOIN_TIMEOUT_MS per account: accounts die concurrently in
-    // the background regardless of which one we're currently join()ing, so budgeting per-account
-    // would let a slow one after a fast one add its own full timeout on top for nothing.
-    long deadline = System.currentTimeMillis() + SHUTDOWN_JOIN_TIMEOUT_MS;
-    for (MailAccount account : accounts) {
-      try {
-        long remainingMs = deadline - System.currentTimeMillis();
-        if (remainingMs > 0) account.join(remainingMs);
-      } catch (InterruptedException ignored) {
-        Thread.currentThread().interrupt();
-      }
+    // AccountService's own timeout (see MailAccount#requestStop for the IMAP IDLE case).
+    if (serviceProvider != null) {
+      serviceProvider.destroy();
     }
     if (webServer != null) {
       WebServerRunner.stop(webServer);
     }
-    // Not the "reputationRegistry" field directly: ServiceProvider#updateGeneralSettings can have
+    // Not the "reputationRegistry" field directly: SettingsService#updateGeneralSettings can have
     // hot-swapped it for a fresh instance since startup (see ReputationRegistryHolder) — stopping
     // the original would leave that current one's own refresh scheduler thread running.
     ReputationRegistry currentReputationRegistry = ReputationRegistryHolder.get();

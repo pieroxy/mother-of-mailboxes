@@ -3,6 +3,7 @@ package net.pieroxy.mom.api;
 import net.pieroxy.mom.api.metadata.ApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.utils.reflection.GetAccessibleClasses;
 
 import jakarta.servlet.http.HttpServlet;

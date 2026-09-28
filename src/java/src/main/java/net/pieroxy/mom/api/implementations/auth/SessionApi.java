@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.auth;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -22,7 +22,7 @@ public class SessionApi extends AbstractApiEndpoint<SessionApiInput, SessionApiO
 
   @Override
   public SessionApiOutput process(SessionApiInput input) {
-    return new SessionApiOutput(serviceProvider.getSessionStore().isValid(input.getSessionId()));
+    return new SessionApiOutput(serviceProvider.getSessionService().isValid(input.getSessionId()));
   }
 }
 

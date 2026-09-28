@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.accountconfig;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -49,7 +49,7 @@ public class UpdateAccountApi extends AbstractApiEndpoint<UpdateAccountApiInput,
     List<LearningShortcutConfiguration> shortcuts = input.getShortcuts() != null ? input.getShortcuts() : List.of();
     RuleLearner.validateShortcuts(shortcuts);
 
-    serviceProvider.updateAccount(input.getAccountName(), input.getHost(), input.getPort(), input.getRunEvery(),
+    serviceProvider.getAccountService().updateAccount(input.getAccountName(), input.getHost(), input.getPort(), input.getRunEvery(),
         blankToNull(input.getClassifierSpamFolderName()),
         input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
         input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),

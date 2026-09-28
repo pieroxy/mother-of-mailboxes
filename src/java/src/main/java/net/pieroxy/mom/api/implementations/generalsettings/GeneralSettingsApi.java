@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.generalsettings;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.implementations.reputation.ReputationListDto;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
@@ -32,11 +32,11 @@ public class GeneralSettingsApi extends AbstractApiEndpoint<GeneralSettingsApiIn
 
   @Override
   public GeneralSettingsApiOutput process(GeneralSettingsApiInput input) {
-    Configuration config = serviceProvider.getConfiguration();
+    Configuration config = serviceProvider.getSettingsService().getConfiguration();
     WebServerConfiguration webServer = config.getWebServer();
 
     String webServerCredentialsKey = webServer != null ? webServer.getCredentials() : null;
-    Credential webServerCredential = serviceProvider.getWebServerCredential();
+    Credential webServerCredential = serviceProvider.getSettingsService().getWebServerCredential();
 
     List<ReputationListDto> reputationLists = (config.getReputationLists() != null ? config.getReputationLists() : List.<ReputationListConfig>of())
         .stream().map(ReputationListDto::new).collect(Collectors.toList());

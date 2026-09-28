@@ -1,7 +1,7 @@
 package net.pieroxy.mom.webserver;
 
 import net.pieroxy.mom.api.ApiServlet;
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.config.general.WebServerConfiguration;
 import net.pieroxy.mom.utils.logging.OneLineLogFormatter;
 import org.apache.catalina.LifecycleException;

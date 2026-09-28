@@ -1,4 +1,4 @@
-package net.pieroxy.mom.api;
+package net.pieroxy.mom.services;
 
 import org.junit.Test;
 
@@ -9,10 +9,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class SessionStoreTest {
+public class SessionServiceTest {
   @Test
   public void aCreatedSessionIsValid() {
-    SessionStore store = new SessionStore();
+    SessionService store = new SessionService();
 
     String sessionId = store.create();
 
@@ -21,21 +21,21 @@ public class SessionStoreTest {
 
   @Test
   public void aRandomIdIsNotValid() {
-    SessionStore store = new SessionStore();
+    SessionService store = new SessionService();
 
     assertFalse(store.isValid("not-a-real-session-id"));
   }
 
   @Test
   public void nullIsNeverValid() {
-    SessionStore store = new SessionStore();
+    SessionService store = new SessionService();
 
     assertFalse(store.isValid(null));
   }
 
   @Test
   public void invalidatingRemovesTheSession() {
-    SessionStore store = new SessionStore();
+    SessionService store = new SessionService();
     String sessionId = store.create();
 
     store.invalidate(sessionId);
@@ -45,7 +45,7 @@ public class SessionStoreTest {
 
   @Test
   public void invalidatingNullIsANoop() {
-    SessionStore store = new SessionStore();
+    SessionService store = new SessionService();
     String sessionId = store.create();
 
     store.invalidate(null);
@@ -55,7 +55,7 @@ public class SessionStoreTest {
 
   @Test
   public void invalidatingAnUnknownSessionIsANoop() {
-    SessionStore store = new SessionStore();
+    SessionService store = new SessionService();
 
     store.invalidate("never-created");
     // No exception: that's the whole assertion.
@@ -63,7 +63,7 @@ public class SessionStoreTest {
 
   @Test
   public void eachCreatedSessionIsDistinct() {
-    SessionStore store = new SessionStore();
+    SessionService store = new SessionService();
     Set<String> ids = ConcurrentHashMap.newKeySet();
 
     for (int i = 0; i < 1000; i++) {
@@ -74,8 +74,8 @@ public class SessionStoreTest {
 
   @Test
   public void differentStoresProduceDifferentSessions() {
-    SessionStore a = new SessionStore();
-    SessionStore b = new SessionStore();
+    SessionService a = new SessionService();
+    SessionService b = new SessionService();
 
     assertNotEquals(a.create(), b.create());
   }

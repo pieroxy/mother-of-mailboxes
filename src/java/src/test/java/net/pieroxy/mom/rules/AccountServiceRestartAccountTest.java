@@ -1,8 +1,8 @@
 package net.pieroxy.mom.rules;
 
 import com.google.gson.Gson;
-import net.pieroxy.mom.api.ServiceProvider;
-import net.pieroxy.mom.api.SessionStore;
+import net.pieroxy.mom.services.AccountService;
+import net.pieroxy.mom.services.SettingsService;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.config.general.Configuration;
@@ -32,13 +32,13 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 
 /**
- * {@link ServiceProvider#restartAccount}/{@link ServiceProvider#updateAccount} are exercised
- * here, in {@code net.pieroxy.mom.rules} rather than {@code net.pieroxy.mom.api} (where
- * {@link ServiceProvider} itself lives), only to reach {@link MailAccount}'s package-private test
+ * {@link AccountService#restartAccount}/{@link AccountService#updateAccount} are exercised here,
+ * in {@code net.pieroxy.mom.rules} rather than {@code net.pieroxy.mom.services} (where
+ * {@link AccountService} itself lives), only to reach {@link MailAccount}'s package-private test
  * constructor for the *original* account (so it never dials out for real) — both methods under
- * test are still the public, fully-qualified {@link ServiceProvider} API.
+ * test are still the public {@link AccountService} API.
  */
-public class ServiceProviderRestartAccountTest {
+public class AccountServiceRestartAccountTest {
   private static final String CREDENTIALS_KEY = "test-cred";
 
   @Rule
@@ -56,21 +56,23 @@ public class ServiceProviderRestartAccountTest {
     fixture.stop();
   }
 
-  /** Everything a test needs: the live config object to mutate, and the ServiceProvider under test. */
+  /** Everything a test needs: the live config object to mutate, and the AccountService under test. */
   private static final class Setup {
     final MailAccountConfiguration config;
     final File configFile;
     final File credentialsFilePath;
     final List<MailAccount> accounts;
-    final ServiceProvider serviceProvider;
+    final SettingsService settingsService;
+    final AccountService accountService;
 
-    Setup(MailAccountConfiguration config, File configFile, File credentialsFilePath,
-          List<MailAccount> accounts, ServiceProvider serviceProvider) {
+    Setup(MailAccountConfiguration config, File configFile, File credentialsFilePath, List<MailAccount> accounts,
+          SettingsService settingsService, AccountService accountService) {
       this.config = config;
       this.configFile = configFile;
       this.credentialsFilePath = credentialsFilePath;
       this.accounts = accounts;
-      this.serviceProvider = serviceProvider;
+      this.settingsService = settingsService;
+      this.accountService = accountService;
     }
   }
 
@@ -97,10 +99,10 @@ public class ServiceProviderRestartAccountTest {
     MailAccount original = new MailAccount(config, credential, dataFolder, (c, cred) -> fixture.connectAsImapMailbox());
     List<MailAccount> accounts = new CopyOnWriteArrayList<>(List.of(original));
 
-    ServiceProvider serviceProvider = new ServiceProvider(null, new SessionStore(), accounts,
-        configuration, configFile, credentialsFile, credentialsFilePath, dataFolder);
+    SettingsService settingsService = new SettingsService(configuration, configFile, credentialsFile, credentialsFilePath, dataFolder);
+    AccountService accountService = new AccountService(settingsService, accounts);
 
-    return new Setup(config, configFile, credentialsFilePath, accounts, serviceProvider);
+    return new Setup(config, configFile, credentialsFilePath, accounts, settingsService, accountService);
   }
 
   /** Stops whatever real account restartAccount()/updateCredentials() started, so it doesn't keep retrying a doomed IMAPS handshake in the background after the test ends. */
@@ -115,13 +117,13 @@ public class ServiceProviderRestartAccountTest {
     Setup setup = setUp();
     MailAccount original = setup.accounts.get(0);
 
-    MailAccountConfiguration liveConfig = setup.serviceProvider.findAccountConfig("test-account");
+    MailAccountConfiguration liveConfig = setup.settingsService.findAccountConfig("test-account");
     assertSame("findAccountConfig must hand back the live object, not a copy, since callers mutate it in place",
         setup.config, liveConfig);
     liveConfig.setRunEvery(120);
 
     try {
-      setup.serviceProvider.restartAccount("test-account");
+      setup.accountService.restartAccount("test-account");
 
       Configuration reloaded = new Gson().fromJson(new FileReader(setup.configFile), Configuration.class);
       assertEquals("the edit must be on disk", 120, reloaded.getConfigurations().get(0).getRunEvery());
@@ -221,7 +223,7 @@ public class ServiceProviderRestartAccountTest {
 
   private static void updateAccount(Setup setup, String username, String password, List<MailFilterRuleConfiguration> rules,
                                      List<LearningShortcutConfiguration> shortcuts) {
-    setup.serviceProvider.updateAccount("test-account", setup.config.getHost(), setup.config.getPort(), setup.config.getRunEvery(),
+    setup.accountService.updateAccount("test-account", setup.config.getHost(), setup.config.getPort(), setup.config.getRunEvery(),
         setup.config.getClassifierSpamFolderName(), setup.config.getClassifierExcludedFolders(),
         setup.config.getClassifierCorpusRetentionDays(), setup.config.getClassifierCorpusScanBatchSize(),
         setup.config.isDiscoveryTreeDisabled(), username, password, rules, shortcuts);

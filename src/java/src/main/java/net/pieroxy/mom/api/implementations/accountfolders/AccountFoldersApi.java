@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.accountfolders;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -35,7 +35,7 @@ public class AccountFoldersApi extends AbstractApiEndpoint<AccountFoldersApiInpu
 
   @Override
   public AccountFoldersApiOutput process(AccountFoldersApiInput input) throws MessagingException {
-    MailAccount account = serviceProvider.getAccounts().stream()
+    MailAccount account = serviceProvider.getAccountService().getAccounts().stream()
         .filter(a -> a.getAccountLabel().equals(input.getAccountName()))
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException("No such account: " + input.getAccountName()));

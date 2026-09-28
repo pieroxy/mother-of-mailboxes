@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.auth;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -18,12 +18,12 @@ public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput>
 
   @Override
   public LoginApiOutput process(LoginApiInput input) {
-    Credential expected = serviceProvider.getWebServerCredential();
+    Credential expected = serviceProvider.getSettingsService().getWebServerCredential();
     boolean ok = expected != null
         && expected.getUsername().equals(input.getLogin())
         && PasswordHasher.verify(input.getPassword(), expected.getPasswordHash());
     if (!ok) return new LoginApiOutput(false, null);
-    return new LoginApiOutput(true, serviceProvider.getSessionStore().create());
+    return new LoginApiOutput(true, serviceProvider.getSessionService().create());
   }
 }
 

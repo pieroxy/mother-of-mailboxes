@@ -1,4 +1,4 @@
-package net.pieroxy.mom.api;
+package net.pieroxy.mom.services;
 
 import java.util.Set;
 import java.util.UUID;
@@ -9,9 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * persisted: a process restart clears it, so a restart always requires a fresh login — there is
  * no "remember me across a service restart" concept, and no need for one (there's only ever one
  * configured web credential, not per-user accounts, so a session carries no data of its own —
- * its mere presence and validity here *is* the authorization).
+ * its mere presence and validity here *is* the authorization). No background work to start or
+ * stop, so {@link #init()}/{@link #destroy()} stay the default no-ops.
  */
-public class SessionStore {
+public class SessionService implements Service {
   // ConcurrentHashMap-backed set: thread-safe under concurrent API requests, no ordering needed.
   private final Set<String> sessionIds = ConcurrentHashMap.newKeySet();
 

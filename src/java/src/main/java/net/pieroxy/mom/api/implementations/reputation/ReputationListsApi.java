@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
  * item count, content size — status itself is computed client-side from lastRefreshTimestamp and
  * refreshHours, same as an account's cycle progress bar). Global, not per-account: reputation
  * lists are shared process-wide, so — unlike every other endpoint in {@code api.implementations} —
- * this one takes no {@link net.pieroxy.mom.api.ServiceProvider} and reaches the registry directly
- * via its static holder, exactly like the matchers that consume it at runtime do.
+ * this one takes no {@link net.pieroxy.mom.services.ServiceProvider} and reaches the registry
+ * directly via its static holder, exactly like the matchers that consume it at runtime do.
  */
 @Endpoint(method = ApiMethod.GET)
 public class ReputationListsApi extends AbstractApiEndpoint<ReputationListsApiInput, ReputationListsApiOutput> {

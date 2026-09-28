@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.stats;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -30,7 +30,7 @@ public class StatsApi extends AbstractApiEndpoint<StatsApiInput, StatsApiOutput>
 
   @Override
   public StatsApiOutput process(StatsApiInput input) {
-    MailAccount account = serviceProvider.getAccounts().stream()
+    MailAccount account = serviceProvider.getAccountService().getAccounts().stream()
         .filter(a -> a.getAccountLabel().equals(input.getAccountName()))
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException("No such account: " + input.getAccountName()));

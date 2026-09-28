@@ -1,6 +1,7 @@
 package net.pieroxy.mom.api.implementations.generalsettings;
 
-import net.pieroxy.mom.api.ServiceProvider;
+import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.SettingsService;
 import net.pieroxy.mom.api.implementations.reputation.ReputationListDto;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
@@ -14,7 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Saves every field the general settings page offers, via {@link ServiceProvider#updateGeneralSettings}.
+ * Saves every field the general settings page offers, via {@link SettingsService#updateGeneralSettings}.
  * The web server's own login and the whole reputation lists list apply immediately, with no
  * restart; data folder, log retention and the web server's own connection settings are persisted
  * to config.json but only take effect once the whole process is restarted by hand — see
@@ -67,7 +68,7 @@ public class UpdateGeneralSettingsApi extends AbstractApiEndpoint<UpdateGeneralS
     }
 
     List<ReputationListConfig> reputationLists = dtos.stream().map(ReputationListDto::toConfig).collect(Collectors.toList());
-    serviceProvider.updateGeneralSettings(input.getDataFolder(), input.getKeepLogFiles(), input.isWebServerEnabled(),
+    serviceProvider.getSettingsService().updateGeneralSettings(input.getDataFolder(), input.getKeepLogFiles(), input.isWebServerEnabled(),
         input.getWebServerHttpPort(), input.getWebServerAddress(), input.getWebServerUsername(),
         input.getWebServerPassword(), reputationLists);
 
