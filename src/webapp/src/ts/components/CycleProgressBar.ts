@@ -1,22 +1,26 @@
 import m from "mithril";
 
 interface CycleProgressBarAttrs {
-  lastCycleCompletedTimestamp: string;
-  nextScheduledCycleTimestamp: string;
+  /** ISO-8601 timestamp the last cycle/refresh completed, or "" if none has happened yet. */
+  lastTimestamp: string;
+  /** ISO-8601 timestamp the next one is expected, or "" if unknown (see lastTimestamp). */
+  nextTimestamp: string;
 }
 
 /**
- * Visualizes an account's cycle timing (see AccountsApi): a bar filling up from the last
- * completed cycle towards the next scheduled one, with "Xs ago" / "in Ys" labels. Recomputed
- * from the account's own timestamps against Date.now() on every render — HomePage redraws this
- * every second so the numbers actually tick, without re-fetching account data that often.
+ * Visualizes any "last completed / next expected" timing — an account's cycle (see AccountsApi)
+ * or a reputation list's refresh (see ReputationListsApi, whose "next" isn't server-computed:
+ * the caller derives it from lastRefreshTimestamp + refreshHours, client-side, same as status).
+ * A bar filling up from last towards next, with "Xs ago" / "in Ys" labels. Recomputed against
+ * Date.now() on every render — HomePage redraws this every second so the numbers actually tick,
+ * without re-fetching data that often.
  */
 export class CycleProgressBar implements m.ClassComponent<CycleProgressBarAttrs> {
   view({ attrs }: m.Vnode<CycleProgressBarAttrs>): m.Children {
-    const last = attrs.lastCycleCompletedTimestamp ? Date.parse(attrs.lastCycleCompletedTimestamp) : NaN;
-    const next = attrs.nextScheduledCycleTimestamp ? Date.parse(attrs.nextScheduledCycleTimestamp) : NaN;
+    const last = attrs.lastTimestamp ? Date.parse(attrs.lastTimestamp) : NaN;
+    const next = attrs.nextTimestamp ? Date.parse(attrs.nextTimestamp) : NaN;
     if (isNaN(last) || isNaN(next)) {
-      return m(".cycle-progress.cycle-progress-pending", "Waiting for the first cycle…");
+      return m(".cycle-progress.cycle-progress-pending", "Nothing recorded yet…");
     }
 
     const now = Date.now();

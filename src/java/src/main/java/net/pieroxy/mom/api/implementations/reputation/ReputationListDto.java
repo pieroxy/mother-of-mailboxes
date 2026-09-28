@@ -3,6 +3,9 @@ package net.pieroxy.mom.api.implementations.reputation;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.ReputationListConfig;
 import net.pieroxy.mom.detection.reputation.ReputationListType;
+import net.pieroxy.mom.detection.reputation.ReputationRegistry;
+
+import java.time.Instant;
 
 /**
  * Public: reused from {@code generalsettings} (a different package) to both display and save the
@@ -15,6 +18,10 @@ public class ReputationListDto {
   private String url;
   private int refreshHours;
   private double score;
+  /** ISO-8601 timestamp the currently loaded cache was last written, or null if none exists yet. */
+  private String lastRefreshTimestamp;
+  private int itemCount;
+  private long contentSizeBytes;
 
   public ReputationListDto() {
   }
@@ -25,6 +32,15 @@ public class ReputationListDto {
     this.url = config.getUrl();
     this.refreshHours = config.getRefreshHours();
     this.score = config.getScore();
+  }
+
+  /** For the homepage dashboard (see {@code ReputationListsApi}): also carries live registry state. */
+  public ReputationListDto(ReputationListConfig config, ReputationRegistry registry) {
+    this(config);
+    long lastModified = registry.getLastModified(config.getId());
+    this.lastRefreshTimestamp = lastModified > 0 ? Instant.ofEpochMilli(lastModified).toString() : null;
+    this.itemCount = registry.getItemCount(config.getId());
+    this.contentSizeBytes = registry.getContentSizeBytes(config.getId());
   }
 
   public String getId() {
@@ -65,6 +81,30 @@ public class ReputationListDto {
 
   public void setScore(double score) {
     this.score = score;
+  }
+
+  public String getLastRefreshTimestamp() {
+    return lastRefreshTimestamp;
+  }
+
+  public void setLastRefreshTimestamp(String lastRefreshTimestamp) {
+    this.lastRefreshTimestamp = lastRefreshTimestamp;
+  }
+
+  public int getItemCount() {
+    return itemCount;
+  }
+
+  public void setItemCount(int itemCount) {
+    this.itemCount = itemCount;
+  }
+
+  public long getContentSizeBytes() {
+    return contentSizeBytes;
+  }
+
+  public void setContentSizeBytes(long contentSizeBytes) {
+    this.contentSizeBytes = contentSizeBytes;
   }
 
   /** Converts this DTO back into the shape config.json/ReputationRegistry use — see UpdateGeneralSettingsApi. */

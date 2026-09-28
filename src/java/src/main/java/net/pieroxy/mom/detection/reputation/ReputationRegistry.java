@@ -2,6 +2,7 @@ package net.pieroxy.mom.detection.reputation;
 
 import net.pieroxy.mom.config.general.ReputationListConfig;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,12 @@ public final class ReputationRegistry {
 
   private final Map<String, ReputationListConfig> configsById;
   private final ConcurrentHashMap<String, ReputationList> listsById = new ConcurrentHashMap<>();
+  // Populated alongside listsById, from the same successful parse (startup cache load or
+  // refresh) — see ReputationListsApi, which surfaces these for the homepage dashboard. Kept
+  // here rather than derived on demand: re-parsing the cached content on every API call just to
+  // count entries would be wasteful.
+  private final ConcurrentHashMap<String, Integer> itemCountById = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Long> contentSizeBytesById = new ConcurrentHashMap<>();
   private final ReputationListStore store;
   private ScheduledExecutorService scheduler;
 
@@ -52,6 +59,8 @@ public final class ReputationRegistry {
       try {
         ReputationListParser.ParseResult result = ReputationListParser.parse(cfg.getId(), cfg.getType(), cached);
         listsById.put(cfg.getId(), result.list());
+        itemCountById.put(cfg.getId(), result.validCount());
+        contentSizeBytesById.put(cfg.getId(), (long) cached.getBytes(StandardCharsets.UTF_8).length);
         LOGGER.info("Reputation list [" + cfg.getId() + "]: loaded " + result.validCount() + " valid / "
             + result.invalidCount() + " invalid entries from disk cache in " + elapsedMs(start) + "ms");
       } catch (Exception e) {
@@ -68,6 +77,21 @@ public final class ReputationRegistry {
   /** Every list declared in the global config, id + type only — see {@code ReputationListsApi}. */
   public List<ReputationListConfig> getConfiguredLists() {
     return List.copyOf(configsById.values());
+  }
+
+  /** Epoch millis the cache for this id was last written, or 0 if it has none yet — see {@code ReputationListsApi}. */
+  public long getLastModified(String id) {
+    return store == null ? 0 : store.lastModified(id);
+  }
+
+  /** Entries successfully parsed from the currently loaded list, or 0 if none is loaded yet. */
+  public int getItemCount(String id) {
+    return itemCountById.getOrDefault(id, 0);
+  }
+
+  /** Byte size of the currently loaded list's raw (downloaded, pre-compression) content, or 0 if none is loaded yet. */
+  public long getContentSizeBytes(String id) {
+    return contentSizeBytesById.getOrDefault(id, 0L);
   }
 
   /**
@@ -131,6 +155,8 @@ public final class ReputationRegistry {
 
       listsById.put(cfg.getId(), result.list());
       store.save(cfg.getId(), content);
+      itemCountById.put(cfg.getId(), result.validCount());
+      contentSizeBytesById.put(cfg.getId(), (long) content.getBytes(StandardCharsets.UTF_8).length);
 
       LOGGER.info("Reputation list [" + cfg.getId() + "] refreshed from " + cfg.getUrl() + ": "
           + result.validCount() + " valid / " + result.invalidCount() + " invalid entries "

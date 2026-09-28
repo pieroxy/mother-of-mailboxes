@@ -1,10 +1,11 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { AccountStatusDto } from "../../auto/pieroxy-mom";
+import { AccountStatusDto, ReputationListDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
 import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
+import { StatusWarningIcon } from "../atoms/icons/StatusWarningIcon";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 import { CycleProgressBar } from "../CycleProgressBar";
 import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
@@ -17,6 +18,7 @@ const TICK_INTERVAL_MS = 1_000;
 
 export class HomePage extends AbstractPage {
   private accounts: AccountStatusDto[] = [];
+  private reputationLists: ReputationListDto[] = [];
   private error: string | undefined;
   private refreshTimer: number | undefined;
   private tickTimer: number | undefined;
@@ -26,11 +28,11 @@ export class HomePage extends AbstractPage {
   }
 
   oninit() {
-    this.refreshData = () => this.loadAccounts();
-    this.loadAccounts();
-    this.refreshTimer = window.setInterval(() => this.loadAccounts(), REFRESH_INTERVAL_MS);
-    // Ticks the cycle progress bars every second without re-fetching account data that often:
-    // they're computed live from timestamps already in hand (see CycleProgressBar).
+    this.refreshData = () => this.loadData();
+    this.loadData();
+    this.refreshTimer = window.setInterval(() => this.loadData(), REFRESH_INTERVAL_MS);
+    // Ticks the progress bars every second without re-fetching that often: they're computed
+    // live from timestamps already in hand (see CycleProgressBar).
     this.tickTimer = window.setInterval(() => m.redraw(), TICK_INTERVAL_MS);
   }
 
@@ -43,14 +45,19 @@ export class HomePage extends AbstractPage {
     return m("page.homepage", [
       m(".accounts", this.accounts.map((account) => m(AccountRow, { account }))),
       this.error ? m(".accounts-error.errorMessage", this.error) : null,
+      m("h2", "Reputation Lists"),
+      this.reputationLists.length === 0
+        ? m(".reputationlists-empty", "No reputation lists configured.")
+        : m(".reputationlists", this.reputationLists.map((list) => m(ReputationListRow, { list }))),
     ]);
   }
 
-  private loadAccounts() {
-    ApiEndpoints.Accounts.call({})
-      .then((output) => {
+  private loadData() {
+    Promise.all([ApiEndpoints.Accounts.call({}), ApiEndpoints.ReputationLists.call({})])
+      .then(([accountsOutput, reputationListsOutput]) => {
         this.error = undefined;
-        this.accounts = output.accounts;
+        this.accounts = accountsOutput.accounts;
+        this.reputationLists = reputationListsOutput.lists;
         m.redraw();
       })
       .catch((err: Error) => {
@@ -82,8 +89,8 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
         m(".account-messages-matched", account.messagesMatched + " matched"),
         m(".account-rules", account.ruleCount + " rule(s), " + account.activeRuleCount + " active"),
         m(CycleProgressBar, {
-          lastCycleCompletedTimestamp: account.lastCycleCompletedTimestamp,
-          nextScheduledCycleTimestamp: account.nextScheduledCycleTimestamp,
+          lastTimestamp: account.lastCycleCompletedTimestamp,
+          nextTimestamp: account.nextScheduledCycleTimestamp,
         }),
         m(ClassifierTrainingSummary, { training: account.classifierTraining }),
         account.status == 'KO' ? m(".account-error", account.lastErrorTimestamp + ": " + account.lastErrorMessage ) : null
@@ -101,10 +108,63 @@ class StatusIcon implements m.ClassComponent<StatusIconAttrs> {
     switch (attrs.status) {
       case "OK":
         return m(StatusOkIcon);
+      case "WARNING":
+        return m(StatusWarningIcon);
       case "KO":
         return m(StatusErrorIcon);
       default:
         return m(StatusInfoIcon);
     }
+  }
+}
+
+interface ReputationListRowAttrs {
+  list: ReputationListDto;
+}
+
+/**
+ * Status is deliberately computed here, client-side, same as an account's cycle progress bar:
+ * the server has no opinion on it (ReputationListsApi only ever reports lastRefreshTimestamp +
+ * refreshHours) — OK while the cache is younger than refreshHours, WARNING for one missed cycle
+ * (a single blip shouldn't read as broken), KO once it's missed two or more, or if there's no
+ * cache at all yet. This also makes it self-healing: the moment a refresh succeeds, the cache's
+ * age resets and status recovers on its own, with nothing to reset by hand.
+ */
+function reputationListStatus(list: ReputationListDto): string {
+  const lastMs = list.lastRefreshTimestamp ? Date.parse(list.lastRefreshTimestamp) : NaN;
+  if (isNaN(lastMs)) return "KO";
+  const ageHours = (Date.now() - lastMs) / 3_600_000;
+  if (ageHours < list.refreshHours) return "OK";
+  if (ageHours < list.refreshHours * 2) return "WARNING";
+  return "KO";
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  const units = ["KB", "MB", "GB"];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  return value.toFixed(1) + " " + units[unitIndex];
+}
+
+class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
+  view({ attrs }: m.Vnode<ReputationListRowAttrs>): m.Children {
+    const list = attrs.list;
+    const status = reputationListStatus(list);
+    const lastMs = list.lastRefreshTimestamp ? Date.parse(list.lastRefreshTimestamp) : NaN;
+    const nextTimestamp = isNaN(lastMs) ? "" : new Date(lastMs + list.refreshHours * 3_600_000).toISOString();
+
+    return m(".reputationlist.status-" + status.toLowerCase(), [
+      m(".reputationlist-left", m(StatusIcon, { status })),
+      m(".reputationlist-details", [
+        m(".reputationlist-name", { title: list.url }, list.id),
+        m(".reputationlist-meta", list.type + " · score " + list.score + " · " + list.itemCount + " entries · " + formatBytes(list.contentSizeBytes)),
+        m(CycleProgressBar, { lastTimestamp: list.lastRefreshTimestamp, nextTimestamp }),
+      ]),
+    ]);
   }
 }

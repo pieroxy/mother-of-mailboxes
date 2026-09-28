@@ -15,7 +15,13 @@ interface PendingReputationList {
 }
 
 function defaultReputationList(): ReputationListDto {
-  return { id: "", type: ReputationListType.IP_CIDR, url: "", refreshHours: 24, score: 1 };
+  // lastRefreshTimestamp/itemCount/contentSizeBytes: live dashboard fields (see AccountsApi-style
+  // HomePage section), meaningless before this list has ever been saved and fetched — "" / 0 / 0
+  // accurately represents that, not a placeholder standing in for real data.
+  return {
+    id: "", type: ReputationListType.IP_CIDR, url: "", refreshHours: 24, score: 1,
+    lastRefreshTimestamp: "", itemCount: 0, contentSizeBytes: 0,
+  };
 }
 
 /**
