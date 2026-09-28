@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.accountconfig;
 
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -19,9 +19,9 @@ import java.util.List;
  */
 @Endpoint(method = ApiMethod.GET)
 public class AccountConfigApi extends AbstractApiEndpoint<AccountConfigApiInput, AccountConfigApiOutput> {
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public AccountConfigApi(ServiceProvider serviceProvider) {
+  public AccountConfigApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

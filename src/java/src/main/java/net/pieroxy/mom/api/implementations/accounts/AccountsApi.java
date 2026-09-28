@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.accounts;
 
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -18,9 +18,9 @@ import java.util.stream.Collectors;
 /** The live status of every configured {@link MailAccount}, for the logged-in homepage. */
 @Endpoint(method = ApiMethod.GET)
 public class AccountsApi extends AbstractApiEndpoint<AccountsApiInput, AccountsApiOutput> {
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public AccountsApi(ServiceProvider serviceProvider) {
+  public AccountsApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

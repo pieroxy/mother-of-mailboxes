@@ -3,7 +3,7 @@ package net.pieroxy.mom.api;
 import net.pieroxy.mom.api.metadata.ApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.utils.reflection.GetAccessibleClasses;
 
 import jakarta.servlet.http.HttpServlet;
@@ -21,10 +21,10 @@ public class ApiServlet extends HttpServlet {
   private final static String API_PATH_PREFIX = "/api/";
   private final static String ENDPOINT_CLASS_SUFFIX = "Api";
 
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
   private Map<String, ApiEndpoint> endpoints;
 
-  public ApiServlet(ServiceProvider serviceProvider) {
+  public ApiServlet(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 
@@ -84,11 +84,11 @@ public class ApiServlet extends HttpServlet {
       if (constructor.getParameterCount() == 0) {
         return (ApiEndpoint) constructor.newInstance();
       }
-      if (constructor.getParameterCount() == 1 && constructor.getParameterTypes()[0] == ServiceProvider.class) {
+      if (constructor.getParameterCount() == 1 && constructor.getParameterTypes()[0] == IServiceProvider.class) {
         return (ApiEndpoint) constructor.newInstance(serviceProvider);
       }
     }
     throw new IllegalStateException("Could not instantiate API endpoint " + c.getName()
-        + ": no no-arg or (ServiceProvider) constructor.");
+        + ": no no-arg or (IServiceProvider) constructor.");
   }
 }

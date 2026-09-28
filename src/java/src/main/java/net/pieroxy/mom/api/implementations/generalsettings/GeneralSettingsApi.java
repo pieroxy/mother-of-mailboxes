@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.generalsettings;
 
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.implementations.reputation.ReputationListDto;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
@@ -24,9 +24,9 @@ import java.util.stream.Collectors;
  */
 @Endpoint(method = ApiMethod.GET)
 public class GeneralSettingsApi extends AbstractApiEndpoint<GeneralSettingsApiInput, GeneralSettingsApiOutput> {
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public GeneralSettingsApi(ServiceProvider serviceProvider) {
+  public GeneralSettingsApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

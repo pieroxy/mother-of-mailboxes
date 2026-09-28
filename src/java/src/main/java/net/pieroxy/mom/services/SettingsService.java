@@ -55,10 +55,14 @@ public class SettingsService implements Service {
   /**
    * Resolves the web server's own login credential (if a {@code webServer} section is configured
    * and enabled) and migrates a plaintext password to a hashed one, one time, if it finds one —
-   * see {@link #migrateWebServerPasswordIfNeeded}.
+   * see {@link #migrateWebServerPasswordIfNeeded}. No declared dependencies (see
+   * {@link Service#getDependencies}): everything this needs came in through the constructor
+   * already — but {@link WebServerService} depends on this service, so this still has to be done by
+   * the end of this method, not deferred anywhere later, so it's guaranteed ready before Tomcat's
+   * own {@code start()} ever runs.
    */
   @Override
-  public void init() {
+  public void start() {
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
       webServerCredential = resolveCredential(config.getWebServer().getCredentials(), "webServer");
       migrateWebServerPasswordIfNeeded();
@@ -73,7 +77,7 @@ public class SettingsService implements Service {
     return dataFolder;
   }
 
-  /** Null if no {@code webServer} section is configured/enabled — see {@link #init}. */
+  /** Null if no {@code webServer} section is configured/enabled — see {@link #start}. */
   public Credential getWebServerCredential() {
     return webServerCredential;
   }

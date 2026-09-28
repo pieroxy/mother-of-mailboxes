@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.accountfolders;
 
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -27,9 +27,9 @@ import java.util.List;
  */
 @Endpoint(method = ApiMethod.GET)
 public class AccountFoldersApi extends AbstractApiEndpoint<AccountFoldersApiInput, AccountFoldersApiOutput> {
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public AccountFoldersApi(ServiceProvider serviceProvider) {
+  public AccountFoldersApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

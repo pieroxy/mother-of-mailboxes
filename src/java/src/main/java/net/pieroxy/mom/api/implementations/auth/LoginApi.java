@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.auth;
 
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -10,9 +10,9 @@ import net.pieroxy.mom.config.credentials.PasswordHasher;
 
 @Endpoint(method = ApiMethod.POST)
 public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput> {
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public LoginApi(ServiceProvider serviceProvider) {
+  public LoginApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

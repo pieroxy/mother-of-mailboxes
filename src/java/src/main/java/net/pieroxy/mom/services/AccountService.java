@@ -11,9 +11,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Owns the accounts actually running in this process: builds and starts one {@link MailAccount}
- * per {@code config.json} entry (see {@link #init}), and applies every edit an API endpoint makes
+ * per {@code config.json} entry (see {@link #start}), and applies every edit an API endpoint makes
  * that needs one restarted. Not config.json/credentials.json themselves — see
- * {@link SettingsService}, which every persist/credential-lookup here delegates to.
+ * {@link SettingsService}, which every persist/credential-lookup here delegates to (via plain
+ * constructor injection, not {@link Service#getDependencies}: there's no circularity here to
+ * resolve, so there's nothing declaring a dependency would add over just holding the reference).
  */
 public class AccountService implements Service {
   // Generous: an in-progress IMAP cycle (blocking socket I/O) won't be interrupted on the spot —
@@ -30,7 +32,7 @@ public class AccountService implements Service {
   }
 
   /**
-   * Starts from an already-built list instead of letting {@link #init()} build one — e.g. a test
+   * Starts from an already-built list instead of letting {@link #start()} build one — e.g. a test
    * seeding a single controlled {@link MailAccount} that never dials out for real.
    */
   public AccountService(SettingsService settingsService, List<MailAccount> accounts) {
@@ -39,7 +41,7 @@ public class AccountService implements Service {
   }
 
   @Override
-  public void init() {
+  public void start() {
     settingsService.getConfiguration().getConfigurations().forEach(conf -> {
       Credential credential = settingsService.resolveCredential(conf.getCredentials(), "mail account \"" + conf.getDisplayName() + "\"");
       MailAccount account = new MailAccount(conf, credential, settingsService.getDataFolder());

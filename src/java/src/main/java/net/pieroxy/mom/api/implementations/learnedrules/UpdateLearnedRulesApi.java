@@ -1,7 +1,7 @@
 package net.pieroxy.mom.api.implementations.learnedrules;
 
 import net.pieroxy.mom.services.AccountService;
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -18,9 +18,9 @@ import java.util.List;
  */
 @Endpoint(method = ApiMethod.POST)
 public class UpdateLearnedRulesApi extends AbstractApiEndpoint<UpdateLearnedRulesApiInput, UpdateLearnedRulesApiOutput> {
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public UpdateLearnedRulesApi(ServiceProvider serviceProvider) {
+  public UpdateLearnedRulesApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

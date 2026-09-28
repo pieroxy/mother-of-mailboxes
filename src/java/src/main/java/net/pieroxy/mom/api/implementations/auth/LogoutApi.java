@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.auth;
 
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -8,9 +8,9 @@ import net.pieroxy.mom.api.metadata.TypeScriptType;
 
 @Endpoint(method = ApiMethod.POST)
 public class LogoutApi extends AbstractApiEndpoint<LogoutApiInput, LogoutApiOutput> {
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public LogoutApi(ServiceProvider serviceProvider) {
+  public LogoutApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

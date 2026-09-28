@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.stats;
 
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -22,9 +22,9 @@ public class StatsApi extends AbstractApiEndpoint<StatsApiInput, StatsApiOutput>
   private final static int MAX_RANGE_DAYS = 400;
   private final static int TOP_MATCHERS_LIMIT = 8;
 
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public StatsApi(ServiceProvider serviceProvider) {
+  public StatsApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

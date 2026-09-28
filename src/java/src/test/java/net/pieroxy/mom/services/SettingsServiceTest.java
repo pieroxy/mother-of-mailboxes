@@ -19,7 +19,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * {@link SettingsService#init()}: resolves the web server's own login credential (if configured
+ * {@link SettingsService#start()}: resolves the web server's own login credential (if configured
  * and enabled) and migrates a plaintext password to a hashed one, one time, if it finds one.
  */
 public class SettingsServiceTest {
@@ -45,14 +45,14 @@ public class SettingsServiceTest {
   }
 
   @Test
-  public void initHashesAPlaintextPasswordAndClearsItInMemoryAndOnDisk() throws Exception {
+  public void startHashesAPlaintextPasswordAndClearsItInMemoryAndOnDisk() throws Exception {
     Credential webServerCredential = new Credential();
     webServerCredential.setUsername("admin");
     webServerCredential.setPassword("plaintext-password");
     File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
     SettingsService settingsService = buildSettingsService(webServerCredential, true, credentialsFilePath);
 
-    settingsService.init();
+    settingsService.start();
 
     assertNull("the plaintext must not survive migration", webServerCredential.getPassword());
     assertTrue(PasswordHasher.verify("plaintext-password", webServerCredential.getPasswordHash()));
@@ -64,7 +64,7 @@ public class SettingsServiceTest {
   }
 
   @Test
-  public void initDoesNothingWhenAlreadyHashed() {
+  public void startDoesNothingWhenAlreadyHashed() {
     Credential webServerCredential = new Credential();
     webServerCredential.setUsername("admin");
     webServerCredential.setPasswordHash(PasswordHasher.hash("already-hashed"));
@@ -72,33 +72,33 @@ public class SettingsServiceTest {
     File credentialsFilePath = new File(tmp.getRoot(), "nonexistent-dir/credentials.json");
     SettingsService settingsService = buildSettingsService(webServerCredential, true, credentialsFilePath);
 
-    settingsService.init();
+    settingsService.start();
 
     assertTrue(PasswordHasher.verify("already-hashed", webServerCredential.getPasswordHash()));
   }
 
   @Test
-  public void initDoesNothingWhenThereIsNoPasswordAtAll() {
+  public void startDoesNothingWhenThereIsNoPasswordAtAll() {
     Credential webServerCredential = new Credential();
     webServerCredential.setUsername("admin");
     File credentialsFilePath = new File(tmp.getRoot(), "nonexistent-dir/credentials.json");
     SettingsService settingsService = buildSettingsService(webServerCredential, true, credentialsFilePath);
 
-    settingsService.init();
+    settingsService.start();
 
     assertNull(webServerCredential.getPassword());
     assertNull(webServerCredential.getPasswordHash());
   }
 
   @Test
-  public void initLeavesTheCredentialUnresolvedWhenTheWebServerIsDisabled() {
+  public void startLeavesTheCredentialUnresolvedWhenTheWebServerIsDisabled() {
     Credential webServerCredential = new Credential();
     webServerCredential.setUsername("admin");
     webServerCredential.setPassword("plaintext-password");
     File credentialsFilePath = new File(tmp.getRoot(), "nonexistent-dir/credentials.json");
     SettingsService settingsService = buildSettingsService(webServerCredential, false, credentialsFilePath);
 
-    settingsService.init();
+    settingsService.start();
 
     assertNull("a disabled web server must never be resolved or migrated", settingsService.getWebServerCredential());
     assertTrue("the original credential object must be left untouched", "plaintext-password".equals(webServerCredential.getPassword()));

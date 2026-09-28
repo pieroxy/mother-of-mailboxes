@@ -67,7 +67,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
 
     File configFile = new File(tmp.getRoot(), "config.json");
     settingsService = new SettingsService(config, configFile, credentialsFile, credentialsFilePath, tmp.getRoot().getAbsolutePath());
-    settingsService.init();
+    settingsService.start();
   }
 
   @After
@@ -96,7 +96,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
 
   @Test
   public void leavesTheWebServerPasswordUnchangedWhenBlank() throws Exception {
-    // setUp()'s own init() call already migrated "old-password" to a hash (see
+    // setUp()'s own start() call already migrated "old-password" to a hash (see
     // SettingsServiceTest) before this test ever runs — a blank password here must leave that
     // hash untouched, not the (long gone) plaintext.
     settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",

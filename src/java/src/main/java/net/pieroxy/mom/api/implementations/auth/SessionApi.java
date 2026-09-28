@@ -1,6 +1,6 @@
 package net.pieroxy.mom.api.implementations.auth;
 
-import net.pieroxy.mom.services.ServiceProvider;
+import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
@@ -14,9 +14,9 @@ import net.pieroxy.mom.api.metadata.TypeScriptType;
  */
 @Endpoint(method = ApiMethod.GET)
 public class SessionApi extends AbstractApiEndpoint<SessionApiInput, SessionApiOutput> {
-  private final ServiceProvider serviceProvider;
+  private final IServiceProvider serviceProvider;
 
-  public SessionApi(ServiceProvider serviceProvider) {
+  public SessionApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
   }
 

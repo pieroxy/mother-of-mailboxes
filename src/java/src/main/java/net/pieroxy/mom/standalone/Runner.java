@@ -5,13 +5,12 @@ import net.pieroxy.mom.services.AccountService;
 import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.services.SessionService;
 import net.pieroxy.mom.services.SettingsService;
+import net.pieroxy.mom.services.WebServerService;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.utils.logging.LoggingBootstrap;
 import net.pieroxy.mom.detection.reputation.ReputationRegistry;
 import net.pieroxy.mom.detection.reputation.ReputationRegistryHolder;
-import net.pieroxy.mom.webserver.WebServerRunner;
-import org.apache.catalina.startup.Tomcat;
 
 import java.io.*;
 import java.time.LocalDateTime;
@@ -27,7 +26,6 @@ public class Runner {
   private static String logFile;
   private static ServiceProvider serviceProvider;
   private static ReputationRegistry reputationRegistry;
-  private static Tomcat webServer;
 
   static {
     GIT_REV = readResourceFileAsString("GIT_REV");
@@ -59,12 +57,10 @@ public class Runner {
 
     SettingsService settingsService = new SettingsService(config, configFile, credentialsFile, credentialsFilePath, config.getDataFolder());
     AccountService accountService = new AccountService(settingsService);
-    serviceProvider = new ServiceProvider(settingsService, accountService, new SessionService());
+    SessionService sessionService = new SessionService();
+    WebServerService webServerService = new WebServerService(config.getWebServer(), config.getDataFolder());
+    serviceProvider = new ServiceProvider(settingsService, accountService, sessionService, webServerService);
     serviceProvider.init();
-
-    if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
-      webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder(), serviceProvider);
-    }
 
     Runtime.getRuntime().addShutdownHook(new Thread(Runner::shutdown, "shutdown-hook"));
     LOGGER.info("Started MOM (Mother Of Mailboxes) version " + MVN_VER + " rev " + GIT_REV);
@@ -74,12 +70,10 @@ public class Runner {
     logDirectly("Shutting down...");
     // An IMAP cycle already in progress (blocking socket I/O) won't be interrupted on the spot;
     // this only prevents a new cycle from starting and lets an in-progress cycle finish within
-    // AccountService's own timeout (see MailAccount#requestStop for the IMAP IDLE case).
+    // AccountService's own timeout (see MailAccount#requestStop for the IMAP IDLE case). Stops
+    // every service, Tomcat included, in the reverse of whatever order they actually started in.
     if (serviceProvider != null) {
       serviceProvider.destroy();
-    }
-    if (webServer != null) {
-      WebServerRunner.stop(webServer);
     }
     // Not the "reputationRegistry" field directly: SettingsService#updateGeneralSettings can have
     // hot-swapped it for a fresh instance since startup (see ReputationRegistryHolder) — stopping
