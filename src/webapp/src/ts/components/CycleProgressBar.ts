@@ -1,4 +1,5 @@
 import m from "mithril";
+import { formatDuration } from "../utils/format";
 
 interface CycleProgressBarAttrs {
   /** ISO-8601 timestamp the last cycle/refresh completed, or "" if none has happened yet. */
@@ -24,15 +25,15 @@ export class CycleProgressBar implements m.ClassComponent<CycleProgressBarAttrs>
     }
 
     const now = Date.now();
-    const secondsSinceLastRun = Math.max(0, Math.round((now - last) / 1000));
-    const secondsUntilNextRun = Math.round((next - now) / 1000);
+    const secondsSinceLastRun = Math.max(0, (now - last) / 1000);
+    const secondsUntilNextRun = (next - now) / 1000;
     const percent = next > last ? Math.min(100, Math.max(0, ((now - last) / (next - last)) * 100)) : 100;
 
     return m(".cycle-progress", [
       m(".cycle-progress-bar", m(".cycle-progress-bar-fill", { style: { width: percent + "%" } })),
       m(".cycle-progress-labels", [
-        m("span.cycle-progress-last", secondsSinceLastRun + "s ago"),
-        m("span.cycle-progress-next", secondsUntilNextRun > 0 ? "next in " + secondsUntilNextRun + "s" : "next any moment"),
+        m("span.cycle-progress-last", formatDuration(secondsSinceLastRun) + " ago"),
+        m("span.cycle-progress-next", secondsUntilNextRun > 0 ? "next in " + formatDuration(secondsUntilNextRun) : "next any moment"),
       ]),
     ]);
   }

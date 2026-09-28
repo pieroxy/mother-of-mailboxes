@@ -12,6 +12,7 @@ import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
 import { StatsIcon } from "../atoms/icons/StatsIcon";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 import { Routing } from "../../utils/navigation/Routing";
+import { formatBytes, formatCount } from "../../utils/format";
 
 const REFRESH_INTERVAL_MS = 60_000;
 const TICK_INTERVAL_MS = 1_000;
@@ -139,18 +140,6 @@ function reputationListStatus(list: ReputationListDto): string {
   return "KO";
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return bytes + " B";
-  const units = ["KB", "MB", "GB"];
-  let value = bytes / 1024;
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex++;
-  }
-  return value.toFixed(1) + " " + units[unitIndex];
-}
-
 class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
   view({ attrs }: m.Vnode<ReputationListRowAttrs>): m.Children {
     const list = attrs.list;
@@ -162,7 +151,7 @@ class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
       m(".reputationlist-left", m(StatusIcon, { status })),
       m(".reputationlist-details", [
         m(".reputationlist-name", { title: list.url }, list.id),
-        m(".reputationlist-meta", list.type + " · score " + list.score + " · " + list.itemCount + " entries · " + formatBytes(list.contentSizeBytes)),
+        m(".reputationlist-meta", list.type + " · score " + list.score + " · " + formatCount(list.itemCount) + " entries · " + formatBytes(list.contentSizeBytes)),
         m(CycleProgressBar, { lastTimestamp: list.lastRefreshTimestamp, nextTimestamp }),
       ]),
     ]);
