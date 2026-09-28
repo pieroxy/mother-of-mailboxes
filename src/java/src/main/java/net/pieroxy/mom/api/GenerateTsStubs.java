@@ -5,19 +5,17 @@ import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiEndpoint;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
+import net.pieroxy.mom.utils.reflection.GenericTypeArgumentResolver;
 import net.pieroxy.mom.utils.reflection.GetAccessibleClasses;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Not wired into the Maven build yet. Takes the output .ts path as args[0]. */
+/** Run by the {@code generate-api-ts-stubs} step in {@code pom.xml} (process-classes phase); writes the .ts path passed as args[0]. */
 public class GenerateTsStubs {
   private static BufferedWriter writer;
   private static final List<String> later = new ArrayList<>();
@@ -78,39 +76,8 @@ public class GenerateTsStubs {
     writer.close();
   }
 
-  /**
-   * Mirrors {@link AbstractApiEndpoint#resolveInputType} (see its javadoc for why a plain
-   * "read the type argument off the direct subclass" walk isn't enough once an intermediate
-   * generic superclass — e.g. AbstractAuthenticatedEndpoint — is in the chain).
-   */
   private static String getType(Class<?> leafClass, int argIndex) {
-    Map<TypeVariable<?>, Type> bindings = new HashMap<>();
-    Class<?> current = leafClass;
-    Class<?> clazz = null;
-    while (true) {
-      Class<?> rawSuperclass = current.getSuperclass();
-      if (rawSuperclass == null) throw new IllegalArgumentException("Could not resolve type argument " + argIndex + " for " + leafClass);
-      Type genericSuperclass = current.getGenericSuperclass();
-      Type[] actualArgs = (genericSuperclass instanceof ParameterizedType parameterizedType)
-          ? parameterizedType.getActualTypeArguments() : new Type[0];
-
-      if (rawSuperclass == AbstractApiEndpoint.class) {
-        Type arg = actualArgs[argIndex];
-        Type resolved = (arg instanceof TypeVariable<?>) ? bindings.get(arg) : arg;
-        if (!(resolved instanceof Class<?>)) {
-          throw new IllegalArgumentException("Could not resolve a concrete type argument " + argIndex + " for " + leafClass + " (got " + resolved + ")");
-        }
-        clazz = (Class<?>) resolved;
-        break;
-      }
-
-      TypeVariable<?>[] params = rawSuperclass.getTypeParameters();
-      for (int i = 0; i < params.length && i < actualArgs.length; i++) {
-        Type arg = actualArgs[i];
-        bindings.put(params[i], (arg instanceof TypeVariable<?>) ? bindings.getOrDefault(arg, arg) : arg);
-      }
-      current = rawSuperclass;
-    }
+    Class<?> clazz = GenericTypeArgumentResolver.resolve(leafClass, AbstractApiEndpoint.class, argIndex);
     String res;
     if (clazz == Object.class) {
       res = "any";
