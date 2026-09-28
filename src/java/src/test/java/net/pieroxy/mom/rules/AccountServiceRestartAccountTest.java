@@ -216,6 +216,26 @@ public class AccountServiceRestartAccountTest {
     }
   }
 
+  @Test
+  public void deleteAccountStopsTheAccountAndRemovesItFromConfig() throws Exception {
+    Setup setup = setUp();
+    MailAccount original = setup.accounts.get(0);
+
+    setup.accountService.deleteAccount("test-account");
+
+    assertEquals("the account must be gone from the running list", 0, setup.accounts.size());
+    original.join(2000);
+
+    Configuration reloaded = new Gson().fromJson(new FileReader(setup.configFile), Configuration.class);
+    assertEquals("the account must be gone from config.json", 0, reloaded.getConfigurations().size());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void deleteAccountRejectsAnUnknownAccountName() {
+    Setup setup = setUp();
+    setup.accountService.deleteAccount("does-not-exist");
+  }
+
   /** Passes the setup's current config fields straight through, only exercising the username/password/rules under test — mirrors the one combined save the settings page now sends (see UpdateAccountApi). */
   private static void updateAccount(Setup setup, String username, String password, List<MailFilterRuleConfiguration> rules) {
     updateAccount(setup, username, password, rules, List.of());

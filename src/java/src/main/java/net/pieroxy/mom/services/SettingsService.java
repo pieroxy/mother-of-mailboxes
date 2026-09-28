@@ -98,6 +98,14 @@ public class SettingsService implements Service {
         .orElseThrow(() -> new IllegalArgumentException("No such account: " + accountName));
   }
 
+  /** Removes one account's entry from the in-memory config — see {@link AccountService#deleteAccount}. */
+  public void removeAccountConfig(String accountName) {
+    boolean removed = config.getConfigurations().removeIf(c -> accountName.equals(c.getDisplayName()));
+    if (!removed) {
+      throw new IllegalArgumentException("No such account: " + accountName);
+    }
+  }
+
   public void persistConfig() {
     try (Writer w = new FileWriter(configFile)) {
       GSON.toJson(config, w);

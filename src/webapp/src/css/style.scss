@@ -136,6 +136,40 @@ body {
             }
         }
 
+        // Modal veil behind a Dialogs.confirm/prompt (see AbstractPage#renderDialog).
+        .dialogveil {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+
+            .dialogout {
+                max-width: 420px;
+                width: 100%;
+            }
+
+            .dialogin {
+                background-color: $bg-color-l3;
+                border-radius: 10px;
+                padding: 24px;
+                color: $text-color;
+                font-size: 14px;
+                box-shadow: 2px 2px 15px $shadow-dark;
+
+                .buttonpanel {
+                    display: flex;
+                    gap: 12px;
+                    justify-content: flex-end;
+                    margin-top: 20px;
+                }
+            }
+        }
+
         page {
           padding: 5em 10% 0 10%;
           display: block;
@@ -337,6 +371,10 @@ body {
               background-color: $bg-color-l3;
               border-radius: 10px;
               padding: 20px;
+
+              &.danger-zone {
+                  border: 1px solid $error-color;
+              }
 
               h2 {
                   margin: 0;
@@ -1304,6 +1342,16 @@ button {
     border-radius: 5px;
     box-shadow: inset 3px 3px 5px $shadow-light, inset -3px -3px 5px $shadow-dark;
     color: $text-on-accent;
+
+    &.secondary {
+        background-color: $bg-color-d1;
+        color: $text-muted;
+    }
+}
+
+.danger-button {
+    background-color: $error-color;
+    color: $text-color;
 }
 
 .errorMessage, .account-error {

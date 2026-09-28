@@ -10,6 +10,7 @@ import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 import { TokenListEditor } from "../TokenListEditor";
+import { Dialogs } from "../../utils/Dialogs";
 import {
   AccountEditSession,
   PendingLearnedRule,
@@ -45,6 +46,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   private savingChanges = false;
   private loading = true;
   private error: string | undefined;
+  private deleting = false;
 
   getPageTitle(): string {
     return "MOM - Account settings";
@@ -90,6 +92,12 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       m(".page-card", [
         sectionHeader("Learned Rules"),
         this.renderLearnedRulesSection(session),
+      ]),
+      m(".page-card.danger-zone", [
+        m("h2", "Danger Zone"),
+        m("p.field-hint", "Deleting this account stops it and removes it from config.json. This cannot be undone."),
+        m("button.danger-button", { onclick: () => this.confirmDeleteAccount(), disabled: this.deleting },
+          this.deleting ? "Deleting…" : "Delete Account"),
       ]),
     ]);
   }
@@ -313,6 +321,29 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   private discardChanges() {
     accountEditSessions.discard(this.accountName);
     this.load();
+  }
+
+  private confirmDeleteAccount() {
+    Dialogs.confirm(
+      "Delete account \"" + this.accountName + "\"? It will stop running and be removed from config.json. There's no coming back from this.",
+      "Delete Account", "Cancel",
+      () => this.deleteAccount(),
+    );
+  }
+
+  private deleteAccount() {
+    this.deleting = true;
+    this.error = undefined;
+    ApiEndpoints.DeleteAccount.call({ accountName: this.accountName })
+      .then(() => {
+        accountEditSessions.discard(this.accountName);
+        Routing.goToScreen(Endpoints.HOME);
+      })
+      .catch((err: Error) => {
+        this.deleting = false;
+        this.error = err.message;
+        m.redraw();
+      });
   }
 
   private load() {

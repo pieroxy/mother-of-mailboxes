@@ -138,6 +138,38 @@ public class AccountService implements Service {
   }
 
   /**
+   * Permanently removes one account: stops its thread, drops it from {@link #getAccounts()}, and
+   * removes its entry from config.json. Deliberately leaves its credentials.json entry and any
+   * on-disk state (learned rules, stats, classifier corpus) untouched — nothing else references
+   * them once the account is gone, but silently deleting a user's history as a side effect of
+   * removing a config entry would be a surprise, not a convenience.
+   */
+  public synchronized void deleteAccount(String accountName) {
+    int index = -1;
+    for (int i = 0; i < accounts.size(); i++) {
+      if (accounts.get(i).getAccountLabel().equals(accountName)) {
+        index = i;
+        break;
+      }
+    }
+    if (index < 0) {
+      throw new IllegalArgumentException("No such account: " + accountName);
+    }
+
+    MailAccount account = accounts.get(index);
+    account.requestStop();
+    try {
+      account.join(RESTART_JOIN_TIMEOUT_MS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    accounts.remove(index);
+
+    settingsService.removeAccountConfig(accountName);
+    settingsService.persistConfig();
+  }
+
+  /**
    * Replaces one account's learned rules and applies the change immediately (see
    * {@link MailAccount#updateLearnedRules}) — no restart, since learned rules live in their own
    * file, not config.json.
