@@ -103,8 +103,12 @@ public class Runner {
     if (webServer != null) {
       WebServerRunner.stop(webServer);
     }
-    if (reputationRegistry != null) {
-      reputationRegistry.stop();
+    // Not the "reputationRegistry" field directly: ServiceProvider#updateGeneralSettings can have
+    // hot-swapped it for a fresh instance since startup (see ReputationRegistryHolder) — stopping
+    // the original would leave that current one's own refresh scheduler thread running.
+    ReputationRegistry currentReputationRegistry = ReputationRegistryHolder.get();
+    if (currentReputationRegistry != null) {
+      currentReputationRegistry.stop();
     }
     LoggingBootstrap.shutdown();
     logDirectly("Shutdown complete.");

@@ -11,11 +11,13 @@ import { AccountConfigEditPage } from "./components/pages/AccountConfigEditPage"
 import { AccountCredentialsEditPage } from "./components/pages/AccountCredentialsEditPage";
 import { RuleEditPage } from "./components/pages/RuleEditPage";
 import { ShortcutEditPage } from "./components/pages/ShortcutEditPage";
+import { GeneralSettingsPage } from "./components/pages/GeneralSettingsPage";
 
 const routes: m.RouteDefs = {
   [Endpoints.LOGIN]: LoginPage,
   [Endpoints.HOME]: new AuthenticatedPageResolver(HomePage),
   [Endpoints.PROFILE]: new AuthenticatedPageResolver(ProfilePage),
+  [Endpoints.GENERAL_SETTINGS]: new AuthenticatedPageResolver(GeneralSettingsPage),
   [Endpoints.STATS]: new AuthenticatedPageResolver(StatsPage),
   [Endpoints.ACCOUNT_SETTINGS]: new AuthenticatedPageResolver(AccountSettingsPage),
   [Endpoints.ACCOUNT_CONFIG_EDIT]: new AuthenticatedPageResolver(AccountConfigEditPage),

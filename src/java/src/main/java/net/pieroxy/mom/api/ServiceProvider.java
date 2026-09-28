@@ -8,6 +8,9 @@ import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.mom.config.general.ReputationListConfig;
+import net.pieroxy.mom.detection.reputation.ReputationRegistry;
+import net.pieroxy.mom.detection.reputation.ReputationRegistryHolder;
 import net.pieroxy.mom.rules.MailAccount;
 import net.pieroxy.mom.utils.CredentialsResolver;
 
@@ -58,6 +61,18 @@ public class ServiceProvider {
   /** The accounts running in this process — see {@code Runner#main}. Mutated only by {@link #restartAccount}. */
   public List<MailAccount> getAccounts() {
     return accounts;
+  }
+
+  /**
+   * The whole live config, for the parts of it that aren't per-account. {@code GeneralSettingsApi}
+   * reads it directly; edits go through {@link #updateGeneralSettings} instead, since
+   * {@code dataFolder}, {@code keepLogFiles} and {@code webServer}'s own connection settings are
+   * startup-time-only — saving a change to them persists to disk immediately but only actually
+   * takes effect once the whole process is restarted (by hand; nothing in this webapp can trigger
+   * that itself).
+   */
+  public Configuration getConfiguration() {
+    return config;
   }
 
   /**
@@ -167,6 +182,47 @@ public class ServiceProvider {
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException("No such account: " + accountName));
     account.updateLearnedRules(rules);
+  }
+
+  /**
+   * Applies every field the general settings page offers. The web server's own login (its
+   * {@code Credential}, resolved and mutated in place, same "blank password = unchanged"
+   * convention as an account's) and the whole {@code reputationLists} list take effect immediately
+   * — the login on the next request, the lists via a hot-swapped {@link ReputationRegistry} (built
+   * — cheap, disk-cache only, no network I/O — then started before the old one is stopped, so
+   * there's no window with no registry at all). {@code dataFolder}, {@code keepLogFiles} and the
+   * web server's own connection settings ({@code enabled}/{@code httpPort}/{@code address}) are
+   * only ever persisted to {@code config.json} here: this process keeps using the values it
+   * started with (see the {@code dataFolder} field) until someone restarts it by hand.
+   */
+  public synchronized void updateGeneralSettings(String newDataFolder, int keepLogFiles, boolean webServerEnabled,
+                                                  int webServerHttpPort, String webServerAddress,
+                                                  String webServerUsername, String webServerPassword,
+                                                  List<ReputationListConfig> reputationLists) {
+    config.setDataFolder(newDataFolder);
+    config.setKeepLogFiles(keepLogFiles);
+
+    if (config.getWebServer() != null) {
+      config.getWebServer().setEnabled(webServerEnabled);
+      config.getWebServer().setHttpPort(webServerHttpPort);
+      config.getWebServer().setAddress(webServerAddress);
+
+      Credential credential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
+      credential.setUsername(webServerUsername);
+      if (webServerPassword != null && !webServerPassword.isBlank()) {
+        credential.setPassword(webServerPassword);
+      }
+      persistCredentialsFile();
+    }
+
+    config.setReputationLists(reputationLists);
+    persistConfig();
+
+    ReputationRegistry old = ReputationRegistryHolder.get();
+    ReputationRegistry fresh = new ReputationRegistry(reputationLists, dataFolder);
+    fresh.start();
+    ReputationRegistryHolder.set(fresh);
+    old.stop();
   }
 
   private void persistConfig() {
