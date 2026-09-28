@@ -11,8 +11,10 @@ import net.pieroxy.mom.utils.logging.StatsReader;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** One account's daily processing stats over a date range — powers its dedicated stats page. */
@@ -22,6 +24,12 @@ public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, Stats
   // scanning thousands of day files.
   private final static int MAX_RANGE_DAYS = 400;
   private final static int TOP_MATCHERS_LIMIT = 8;
+  // Strips every "(...)" detail segment a leaf matcher's debug string carries (see
+  // Matcher#matched) — e.g. "FromAddressMatcher(user@spam.example.com)" becomes
+  // "FromAddressMatcher", and "IpReputationMatcher[blocklist](score=0.87)" becomes
+  // "IpReputationMatcher[blocklist]" (the "[tag]" survives: it names *which* list, a genuinely
+  // different matcher, not a per-message value like an address or a score).
+  private final static Pattern DETAIL_SEGMENT = Pattern.compile("\\([^()]*\\)");
 
   public StatsApi(IServiceProvider serviceProvider) {
     super(serviceProvider);
@@ -51,8 +59,10 @@ public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, Stats
 
     List<MatcherCountDto> topMatchers = topN(range.matcherCounts());
     List<MatcherCountDto> topBlockingMatchers = topN(range.blockingMatcherCounts());
+    List<MatcherCountDto> topMatchersByType = topN(byType(range.matcherCounts()));
+    List<MatcherCountDto> topBlockingMatchersByType = topN(byType(range.blockingMatcherCounts()));
 
-    return new StatsApiOutput(days, topMatchers, topBlockingMatchers);
+    return new StatsApiOutput(days, topMatchers, topBlockingMatchers, topMatchersByType, topBlockingMatchersByType);
   }
 
   private static List<MatcherCountDto> topN(Map<String, Long> counts) {
@@ -61,6 +71,22 @@ public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, Stats
         .limit(TOP_MATCHERS_LIMIT)
         .map(e -> new MatcherCountDto(e.getKey(), e.getValue()))
         .collect(Collectors.toList());
+  }
+
+  /**
+   * Re-aggregates {@code counts} by matcher type alone, merging every distinct-by-detail entry
+   * (e.g. one {@code FromAddressMatcher} per sender address it ever matched) back into one. Must
+   * run on the *full* counts map before {@link #topN}, not after: truncating to the top few
+   * detailed entries first and only then stripping their names would miss however many other
+   * addresses/domains/etc. of the same type fired but individually didn't rank. Package-visible
+   * for testing.
+   */
+  static Map<String, Long> byType(Map<String, Long> counts) {
+    Map<String, Long> merged = new LinkedHashMap<>();
+    for (Map.Entry<String, Long> e : counts.entrySet()) {
+      merged.merge(DETAIL_SEGMENT.matcher(e.getKey()).replaceAll(""), e.getValue(), Long::sum);
+    }
+    return merged;
   }
 }
 
@@ -104,14 +130,21 @@ class StatsApiOutput {
   private List<MatcherCountDto> topMatchers;
   /** Of those, only the ones that actually ended processing for a message at least once (see {@code StatsReader#StatsRange}). */
   private List<MatcherCountDto> topBlockingMatchers;
+  /** Same population as {@link #topMatchers}, but merged by matcher type — see {@code StatsApi#byType}. */
+  private List<MatcherCountDto> topMatchersByType;
+  /** Same population as {@link #topBlockingMatchers}, merged by matcher type. */
+  private List<MatcherCountDto> topBlockingMatchersByType;
 
   public StatsApiOutput() {
   }
 
-  public StatsApiOutput(List<DailyStatsDto> days, List<MatcherCountDto> topMatchers, List<MatcherCountDto> topBlockingMatchers) {
+  public StatsApiOutput(List<DailyStatsDto> days, List<MatcherCountDto> topMatchers, List<MatcherCountDto> topBlockingMatchers,
+                         List<MatcherCountDto> topMatchersByType, List<MatcherCountDto> topBlockingMatchersByType) {
     this.days = days;
     this.topMatchers = topMatchers;
     this.topBlockingMatchers = topBlockingMatchers;
+    this.topMatchersByType = topMatchersByType;
+    this.topBlockingMatchersByType = topBlockingMatchersByType;
   }
 
   public List<DailyStatsDto> getDays() {
@@ -136,6 +169,22 @@ class StatsApiOutput {
 
   public void setTopBlockingMatchers(List<MatcherCountDto> topBlockingMatchers) {
     this.topBlockingMatchers = topBlockingMatchers;
+  }
+
+  public List<MatcherCountDto> getTopMatchersByType() {
+    return topMatchersByType;
+  }
+
+  public void setTopMatchersByType(List<MatcherCountDto> topMatchersByType) {
+    this.topMatchersByType = topMatchersByType;
+  }
+
+  public List<MatcherCountDto> getTopBlockingMatchersByType() {
+    return topBlockingMatchersByType;
+  }
+
+  public void setTopBlockingMatchersByType(List<MatcherCountDto> topBlockingMatchersByType) {
+    this.topBlockingMatchersByType = topBlockingMatchersByType;
   }
 }
 

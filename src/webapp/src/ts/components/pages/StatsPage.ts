@@ -36,6 +36,8 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
   private days: DailyStatsDto[] = [];
   private topMatchers: MatcherCountDto[] = [];
   private topBlockingMatchers: MatcherCountDto[] = [];
+  private topMatchersByType: MatcherCountDto[] = [];
+  private topBlockingMatchersByType: MatcherCountDto[] = [];
   private loading = false;
   private hasLoadedOnce = false;
   private error: string | undefined;
@@ -101,7 +103,10 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
       ]),
       m(".page-card", [
         m("h2", "Top matchers"),
-        m(TopMatchersChart, { allMatchers: this.topMatchers, blockingMatchers: this.topBlockingMatchers }),
+        m(TopMatchersChart, {
+          allMatchers: this.topMatchers, blockingMatchers: this.topBlockingMatchers,
+          allMatchersByType: this.topMatchersByType, blockingMatchersByType: this.topBlockingMatchersByType,
+        }),
       ]),
     ]);
   }
@@ -150,6 +155,8 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
         this.days = output.days;
         this.topMatchers = output.topMatchers;
         this.topBlockingMatchers = output.topBlockingMatchers;
+        this.topMatchersByType = output.topMatchersByType;
+        this.topBlockingMatchersByType = output.topBlockingMatchersByType;
         this.loading = false;
         this.hasLoadedOnce = true;
         m.redraw();
