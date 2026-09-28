@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
+import net.pieroxy.mom.config.credentials.CredentialsFileStore;
+import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
@@ -210,7 +212,8 @@ public class ServiceProvider {
       Credential credential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
       credential.setUsername(webServerUsername);
       if (webServerPassword != null && !webServerPassword.isBlank()) {
-        credential.setPassword(webServerPassword);
+        credential.setPasswordHash(PasswordHasher.hash(webServerPassword));
+        credential.setPassword(null);
       }
       persistCredentialsFile();
     }
@@ -234,8 +237,8 @@ public class ServiceProvider {
   }
 
   private void persistCredentialsFile() {
-    try (Writer w = new FileWriter(credentialsFilePath)) {
-      GSON.toJson(credentialsFile, w);
+    try {
+      CredentialsFileStore.save(credentialsFilePath, credentialsFile);
     } catch (IOException e) {
       throw new UncheckedIOException("Could not write " + credentialsFilePath, e);
     }

@@ -6,6 +6,7 @@ import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.credentials.Credential;
+import net.pieroxy.mom.config.credentials.PasswordHasher;
 
 @Endpoint(method = ApiMethod.POST)
 public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput> {
@@ -20,7 +21,7 @@ public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput>
     Credential expected = serviceProvider.getWebServerCredential();
     boolean ok = expected != null
         && expected.getUsername().equals(input.getLogin())
-        && expected.getPassword().equals(input.getPassword());
+        && PasswordHasher.verify(input.getPassword(), expected.getPasswordHash());
     if (!ok) return new LoginApiOutput(false, null);
     return new LoginApiOutput(true, serviceProvider.getSessionStore().create());
   }

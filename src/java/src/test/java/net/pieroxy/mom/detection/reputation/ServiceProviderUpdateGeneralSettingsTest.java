@@ -5,6 +5,7 @@ import net.pieroxy.mom.api.ServiceProvider;
 import net.pieroxy.mom.api.SessionStore;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
+import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.ReputationListConfig;
 import net.pieroxy.mom.config.general.WebServerConfiguration;
@@ -83,13 +84,16 @@ public class ServiceProviderUpdateGeneralSettingsTest {
         "new-admin", "new-password", List.of());
 
     assertEquals("new-admin", webServerCredential.getUsername());
-    assertEquals("new-password", webServerCredential.getPassword());
+    assertEquals("the plaintext password must never be kept once hashed", null, webServerCredential.getPassword());
+    assertTrue(PasswordHasher.verify("new-password", webServerCredential.getPasswordHash()));
     // Takes effect immediately: LoginApi checks against this exact object, not a copy.
     assertSame(webServerCredential, serviceProvider.getWebServerCredential());
 
     CredentialsFile reloaded = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
-    assertEquals("new-admin", reloaded.getCredentials().get(WEB_SERVER_CREDENTIALS_KEY).getUsername());
-    assertEquals("new-password", reloaded.getCredentials().get(WEB_SERVER_CREDENTIALS_KEY).getPassword());
+    Credential reloadedCredential = reloaded.getCredentials().get(WEB_SERVER_CREDENTIALS_KEY);
+    assertEquals("new-admin", reloadedCredential.getUsername());
+    assertEquals("the plaintext password must never be persisted once hashed", null, reloadedCredential.getPassword());
+    assertTrue(PasswordHasher.verify("new-password", reloadedCredential.getPasswordHash()));
   }
 
   @Test

@@ -6,6 +6,8 @@ import net.pieroxy.mom.api.SessionStore;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
+import net.pieroxy.mom.config.credentials.CredentialsFileStore;
+import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.utils.CredentialsResolver;
 import net.pieroxy.mom.utils.logging.LoggingBootstrap;
 import net.pieroxy.mom.detection.reputation.ReputationRegistry;
@@ -73,6 +75,7 @@ public class Runner {
 
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
       Credential webServerCredential = CredentialsResolver.resolve(config.getWebServer().getCredentials(), credentialsFile, "webServer");
+      migrateToHashedPasswordIfNeeded(webServerCredential, credentialsFile, credentialsFilePath);
       ServiceProvider serviceProvider = new ServiceProvider(webServerCredential, new SessionStore(), accounts,
           config, configFile, credentialsFile, credentialsFilePath, config.getDataFolder());
       webServer = WebServerRunner.start(config.getWebServer(), config.getDataFolder(), serviceProvider);
@@ -80,6 +83,30 @@ public class Runner {
 
     Runtime.getRuntime().addShutdownHook(new Thread(Runner::shutdown, "shutdown-hook"));
     LOGGER.info("Started MOM (Mother Of Mailboxes) version " + MVN_VER + " rev " + GIT_REV);
+  }
+
+  /**
+   * One-time, on the web server's own login credential only (never a mail account's — see
+   * {@link Credential}): if it still has a plaintext {@code password} and no {@code passwordHash}
+   * yet, hashes it, clears the plaintext, and persists credentials.json so the plaintext never
+   * sits on disk past this first boot. A write failure (read-only mount, permissions) is logged
+   * and skipped rather than blocking startup — the in-memory hash still works for this run, and
+   * the migration just retries on the next one.
+   * <p>
+   * Package-private (instead of private): lets RunnerTest call it directly without going through
+   * the whole of main() — see MailAccount#processMessages for the same convention.
+   */
+  static void migrateToHashedPasswordIfNeeded(Credential webServerCredential, CredentialsFile credentialsFile, File credentialsFilePath) {
+    if (webServerCredential.getPassword() == null || webServerCredential.getPasswordHash() != null) return;
+    webServerCredential.setPasswordHash(PasswordHasher.hash(webServerCredential.getPassword()));
+    webServerCredential.setPassword(null);
+    try {
+      CredentialsFileStore.save(credentialsFilePath, credentialsFile);
+      LOGGER.info("webServer credential: migrated plaintext password to a hashed one in " + credentialsFilePath);
+    } catch (IOException e) {
+      LOGGER.log(Level.WARNING, "webServer credential: hashed the password but could not persist " + credentialsFilePath
+          + " — will retry on next startup", e);
+    }
   }
 
   private static void shutdown() {
