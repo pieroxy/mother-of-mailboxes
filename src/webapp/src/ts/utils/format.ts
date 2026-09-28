@@ -25,8 +25,8 @@ export function formatCount(count: number): string {
 }
 
 /**
- * A duration in seconds, as its two most significant units, e.g. 71460 -> "19h51m" (not "19.8h" —
- * nobody reads decimal hours as minutes in their head). Below a minute, just seconds: "45s".
+ * A duration in seconds, as its two most significant units, e.g. 71460 -> "19h51m"
+ * Below a minute, just seconds: "45s".
  */
 export function formatDuration(totalSeconds: number): string {
   const seconds = Math.round(Math.abs(totalSeconds));
