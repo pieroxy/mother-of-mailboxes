@@ -57,7 +57,7 @@ export class LoginPage extends AbstractPage {
           Routing.goToScreen(Endpoints.HOME);
         } else {
           this.error = "Invalid login or password.";
-          Notifications.addNotification(new Notification(NotificationsClass.LOGIN, NotificationsType.ERROR, this.error, 50000))
+          Notifications.addNotification(new Notification(NotificationsClass.LOGIN, NotificationsType.ERROR, this.error, 5))
         }
         m.redraw();
       })
