@@ -48,6 +48,13 @@ export interface AccountEditSession {
   rules: PendingRule[];
   shortcuts: PendingShortcut[];
   learnedRules: PendingLearnedRule[];
+  /**
+   * Whether the account currently runs. Deliberately outside the staged/diffed fields above:
+   * pause/resume (see SetAccountActiveApi) takes effect immediately from the settings page, not
+   * staged and flushed together with "Save Changes" — so the page updates this in place on success
+   * rather than going through the rest of this session's change tracking.
+   */
+  active: boolean;
 }
 
 function isDeepEqual(a: unknown, b: unknown): boolean {
@@ -130,6 +137,7 @@ class AccountEditSessionStore {
         rules: output.rules.map((rule, index) => ({ rule, originalIndex: index, deleted: false, edited: false })),
         shortcuts: output.shortcuts.map((shortcut, index) => ({ shortcut, originalIndex: index, deleted: false, edited: false })),
         learnedRules: learnedRulesOutput.rules.map((rule) => ({ rule, deleted: false, edited: false })),
+        active: output.active,
       };
       this.sessions.set(accountName, session);
       return session;

@@ -6,6 +6,7 @@ import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
 import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
 import { StatusWarningIcon } from "../atoms/icons/StatusWarningIcon";
+import { StatusPausedIcon } from "../atoms/icons/StatusPausedIcon";
 import { CycleProgressBar } from "../CycleProgressBar";
 import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
 import { StatsIcon } from "../atoms/icons/StatsIcon";
@@ -76,9 +77,13 @@ interface AccountRowAttrs {
 class AccountRow implements m.ClassComponent<AccountRowAttrs> {
   view({ attrs }: m.Vnode<AccountRowAttrs>): m.Children {
     const account = attrs.account;
-    return m(".account.status-" + account.status.toLowerCase(), [
+    // A paused account's displayed status always wins over whatever it last did while running —
+    // there's no "last known status" worth showing once the user has turned it off on purpose.
+    const displayStatus = account.active ? account.status : "PAUSED";
+    return m(".account.status-" + displayStatus.toLowerCase(), [
       m(".account-left", [
-        m(StatusIcon, { status: account.status }),
+        m(StatusIcon, { status: displayStatus }),
+        m(".account-status-label", statusLabel(displayStatus)),
         m(".account-left-actions", [
           m("span.settings-link", { title: "Account settings", onclick: () => Routing.goToAccountSettings(account.name) }, m(SettingsIcon)),
           m("span.stats-link", { title: "View stats", onclick: () => Routing.goToStats(account.name) }, m(StatsIcon)),
@@ -94,7 +99,7 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
           nextTimestamp: account.nextScheduledCycleTimestamp,
         }),
         m(ClassifierTrainingSummary, { training: account.classifierTraining }),
-        account.status == 'KO' ? m(".account-error", account.lastErrorTimestamp + ": " + account.lastErrorMessage ) : null
+        account.active && account.status == 'KO' ? m(".account-error", account.lastErrorTimestamp + ": " + account.lastErrorMessage ) : null
       )
     ]);
   }
@@ -113,9 +118,27 @@ class StatusIcon implements m.ClassComponent<StatusIconAttrs> {
         return m(StatusWarningIcon);
       case "KO":
         return m(StatusErrorIcon);
+      case "PAUSED":
+        return m(StatusPausedIcon);
       default:
         return m(StatusInfoIcon);
     }
+  }
+}
+
+/** The word shown under an account's status icon — see {@link StatusIcon} for the matching icon. */
+function statusLabel(status: string): string {
+  switch (status) {
+    case "OK":
+      return "OK";
+    case "PROCESSING":
+      return "Processing";
+    case "KO":
+      return "Error";
+    case "PAUSED":
+      return "Paused";
+    default:
+      return status;
   }
 }
 

@@ -236,6 +236,40 @@ public class AccountServiceRestartAccountTest {
     setup.accountService.deleteAccount("does-not-exist");
   }
 
+  @Test
+  public void setAccountActiveFalsePersistsAndStopsTheAccountWithoutRemovingIt() throws Exception {
+    Setup setup = setUp();
+    MailAccount original = setup.accounts.get(0);
+
+    try {
+      setup.accountService.setAccountActive("test-account", false);
+
+      Configuration reloaded = new Gson().fromJson(new FileReader(setup.configFile), Configuration.class);
+      assertEquals("the edit must be on disk", false, reloaded.getConfigurations().get(0).isActive());
+
+      assertEquals("a paused account must stay listed, not be removed", 1, setup.accounts.size());
+      assertNotSame("the old instance must be replaced, not just mutated", original, setup.accounts.get(0));
+    } finally {
+      stopReplacedAccount(setup);
+    }
+  }
+
+  @Test
+  public void setAccountActiveIsANoOpWhenAlreadyInThatState() {
+    Setup setup = setUp();
+    MailAccount original = setup.accounts.get(0);
+
+    setup.accountService.setAccountActive("test-account", true); // already active by default
+
+    assertSame("nothing should be rebuilt when the requested state already holds", original, setup.accounts.get(0));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void setAccountActiveRejectsAnUnknownAccountName() {
+    Setup setup = setUp();
+    setup.accountService.setAccountActive("does-not-exist", false);
+  }
+
   /** Passes the setup's current config fields straight through, only exercising the username/password/rules under test — mirrors the one combined save the settings page now sends (see UpdateAccountApi). */
   private static void updateAccount(Setup setup, String username, String password, List<MailFilterRuleConfiguration> rules) {
     updateAccount(setup, username, password, rules, List.of());

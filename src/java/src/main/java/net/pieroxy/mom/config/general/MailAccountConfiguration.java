@@ -59,6 +59,9 @@ public class MailAccountConfiguration {
    */
   private boolean discoveryTreeDisabled;
 
+  /** Whether this account's thread runs (default true). Paused via the settings page, not deleted — see {@link net.pieroxy.mom.services.AccountService#setAccountActive}. */
+  private boolean active = true;
+
   public String getHost() {
     return host;
   }
@@ -153,5 +156,13 @@ public class MailAccountConfiguration {
 
   public void setPort(int port) {
     this.port = port;
+  }
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
   }
 }

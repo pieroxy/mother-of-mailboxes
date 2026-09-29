@@ -42,7 +42,7 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
     List<MailFilterRuleConfiguration> rules = config.getRules() != null ? config.getRules() : List.of();
     List<LearningShortcutConfiguration> shortcuts = config.getLearningShortcuts() != null ? config.getLearningShortcuts() : List.of();
 
-    return new AccountConfigApiOutput(basicConfig, credentials, rules, shortcuts);
+    return new AccountConfigApiOutput(basicConfig, credentials, rules, shortcuts, config.isActive());
   }
 }
 
@@ -65,16 +65,24 @@ class AccountConfigApiOutput {
   private CredentialsInfoDto credentials;
   private List<MailFilterRuleConfiguration> rules;
   private List<LearningShortcutConfiguration> shortcuts;
+  /**
+   * Whether the account currently runs. Kept separate from {@link AccountBasicConfigDto} — unlike
+   * its fields, pause/resume takes effect immediately from the settings page (see
+   * {@code SetAccountActiveApi}), not staged and flushed together with the rest on "Save Changes".
+   */
+  private boolean active;
 
   public AccountConfigApiOutput() {
   }
 
   public AccountConfigApiOutput(AccountBasicConfigDto config, CredentialsInfoDto credentials,
-                                 List<MailFilterRuleConfiguration> rules, List<LearningShortcutConfiguration> shortcuts) {
+                                 List<MailFilterRuleConfiguration> rules, List<LearningShortcutConfiguration> shortcuts,
+                                 boolean active) {
     this.config = config;
     this.credentials = credentials;
     this.rules = rules;
     this.shortcuts = shortcuts;
+    this.active = active;
   }
 
   public AccountBasicConfigDto getConfig() {
@@ -107,6 +115,14 @@ class AccountConfigApiOutput {
 
   public void setShortcuts(List<LearningShortcutConfiguration> shortcuts) {
     this.shortcuts = shortcuts;
+  }
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
   }
 }
 

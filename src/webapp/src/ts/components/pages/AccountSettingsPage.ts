@@ -11,6 +11,7 @@ import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 import { TokenListEditor } from "../TokenListEditor";
 import { Dialogs } from "../../utils/Dialogs";
+import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 import {
   AccountEditSession,
   PendingLearnedRule,
@@ -47,6 +48,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   private loading = true;
   private error: string | undefined;
   private deleting = false;
+  private togglingActive = false;
 
   getPageTitle(): string {
     return "MOM - Account settings";
@@ -92,6 +94,14 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       m(".page-card", [
         sectionHeader("Learned Rules"),
         this.renderLearnedRulesSection(session),
+      ]),
+      m(".page-card", [
+        m("h2", "Account Status"),
+        m("p.field-hint", session.active
+          ? "This account is running. Pausing it stops it without deleting it or any of its settings."
+          : "This account is paused: it won't run until resumed."),
+        m("button", { onclick: () => this.toggleActive(session), disabled: this.togglingActive },
+          this.togglingActive ? (session.active ? "Pausing…" : "Resuming…") : (session.active ? "Pause Account" : "Resume Account")),
       ]),
       m(".page-card.danger-zone", [
         m("h2", "Danger Zone"),
@@ -321,6 +331,25 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   private discardChanges() {
     accountEditSessions.discard(this.accountName);
     this.load();
+  }
+
+  private toggleActive(session: AccountEditSession) {
+    const active = !session.active;
+    this.togglingActive = true;
+    this.error = undefined;
+    ApiEndpoints.SetAccountActive.call({ accountName: this.accountName, active })
+      .then(() => {
+        session.active = active;
+        this.togglingActive = false;
+        Notifications.addNotification(new Notification(NotificationsClass.ACCOUNT_ACTIVE_TOGGLED, NotificationsType.SUCCESS,
+          active ? "Account resumed." : "Account paused.", 3));
+        m.redraw();
+      })
+      .catch((err: Error) => {
+        this.togglingActive = false;
+        this.error = err.message;
+        m.redraw();
+      });
   }
 
   private confirmDeleteAccount() {

@@ -32,7 +32,7 @@ public class AccountsApi extends AbstractAuthenticatedEndpoint<AccountsApiInput,
   }
 
   private static AccountStatusDto toDto(MailAccount account) {
-    return new AccountStatusDto(account.getAccountLabel(), account.getStatus().name(),
+    return new AccountStatusDto(account.getAccountLabel(), account.getStatus().name(), account.getConfig().isActive(),
         account.getMessagesProcessed(), account.getMessagesMatched(),
         account.getLastErrorMessage(), toIsoString(account.getLastErrorTimestamp()),
         toIsoString(account.getLastCycleCompletedTimestamp()), toIsoString(account.getNextScheduledCycle()),
@@ -83,6 +83,8 @@ class AccountsApiOutput {
 class AccountStatusDto {
   private String name;
   private String status;
+  /** Whether the account currently runs — false if paused from its settings page. */
+  private boolean active;
   private long messagesProcessed;
   private long messagesMatched;
   /** Message of the account's most recent cycle failure this session, or null if none happened. */
@@ -102,12 +104,13 @@ class AccountStatusDto {
   public AccountStatusDto() {
   }
 
-  public AccountStatusDto(String name, String status, long messagesProcessed, long messagesMatched,
+  public AccountStatusDto(String name, String status, boolean active, long messagesProcessed, long messagesMatched,
                            String lastErrorMessage, String lastErrorTimestamp,
                            String lastCycleCompletedTimestamp, String nextScheduledCycleTimestamp,
                            ClassifierTrainingStateDto classifierTraining, int ruleCount, int activeRuleCount) {
     this.name = name;
     this.status = status;
+    this.active = active;
     this.messagesProcessed = messagesProcessed;
     this.messagesMatched = messagesMatched;
     this.lastErrorMessage = lastErrorMessage;
@@ -133,6 +136,14 @@ class AccountStatusDto {
 
   public void setStatus(String status) {
     this.status = status;
+  }
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
   }
 
   public long getMessagesProcessed() {

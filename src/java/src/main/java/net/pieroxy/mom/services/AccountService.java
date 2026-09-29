@@ -43,7 +43,7 @@ public class AccountService implements Service {
       Credential credential = settingsService.resolveCredential(conf.getCredentials(), "mail account \"" + conf.getDisplayName() + "\"");
       MailAccount account = new MailAccount(conf, credential, settingsService.getDataFolder());
       accounts.add(account);
-      account.start();
+      if (conf.isActive()) account.start();
     });
   }
 
@@ -101,6 +101,46 @@ public class AccountService implements Service {
     MailAccount fresh = new MailAccount(updatedConfig, credential, settingsService.getDataFolder());
     accounts.set(index, fresh);
     fresh.start();
+  }
+
+  /**
+   * Pauses or resumes an account without deleting it: persists the new {@code active} flag, then
+   * stops the account's current thread — same as {@link #restartAccount}, which in practice means
+   * waiting for an in-progress cycle to finish rather than aborting it mid-flight, since a plain
+   * IMAP socket read doesn't respond to {@link MailAccount#requestStop} until the cycle returns —
+   * and, when resuming, starts a fresh one. Unlike {@link #deleteAccount}, the account stays in
+   * {@link #getAccounts()} throughout, so its settings and last known stats remain visible while
+   * paused. A no-op if the account is already in the requested state.
+   */
+  public synchronized void setAccountActive(String accountName, boolean active) {
+    int index = -1;
+    for (int i = 0; i < accounts.size(); i++) {
+      if (accounts.get(i).getAccountLabel().equals(accountName)) {
+        index = i;
+        break;
+      }
+    }
+    if (index < 0) {
+      throw new IllegalArgumentException("No such account: " + accountName);
+    }
+
+    MailAccountConfiguration config = settingsService.findAccountConfig(accountName);
+    if (config.isActive() == active) return;
+    config.setActive(active);
+    settingsService.persistConfig();
+
+    MailAccount old = accounts.get(index);
+    old.requestStop();
+    try {
+      old.join(RESTART_JOIN_TIMEOUT_MS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+
+    Credential credential = settingsService.resolveCredential(config.getCredentials(), "mail account \"" + accountName + "\"");
+    MailAccount fresh = new MailAccount(config, credential, settingsService.getDataFolder());
+    accounts.set(index, fresh);
+    if (active) fresh.start();
   }
 
   /**

@@ -19,6 +19,7 @@ $status-ok-faint: #0a08;
 $status-info: #aaf;
 $status-warning: #fa4;
 $status-error: #f00;
+$status-paused: #999;
 $value-changed: #7272AB;
 
 // Misc
@@ -459,6 +460,13 @@ body {
                       flex-direction: column;
                       justify-content: space-between;
                       align-items: center;
+                  }
+
+                  .account-status-label {
+                      font-size: 11px;
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                      color: $text-faint;
                   }
 
                   .account-left-actions {
@@ -1289,6 +1297,22 @@ svg.icon {
 
       &.secondary {
         fill: $status-error;
+      }
+    }
+  }
+
+  &.paused {
+    > * {
+      &.primary {
+        stroke: $status-paused;
+      }
+
+      &.primaryfill {
+        fill: $status-paused;
+      }
+
+      &.secondary {
+        fill: $status-paused;
       }
     }
   }
