@@ -122,10 +122,17 @@ body {
 
                 .closebtn {
                     opacity: 0.5;
+                    margin-top:-15px;
+                    margin-right: -15px;
 
                     &:hover {
                         opacity: 0.8;
                         cursor:pointer;
+                    }
+
+                    svg {
+                        width: 30px;
+                        height: 30px;
                     }
                 }
             }
@@ -460,6 +467,13 @@ body {
                       flex-direction: column;
                       justify-content: space-between;
                       align-items: center;
+                  }
+
+                  .account-status {
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                      gap: 4px;
                   }
 
                   .account-status-label {
