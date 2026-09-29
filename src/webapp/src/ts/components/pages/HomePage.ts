@@ -82,8 +82,10 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
     const displayStatus = account.active ? account.status : "PAUSED";
     return m(".account.status-" + displayStatus.toLowerCase(), [
       m(".account-left", [
-        m(StatusIcon, { status: displayStatus }),
-        m(".account-status-label", statusLabel(displayStatus)),
+        m(".account-status", [
+          m(StatusIcon, { status: displayStatus }),
+          m(".account-status-label", statusLabel(displayStatus)),
+        ]),
         m(".account-left-actions", [
           m("span.settings-link", { title: "Account settings", onclick: () => Routing.goToAccountSettings(account.name) }, m(SettingsIcon)),
           m("span.stats-link", { title: "View stats", onclick: () => Routing.goToStats(account.name) }, m(StatsIcon)),
