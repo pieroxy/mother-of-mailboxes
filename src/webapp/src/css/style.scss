@@ -960,6 +960,12 @@ body {
                           font-weight: bold;
                       }
 
+                      // An explanation ("(default)", "(unchanged)"), not part of the value itself —
+                      // styled like .config-row-label instead of the value color around it.
+                      .config-row-hint {
+                          color: $text-faint;
+                      }
+
                       .token-list {
                           display: flex;
                           flex-wrap: wrap;

@@ -416,13 +416,18 @@ function renderTokenList(items: string[]): m.Children {
   return m(".token-list", items.map((item) => m(".token", { key: item }, item)));
 }
 
+/** "(default)"/"(unchanged)" etc. are an explanation, not part of the value — styled like a label (see .config-row-hint), never like real data. */
+function spamFolderValue(name: string): m.Children {
+  return name ? name : ["Spam", m("span.config-row-hint", " (default)")];
+}
+
 function renderGeneralSection(session: AccountEditSession): m.Children {
   const config: AccountBasicConfigDto = session.workingConfig;
   const changed = (field: keyof AccountBasicConfigDto) => isConfigFieldChanged(session, field);
   return m(".config-grid", [
     configRow("Display name", config.displayName, false),
     configRow("Run every", config.runEvery + "s", changed("runEvery")),
-    configRow("Spam folder", config.classifierSpamFolderName || "Spam (default)", changed("classifierSpamFolderName")),
+    configRow("Spam folder", spamFolderValue(config.classifierSpamFolderName), changed("classifierSpamFolderName")),
     configRow("Classifier excluded folders", renderTokenList(config.classifierExcludedFolders), changed("classifierExcludedFolders")),
     configRow("Classifier corpus retention", config.classifierCorpusRetentionDays > 0 ? config.classifierCorpusRetentionDays + " day(s)" : "disabled", changed("classifierCorpusRetentionDays")),
     configRow("Classifier scan batch size", config.classifierCorpusScanBatchSize > 0 ? String(config.classifierCorpusScanBatchSize) : "default", changed("classifierCorpusScanBatchSize")),
@@ -437,6 +442,6 @@ function renderImapSettingsSection(session: AccountEditSession): m.Children {
     configRow("Host", config.host, changed("host")),
     configRow("Port", String(config.port), changed("port")),
     configRow("Username", session.workingUsername, session.workingUsername !== session.baselineUsername),
-    configRow("Password", session.workingPassword !== "" ? "(will be changed)" : "(unchanged)", session.workingPassword !== ""),
+    configRow("Password", session.workingPassword !== "" ? "(will be changed)" : m("span.config-row-hint", "(unchanged)"), session.workingPassword !== ""),
   ]);
 }
