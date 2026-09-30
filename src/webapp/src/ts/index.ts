@@ -7,8 +7,8 @@ import { Endpoints } from "./utils/navigation/Endpoints";
 import { ProfilePage } from "./components/pages/ProfilePage";
 import { StatsPage } from "./components/pages/StatsPage";
 import { AccountSettingsPage } from "./components/pages/AccountSettingsPage";
-import { AccountConfigEditPage } from "./components/pages/AccountConfigEditPage";
-import { AccountCredentialsEditPage } from "./components/pages/AccountCredentialsEditPage";
+import { AccountGeneralEditPage } from "./components/pages/AccountGeneralEditPage";
+import { AccountImapSettingsEditPage } from "./components/pages/AccountImapSettingsEditPage";
 import { RuleEditPage } from "./components/pages/RuleEditPage";
 import { ShortcutEditPage } from "./components/pages/ShortcutEditPage";
 import { GeneralSettingsPage } from "./components/pages/GeneralSettingsPage";
@@ -20,8 +20,8 @@ const routes: m.RouteDefs = {
   [Endpoints.GENERAL_SETTINGS]: new AuthenticatedPageResolver(GeneralSettingsPage),
   [Endpoints.STATS]: new AuthenticatedPageResolver(StatsPage),
   [Endpoints.ACCOUNT_SETTINGS]: new AuthenticatedPageResolver(AccountSettingsPage),
-  [Endpoints.ACCOUNT_CONFIG_EDIT]: new AuthenticatedPageResolver(AccountConfigEditPage),
-  [Endpoints.ACCOUNT_CREDENTIALS_EDIT]: new AuthenticatedPageResolver(AccountCredentialsEditPage),
+  [Endpoints.ACCOUNT_GENERAL_EDIT]: new AuthenticatedPageResolver(AccountGeneralEditPage),
+  [Endpoints.ACCOUNT_IMAP_SETTINGS_EDIT]: new AuthenticatedPageResolver(AccountImapSettingsEditPage),
   [Endpoints.RULE_EDIT]: new AuthenticatedPageResolver(RuleEditPage),
   [Endpoints.SHORTCUT_EDIT]: new AuthenticatedPageResolver(ShortcutEditPage),
 };

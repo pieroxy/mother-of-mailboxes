@@ -23,6 +23,15 @@ import java.util.logging.Logger;
 public class ImapMailboxConnection implements ImapMailbox {
   private final static Logger LOGGER = Logger.getLogger(ImapMailboxConnection.class.getName());
 
+  /**
+   * How long a connect(), and any single blocking read/write on the resulting connection, may
+   * take before failing fast instead of hanging on OS-default socket timeouts (which can run to
+   * several minutes) — no operation here (fetch, move, list folders, ...) is expected to need
+   * anywhere near this long against a real server. Also reused by {@link ImapIdleWatcher} for its
+   * own connect phase, but deliberately not its read timeout — see that class's doc comment.
+   */
+  public final static int CONNECT_TIMEOUT_MS = 5000;
+
   private final Store store;
   private final IMAPFolder inbox;
 
@@ -37,7 +46,7 @@ public class ImapMailboxConnection implements ImapMailbox {
    * try-with-resources.
    */
   public static ImapMailboxConnection connect(MailAccountConfiguration config, Credential credential) throws MessagingException {
-    Session session = Session.getDefaultInstance(peekProperties());
+    Session session = Session.getDefaultInstance(sessionProperties());
     session.setDebug(false);
     Store store = session.getStore("imaps");
     store.connect(config.getHost(), config.getPort(), credential.getUsername(), credential.getPassword());
@@ -225,12 +234,16 @@ public class ImapMailboxConnection implements ImapMailbox {
    * with an IMAP trace: javax.mail still sends BODY[], not BODY.PEEK[], despite "peek"=true
    * here). The real fix for that path is {@code IMAPMessage.setPeek(true)} set per message
    * before reading, see {@link net.pieroxy.mom.utils.MailTools#readRawMessageWithoutMarkingSeen}.
-   * The two properties below exist because it's set per protocol ("imap" plaintext vs "imaps").
+   * The two peek properties below exist because it's set per protocol ("imap" plaintext vs
+   * "imaps") — see {@link #CONNECT_TIMEOUT_MS} for the timeout properties alongside them.
    */
-  private static Properties peekProperties() {
+  private static Properties sessionProperties() {
     Properties props = new Properties();
     props.setProperty("mail.imap.peek", "true");
     props.setProperty("mail.imaps.peek", "true");
+    props.setProperty("mail.imaps.connectiontimeout", String.valueOf(CONNECT_TIMEOUT_MS));
+    props.setProperty("mail.imaps.timeout", String.valueOf(CONNECT_TIMEOUT_MS));
+    props.setProperty("mail.imaps.writetimeout", String.valueOf(CONNECT_TIMEOUT_MS));
     return props;
   }
 }

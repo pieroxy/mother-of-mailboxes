@@ -14,12 +14,12 @@ export class Routing {
     m.route.set(Endpoints.ACCOUNT_SETTINGS, { accountName });
   }
 
-  static goToAccountConfigEdit(accountName: string) {
-    m.route.set(Endpoints.ACCOUNT_CONFIG_EDIT, { accountName });
+  static goToAccountGeneralEdit(accountName: string) {
+    m.route.set(Endpoints.ACCOUNT_GENERAL_EDIT, { accountName });
   }
 
-  static goToAccountCredentialsEdit(accountName: string) {
-    m.route.set(Endpoints.ACCOUNT_CREDENTIALS_EDIT, { accountName });
+  static goToAccountImapSettingsEdit(accountName: string) {
+    m.route.set(Endpoints.ACCOUNT_IMAP_SETTINGS_EDIT, { accountName });
   }
 
   /** ruleIndex is the rule's position in the account's rules array, or "new" to create one. */

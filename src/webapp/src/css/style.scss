@@ -391,6 +391,16 @@ body {
                   gap: 8px;
                   margin-bottom: 12px;
 
+                  // Always present (even with nothing but the edit-gear inside): pushes every
+                  // right-side element as one group to the far right, leaving the h2 flush left —
+                  // whether or not a section passes extra content (see IMAP settings' test button).
+                  .section-header-right {
+                      display: flex;
+                      align-items: center;
+                      gap: 10px;
+                      margin-left: auto;
+                  }
+
                   .section-edit-link {
                       cursor: pointer;
                       opacity: 0.5;
@@ -1384,6 +1394,29 @@ button {
 .danger-button {
     background-color: $error-color;
     color: $text-color;
+}
+
+.test-imap-connection {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    button {
+        font-size: 12px;
+        padding: 4px 14px;
+    }
+
+    .test-imap-connection-result {
+        font-size: 12px;
+
+        &.ok {
+            color: $status-ok;
+        }
+
+        &.error {
+            color: $status-error;
+        }
+    }
 }
 
 .errorMessage, .account-error {

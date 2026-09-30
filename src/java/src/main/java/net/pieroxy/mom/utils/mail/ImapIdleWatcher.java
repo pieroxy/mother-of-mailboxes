@@ -68,7 +68,12 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
   }
 
   private static Store connectImaps(MailAccountConfiguration config, Credential credential) throws MessagingException {
-    Session session = Session.getDefaultInstance(new Properties());
+    // Only the connect phase gets a bounded timeout: idle() below deliberately blocks far longer
+    // than that waiting for new mail (see this class's doc comment) — the same timeout applied to
+    // reads would fail every single slice and silently degrade every account to polling-only.
+    Properties props = new Properties();
+    props.setProperty("mail.imaps.connectiontimeout", String.valueOf(ImapMailboxConnection.CONNECT_TIMEOUT_MS));
+    Session session = Session.getDefaultInstance(props);
     Store store = session.getStore("imaps");
     store.connect(config.getHost(), config.getPort(), credential.getUsername(), credential.getPassword());
     return store;

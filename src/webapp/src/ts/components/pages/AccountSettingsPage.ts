@@ -10,6 +10,7 @@ import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 import { TokenListEditor } from "../TokenListEditor";
+import { TestImapConnectionButton } from "../TestImapConnectionButton";
 import { Dialogs } from "../../utils/Dialogs";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 import {
@@ -34,8 +35,8 @@ interface AccountSettingsPageAttrs {
 }
 
 /**
- * One account's whole configuration, in four sections: Config, Credentials, Rules, Shortcuts.
- * Nothing here calls the backend directly — every edit (Config/Credentials fields, rule reorder/
+ * One account's whole configuration, in four sections: General, IMAP settings, Rules, Shortcuts.
+ * Nothing here calls the backend directly — every edit (General/IMAP settings fields, rule reorder/
  * delete/edit/add) is staged locally in an AccountEditSession (see AccountEditSession.ts) and
  * shown highlighted (see the CSS's $value-changed) until "Save Changes" flushes the whole batch
  * in one call (UpdateAccountApi) and restarts the account once; "Discard Changes" just throws the
@@ -74,12 +75,16 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
     return m(".settings-content", [
       isSessionChanged(session) ? this.renderChangesBar() : null,
       m(".page-card", [
-        sectionHeader("Config", () => Routing.goToAccountConfigEdit(this.accountName)),
-        renderConfigSection(session),
+        sectionHeader("General", () => Routing.goToAccountGeneralEdit(this.accountName)),
+        renderGeneralSection(session),
       ]),
       m(".page-card", [
-        sectionHeader("Credentials", () => Routing.goToAccountCredentialsEdit(this.accountName)),
-        renderCredentialsSection(session),
+        sectionHeader("IMAP settings", () => Routing.goToAccountImapSettingsEdit(this.accountName),
+          m(TestImapConnectionButton, {
+            accountName: this.accountName, host: session.workingConfig.host, port: session.workingConfig.port,
+            username: session.workingUsername, password: session.workingPassword,
+          })),
+        renderImapSettingsSection(session),
       ]),
       m(".page-card", [
         sectionHeader("Rules"),
@@ -392,10 +397,13 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   }
 }
 
-function sectionHeader(title: string, onEdit?: () => void): m.Children {
+function sectionHeader(title: string, onEdit?: () => void, extra?: m.Children): m.Children {
   return m(".section-header", [
     m("h2", title),
-    onEdit ? m("span.section-edit-link", { title: "Edit " + title.toLowerCase(), onclick: onEdit }, m(SettingsIcon)) : null,
+    m(".section-header-right", [
+      extra ?? null,
+      onEdit ? m("span.section-edit-link", { title: "Edit " + title.toLowerCase(), onclick: onEdit }, m(SettingsIcon)) : null,
+    ]),
   ]);
 }
 
@@ -408,13 +416,11 @@ function renderTokenList(items: string[]): m.Children {
   return m(".token-list", items.map((item) => m(".token", { key: item }, item)));
 }
 
-function renderConfigSection(session: AccountEditSession): m.Children {
+function renderGeneralSection(session: AccountEditSession): m.Children {
   const config: AccountBasicConfigDto = session.workingConfig;
   const changed = (field: keyof AccountBasicConfigDto) => isConfigFieldChanged(session, field);
   return m(".config-grid", [
     configRow("Display name", config.displayName, false),
-    configRow("Host", config.host, changed("host")),
-    configRow("Port", String(config.port), changed("port")),
     configRow("Run every", config.runEvery + "s", changed("runEvery")),
     configRow("Spam folder", config.classifierSpamFolderName || "Spam (default)", changed("classifierSpamFolderName")),
     configRow("Classifier excluded folders", renderTokenList(config.classifierExcludedFolders), changed("classifierExcludedFolders")),
@@ -424,9 +430,12 @@ function renderConfigSection(session: AccountEditSession): m.Children {
   ]);
 }
 
-function renderCredentialsSection(session: AccountEditSession): m.Children {
+function renderImapSettingsSection(session: AccountEditSession): m.Children {
+  const config: AccountBasicConfigDto = session.workingConfig;
+  const changed = (field: keyof AccountBasicConfigDto) => isConfigFieldChanged(session, field);
   return m(".config-grid", [
-    configRow("Credentials key", session.credentialsKey, false),
+    configRow("Host", config.host, changed("host")),
+    configRow("Port", String(config.port), changed("port")),
     configRow("Username", session.workingUsername, session.workingUsername !== session.baselineUsername),
     configRow("Password", session.workingPassword !== "" ? "(will be changed)" : "(unchanged)", session.workingPassword !== ""),
   ]);

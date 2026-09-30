@@ -4,24 +4,23 @@ import { Routing } from "../../utils/navigation/Routing";
 import { TokenListEditor } from "../TokenListEditor";
 import { AccountEditSession, accountEditSessions, isConfigFieldChanged } from "../../utils/AccountEditSession";
 
-interface AccountConfigEditPageAttrs {
+interface AccountGeneralEditPageAttrs {
   accountName: string;
 }
 
 /**
- * Edits the Config section's fields (see AccountSettingsPage/AccountBasicConfigDto) — everything
+ * Edits the General section's fields (see AccountSettingsPage/AccountBasicConfigDto) — everything
  * except displayName, which stays read-only: it names every one of this account's on-disk files
  * (state, learned rules, classifier corpus, stats), so editing it here would silently orphan that
- * history instead of migrating it. Nothing is sent to the backend here: "OK" just writes the
- * edited fields into the account's AccountEditSession and returns to the settings page, where
- * they show highlighted until "Save Changes" persists the whole batch in one call.
+ * history instead of migrating it. Host/port live on AccountImapSettingsEditPage instead, grouped
+ * with the IMAP credentials they connect with. Nothing is sent to the backend here: "OK" just
+ * writes the edited fields into the account's AccountEditSession and returns to the settings page,
+ * where they show highlighted until "Save Changes" persists the whole batch in one call.
  */
-export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAttrs> {
+export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageAttrs> {
   private accountName = "";
   private session: AccountEditSession | undefined;
   private displayName = "";
-  private host = "";
-  private port = 0;
   private runEvery = 0;
   private classifierSpamFolderName = "";
   private classifierExcludedFolders: string[] = [];
@@ -32,19 +31,19 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
   private error: string | undefined;
 
   getPageTitle(): string {
-    return "MOM - Edit config";
+    return "MOM - Edit general settings";
   }
 
-  oninit({ attrs }: m.Vnode<AccountConfigEditPageAttrs>) {
+  oninit({ attrs }: m.Vnode<AccountGeneralEditPageAttrs>) {
     this.accountName = attrs.accountName;
     this.load();
   }
 
   render(): m.Children {
-    return m("page.accountconfigeditpage", [
+    return m("page.accountgeneraleditpage", [
       m(".page-header", [
         m("a.page-back", { onclick: () => this.cancel() }, "‹ Back to settings"),
-        m("h1.page-title", "Edit config — " + this.accountName),
+        m("h1.page-title", "Edit general settings — " + this.accountName),
       ]),
       this.error ? m(".settings-error.errorMessage", this.error) : null,
       this.loading ? m(".page-loading", "Loading…") : this.renderForm(),
@@ -56,14 +55,6 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
     const baseline = session.baselineConfig;
     return m(".page-card.edit-form", [
       this.field("Display name", null, m("input", { type: "text", value: this.displayName, disabled: true })),
-      this.field("Host", this.originalHint(session, "host", baseline.host), m("input", {
-        type: "text", value: this.host,
-        oninput: (e: Event) => (this.host = (e.target as HTMLInputElement).value),
-      })),
-      this.field("Port", this.originalHint(session, "port", String(baseline.port)), m("input", {
-        type: "number", value: this.port,
-        oninput: (e: Event) => (this.port = Number((e.target as HTMLInputElement).value)),
-      })),
       this.field("Run every (seconds)", this.originalHint(session, "runEvery", String(baseline.runEvery)), m("input", {
         type: "number", value: this.runEvery,
         oninput: (e: Event) => (this.runEvery = Number((e.target as HTMLInputElement).value)),
@@ -131,8 +122,6 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
   private applyFromWorkingConfig(session: AccountEditSession) {
     const config = session.workingConfig;
     this.displayName = config.displayName;
-    this.host = config.host;
-    this.port = config.port;
     this.runEvery = config.runEvery;
     this.classifierSpamFolderName = config.classifierSpamFolderName || "";
     this.classifierExcludedFolders = config.classifierExcludedFolders;
@@ -143,8 +132,6 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
 
   /** Mirrors the checks UpdateAccountApi itself makes — catches the common mistakes before they're staged into the session instead of only surfacing them at "Save Changes" time. */
   private validate(): string | undefined {
-    if (!this.host.trim()) return "Host must not be blank.";
-    if (this.port <= 0 || this.port > 65535) return "Port must be between 1 and 65535.";
     if (this.runEvery <= 0) return "\"Run every\" must be a positive number of seconds.";
     return undefined;
   }
@@ -158,8 +145,6 @@ export class AccountConfigEditPage extends AbstractPage<AccountConfigEditPageAtt
     const session = this.session!;
     session.workingConfig = {
       ...session.workingConfig,
-      host: this.host,
-      port: this.port,
       runEvery: this.runEvery,
       classifierSpamFolderName: this.classifierSpamFolderName,
       classifierExcludedFolders: this.classifierExcludedFolders,
