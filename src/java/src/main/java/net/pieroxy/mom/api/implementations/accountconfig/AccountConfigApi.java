@@ -148,7 +148,11 @@ class AccountBasicConfigDto {
     this.host = host;
     this.port = port;
     this.runEvery = runEvery;
-    this.classifierSpamFolderName = classifierSpamFolderName;
+    // Never null: the webapp round-trips this DTO byte-for-byte into UpdateAccountApi's own input
+    // to detect unrelated edits (see AccountEditSession's isConfigFieldChanged) — a null baseline
+    // here against an edit page's "" (an <input> can't bind null) would misreport every unrelated
+    // save as having touched this field. Same reasoning as classifierExcludedFolders below.
+    this.classifierSpamFolderName = classifierSpamFolderName != null ? classifierSpamFolderName : "";
     this.classifierExcludedFolders = classifierExcludedFolders != null ? classifierExcludedFolders : List.of();
     this.classifierCorpusRetentionDays = classifierCorpusRetentionDays;
     this.classifierCorpusScanBatchSize = classifierCorpusScanBatchSize;
