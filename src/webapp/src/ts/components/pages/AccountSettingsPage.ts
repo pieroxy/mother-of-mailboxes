@@ -72,13 +72,17 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
   }
 
   private renderContent(session: AccountEditSession): m.Children {
-    return m(".settings-content", [
+    const accountStatusCard = this.renderAccountStatusCard(session);
+    // Keys let Mithril reorder this card (it moves to the top when paused) instead of scrambling
+    // its neighbors; nulls are filtered below since Mithril errors if any sibling is keyed and one isn't.
+    const cards = [
       isSessionChanged(session) ? this.renderChangesBar() : null,
-      m(".page-card", [
+      session.active ? null : accountStatusCard,
+      m(".page-card", { key: "general" }, [
         sectionHeader("General", () => Routing.goToAccountGeneralEdit(this.accountName)),
         renderGeneralSection(session),
       ]),
-      m(".page-card", [
+      m(".page-card", { key: "imap-settings" }, [
         sectionHeader("IMAP settings", () => Routing.goToAccountImapSettingsEdit(this.accountName),
           m(TestImapConnectionButton, {
             accountName: this.accountName, host: session.workingConfig.host, port: session.workingConfig.port,
@@ -86,39 +90,44 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
           })),
         renderImapSettingsSection(session),
       ]),
-      m(".page-card", [
+      m(".page-card", { key: "rules" }, [
         sectionHeader("Rules"),
         this.renderRulesSection(session),
         m("button.add-item-button", { onclick: () => Routing.goToRuleEdit(this.accountName, "new") }, "+ Add rule"),
       ]),
-      m(".page-card", [
+      m(".page-card", { key: "shortcuts" }, [
         sectionHeader("Shortcuts"),
         this.renderShortcutsSection(session),
         m("button.add-item-button", { onclick: () => Routing.goToShortcutEdit(this.accountName, "new") }, "+ Add shortcut"),
       ]),
-      m(".page-card", [
+      m(".page-card", { key: "learned-rules" }, [
         sectionHeader("Learned Rules"),
         this.renderLearnedRulesSection(session),
       ]),
-      m(".page-card", [
-        m("h2", "Account Status"),
-        m("p.field-hint", session.active
-          ? "This account is running. Pausing it stops it without deleting it or any of its settings."
-          : "This account is paused: it won't run until resumed."),
-        m("button", { onclick: () => this.toggleActive(session), disabled: this.togglingActive },
-          this.togglingActive ? (session.active ? "Pausing…" : "Resuming…") : (session.active ? "Pause Account" : "Resume Account")),
-      ]),
-      m(".page-card.danger-zone", [
+      session.active ? accountStatusCard : null,
+      m(".page-card.danger-zone", { key: "danger-zone" }, [
         m("h2", "Danger Zone"),
         m("p.field-hint", "Deleting this account stops it and removes it, and its saved credentials, from config.json/credentials.json. This cannot be undone."),
         m("button.danger-button", { onclick: () => this.confirmDeleteAccount(), disabled: this.deleting },
           this.deleting ? "Deleting…" : "Delete Account"),
       ]),
+    ];
+    return m(".settings-content", cards.filter((card) => card !== null));
+  }
+
+  private renderAccountStatusCard(session: AccountEditSession): m.Children {
+    return m(".page-card", { key: "account-status" }, [
+      m("h2", "Account Status"),
+      m("p.field-hint", session.active
+        ? "This account is running. Pausing it stops it without deleting it or any of its settings."
+        : "This account is paused: it won't run until resumed."),
+      m("button", { onclick: () => this.toggleActive(session), disabled: this.togglingActive },
+        this.togglingActive ? (session.active ? "Pausing…" : "Resuming…") : (session.active ? "Pause Account" : "Resume Account")),
     ]);
   }
 
   private renderChangesBar(): m.Children {
-    return m(".settings-changes-bar", [
+    return m(".settings-changes-bar", { key: "changes-bar" }, [
       m("span", "You have unsaved changes."),
       m(".changes-actions", [
         m("button.save-changes-button", { onclick: () => this.saveChanges(), disabled: this.savingChanges },
