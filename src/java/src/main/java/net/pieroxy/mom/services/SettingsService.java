@@ -18,7 +18,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -55,7 +59,8 @@ public class SettingsService implements Service {
   /**
    * Resolves the web server's login credential (if {@code webServer} is configured and enabled)
    * and migrates a plaintext password to a hashed one — see
-   * {@link #migrateWebServerPasswordIfNeeded}.
+   * {@link #migrateWebServerPasswordIfNeeded}. Then sweeps credentials.json for entries config.json
+   * no longer references — see {@link #cleanUpDanglingCredentials}.
    */
   @Override
   public void start() {
@@ -63,6 +68,7 @@ public class SettingsService implements Service {
       webServerCredential = resolveCredential(config.getWebServer().getCredentials(), "webServer");
       migrateWebServerPasswordIfNeeded();
     }
+    cleanUpDanglingCredentials();
   }
 
   public Configuration getConfiguration() {
@@ -120,6 +126,36 @@ public class SettingsService implements Service {
     } catch (IOException e) {
       throw new UncheckedIOException("Could not write " + credentialsFilePath, e);
     }
+  }
+
+  /**
+   * Removes any credentials.json entry no longer referenced by config.json: each mail account's
+   * {@code credentials} key, plus {@code webServer}'s if that section exists at all (regardless of
+   * {@code enabled} — disabling it doesn't detach the mapping). Neither key is ever repointed once
+   * set (no API changes an existing account's or the web server's credentials key), so this is only
+   * ever called from {@link #start} and {@link AccountService#deleteAccount} — the sole two points
+   * that can actually leave an entry dangling.
+   */
+  public synchronized void cleanUpDanglingCredentials() {
+    Map<String, Credential> credentials = credentialsFile.getCredentials();
+    if (credentials == null || credentials.isEmpty()) return;
+
+    Set<String> referenced = new HashSet<>();
+    if (config.getWebServer() != null) referenced.add(config.getWebServer().getCredentials());
+    for (MailAccountConfiguration c : config.getConfigurations()) referenced.add(c.getCredentials());
+
+    Set<String> dangling = new HashSet<>(credentials.keySet());
+    dangling.removeAll(referenced);
+    if (dangling.isEmpty()) return;
+
+    // A fresh, guaranteed-mutable map rather than mutating credentials in place: nothing
+    // guarantees the Map a caller handed CredentialsFile (or Gson, on deserialization) supports
+    // removal.
+    Map<String, Credential> kept = new HashMap<>(credentials);
+    dangling.forEach(kept::remove);
+    credentialsFile.setCredentials(kept);
+    persistCredentialsFile();
+    LOGGER.info("Removed dangling credentials.json entry/entries no longer referenced by config.json: " + dangling);
   }
 
   /**

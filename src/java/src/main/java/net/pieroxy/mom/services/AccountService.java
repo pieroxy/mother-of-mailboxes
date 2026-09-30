@@ -178,11 +178,13 @@ public class AccountService implements Service {
   }
 
   /**
-   * Permanently removes one account: stops its thread, drops it from {@link #getAccounts()}, and
-   * removes its entry from config.json. Deliberately leaves its credentials.json entry and any
+   * Permanently removes one account: stops its thread, drops it from {@link #getAccounts()},
+   * removes its entry from config.json, and removes its now-unreferenced credentials.json entry
+   * (see {@link SettingsService#cleanUpDanglingCredentials}). Deliberately leaves any other
    * on-disk state (learned rules, stats, classifier corpus) untouched — nothing else references
-   * them once the account is gone, but silently deleting a user's history as a side effect of
-   * removing a config entry would be a surprise, not a convenience.
+   * it once the account is gone, but silently deleting a user's history as a side effect of
+   * removing a config entry would be a surprise, not a convenience. A saved IMAP password left
+   * behind for no reason is a different kind of thing to leave lying around, hence the exception.
    */
   public synchronized void deleteAccount(String accountName) {
     int index = -1;
@@ -207,6 +209,7 @@ public class AccountService implements Service {
 
     settingsService.removeAccountConfig(accountName);
     settingsService.persistConfig();
+    settingsService.cleanUpDanglingCredentials();
   }
 
   /**

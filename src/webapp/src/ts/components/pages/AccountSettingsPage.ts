@@ -105,7 +105,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       ]),
       m(".page-card.danger-zone", [
         m("h2", "Danger Zone"),
-        m("p.field-hint", "Deleting this account stops it and removes it from config.json. This cannot be undone."),
+        m("p.field-hint", "Deleting this account stops it and removes it, and its saved credentials, from config.json/credentials.json. This cannot be undone."),
         m("button.danger-button", { onclick: () => this.confirmDeleteAccount(), disabled: this.deleting },
           this.deleting ? "Deleting…" : "Delete Account"),
       ]),
@@ -354,7 +354,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
 
   private confirmDeleteAccount() {
     Dialogs.confirm(
-      "Delete account \"" + this.accountName + "\"? It will stop running and be removed from config.json. There's no coming back from this.",
+      "Delete account \"" + this.accountName + "\"? It will stop running and be removed, along with its saved credentials, from config.json/credentials.json. There's no coming back from this.",
       "Delete Account", "Cancel",
       () => this.deleteAccount(),
     );

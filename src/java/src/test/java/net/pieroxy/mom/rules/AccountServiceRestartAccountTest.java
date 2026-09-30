@@ -230,6 +230,17 @@ public class AccountServiceRestartAccountTest {
     assertEquals("the account must be gone from config.json", 0, reloaded.getConfigurations().size());
   }
 
+  @Test
+  public void deleteAccountAlsoRemovesItsNowDanglingCredential() throws Exception {
+    Setup setup = setUp();
+
+    setup.accountService.deleteAccount("test-account");
+
+    CredentialsFile reloaded = new Gson().fromJson(new FileReader(setup.credentialsFilePath), CredentialsFile.class);
+    assertEquals("nothing references this account's credential anymore, it must be gone too",
+        0, reloaded.getCredentials().size());
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void deleteAccountRejectsAnUnknownAccountName() {
     Setup setup = setUp();
