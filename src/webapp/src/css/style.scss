@@ -649,6 +649,11 @@ body {
               }
           }
 
+          &.profilepage {
+              display: flex;
+              gap: 12px;
+          }
+
           &.loginpage, &.changepasswordpage {
               display: flex;
               flex-direction: column;
@@ -1398,8 +1403,8 @@ button {
     color: $text-on-accent;
 
     &.secondary {
-        background-color: $bg-color-d1;
-        color: $text-muted;
+        background-color: $white-glow;
+        color: $text-on-accent;
     }
 }
 

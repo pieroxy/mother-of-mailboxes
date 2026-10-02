@@ -1,12 +1,16 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { LogoSub } from "../atoms/icons/Logo";
-import { Auth } from "../../utils/Auth";
+import { Auth, AuthStatus } from "../../utils/Auth";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { Routing } from "../../utils/navigation/Routing";
 import { AbstractPage } from "./AbstractPage";
+import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
-/** Shown right after logging in with a temporary password; nothing else is reachable until it's replaced. */
+/**
+ * Reached from the profile page, or forced right after logging in with a temporary password — in
+ * which case nothing else is reachable until it's replaced, hence no toolbar and no cancel.
+ */
 export class ChangePasswordPage extends AbstractPage {
   private newPassword = ""
   private confirmation = ""
@@ -14,7 +18,7 @@ export class ChangePasswordPage extends AbstractPage {
   private error: string | undefined
 
   showToolbar(): boolean {
-    return false
+    return !this.isForced()
   }
 
   getPageTitle(): string {
@@ -25,7 +29,7 @@ export class ChangePasswordPage extends AbstractPage {
     return m("page.changepasswordpage", [
       m(LogoSub),
       m("form", { onsubmit: (e: Event) => this.submit(e) }, [
-        m("p", "Your password is temporary. Choose a new one to continue."),
+        this.isForced() ? m("p", "Your password is temporary. Choose a new one to continue.") : null,
         m("input", {
           type: "password",
           placeholder: "New password",
@@ -43,9 +47,16 @@ export class ChangePasswordPage extends AbstractPage {
           oninput: (e: Event) => (this.confirmation = (e.target as HTMLInputElement).value),
         }),
         m("button", { type: "submit", disabled: this.submitting }, "Change password"),
+        this.isForced() ? null : m("button.secondary", {
+          type: "button", disabled: this.submitting, onclick: () => Routing.goToScreen(Endpoints.PROFILE),
+        }, "Cancel"),
         this.error ? m("div.errorMessage", this.error) : null,
       ])
     ])
+  }
+
+  private isForced(): boolean {
+    return Auth.getStatus() === AuthStatus.PASSWORD_CHANGE_REQUIRED
   }
 
   private submit(e: Event) {
@@ -63,8 +74,10 @@ export class ChangePasswordPage extends AbstractPage {
     ApiEndpoints.ChangePassword.call({ newPassword: this.newPassword })
       .then(() => {
         this.submitting = false;
+        const wasForced = this.isForced();
         Auth.setPasswordChangeRequired(false);
-        Routing.goToScreen(Endpoints.HOME, true);
+        Notifications.addNotification(new Notification(NotificationsClass.PASSWORD_CHANGED, NotificationsType.SUCCESS, "Password changed.", 4));
+        Routing.goToScreen(wasForced ? Endpoints.HOME : Endpoints.PROFILE, true);
         m.redraw();
       })
       .catch((err: Error) => {

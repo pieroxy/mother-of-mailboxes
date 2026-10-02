@@ -13,6 +13,7 @@ export class ProfilePage extends AbstractPage {
 
   render(): m.Children {
     return m("page.profilepage", [
+      m("button.change-password-button", { onclick: () => Routing.goToScreen(Endpoints.CHANGE_PASSWORD) }, "Change password"),
       m("button.logout-button", { onclick: () => this.logout() }, "Log out"),
     ]);
   }
