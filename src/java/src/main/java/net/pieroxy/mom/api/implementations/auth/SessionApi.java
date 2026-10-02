@@ -22,7 +22,9 @@ public class SessionApi extends AbstractApiEndpoint<SessionApiInput, SessionApiO
 
   @Override
   public SessionApiOutput process(SessionApiInput input) {
-    return new SessionApiOutput(serviceProvider.getSessionService().isValid(input.getSessionId()));
+    boolean authenticated = serviceProvider.getSessionService().isValid(input.getSessionId());
+    return new SessionApiOutput(authenticated,
+        authenticated && serviceProvider.getSettingsService().isWebServerPasswordTemporary());
   }
 }
 
@@ -42,12 +44,14 @@ class SessionApiInput {
 @TypeScriptType
 class SessionApiOutput {
   private boolean authenticated;
+  private boolean passwordChangeRequired;
 
   public SessionApiOutput() {
   }
 
-  public SessionApiOutput(boolean authenticated) {
+  public SessionApiOutput(boolean authenticated, boolean passwordChangeRequired) {
     this.authenticated = authenticated;
+    this.passwordChangeRequired = passwordChangeRequired;
   }
 
   public boolean isAuthenticated() {
@@ -56,5 +60,13 @@ class SessionApiOutput {
 
   public void setAuthenticated(boolean authenticated) {
     this.authenticated = authenticated;
+  }
+
+  public boolean isPasswordChangeRequired() {
+    return passwordChangeRequired;
+  }
+
+  public void setPasswordChangeRequired(boolean passwordChangeRequired) {
+    this.passwordChangeRequired = passwordChangeRequired;
   }
 }

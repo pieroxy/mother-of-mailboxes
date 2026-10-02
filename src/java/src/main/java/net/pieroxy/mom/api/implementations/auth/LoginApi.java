@@ -22,8 +22,8 @@ public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput>
     boolean ok = expected != null
         && expected.getUsername().equals(input.getLogin())
         && PasswordHasher.verify(input.getPassword(), expected.getPasswordHash());
-    if (!ok) return new LoginApiOutput(false, null);
-    return new LoginApiOutput(true, serviceProvider.getSessionService().create());
+    if (!ok) return new LoginApiOutput(false, null, false);
+    return new LoginApiOutput(true, serviceProvider.getSessionService().create(), expected.isTemporary());
   }
 }
 
@@ -53,13 +53,15 @@ class LoginApiInput {
 class LoginApiOutput {
   private boolean ok;
   private String sessionId;
+  private boolean passwordChangeRequired;
 
   public LoginApiOutput() {
   }
 
-  public LoginApiOutput(boolean ok, String sessionId) {
+  public LoginApiOutput(boolean ok, String sessionId, boolean passwordChangeRequired) {
     this.ok = ok;
     this.sessionId = sessionId;
+    this.passwordChangeRequired = passwordChangeRequired;
   }
 
   public boolean isOk() {
@@ -76,5 +78,13 @@ class LoginApiOutput {
 
   public void setSessionId(String sessionId) {
     this.sessionId = sessionId;
+  }
+
+  public boolean isPasswordChangeRequired() {
+    return passwordChangeRequired;
+  }
+
+  public void setPasswordChangeRequired(boolean passwordChangeRequired) {
+    this.passwordChangeRequired = passwordChangeRequired;
   }
 }

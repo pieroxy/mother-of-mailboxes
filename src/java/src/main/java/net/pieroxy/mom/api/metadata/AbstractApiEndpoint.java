@@ -33,6 +33,9 @@ public abstract class AbstractApiEndpoint<I, O> implements ApiEndpoint {
       // Routine (a restart, or just an old tab) — not a bug, so no SEVERE stack trace for it.
       res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       response = ApiResponse.buildErrResult(e.getMessage());
+    } catch (PasswordChangeRequiredException e) {
+      res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+      response = ApiResponse.buildErrResult(e.getMessage());
     } catch (Exception e) {
       logger.log(Level.SEVERE, "Endpoint " + getClass().getSimpleName() + " failed", e);
       response = ApiResponse.buildErrResult(e.getMessage());

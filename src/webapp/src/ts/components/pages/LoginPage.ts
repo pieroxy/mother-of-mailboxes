@@ -53,8 +53,8 @@ export class LoginPage extends AbstractPage {
       .then((output) => {
         this.submitting = false;
         if (output.ok && output.sessionId) {
-          Auth.setSession(output.sessionId);
-          Routing.goToScreen(Endpoints.HOME);
+          Auth.setSession(output.sessionId, output.passwordChangeRequired);
+          Routing.goToScreen(output.passwordChangeRequired ? Endpoints.CHANGE_PASSWORD : Endpoints.HOME);
         } else {
           this.error = "Invalid login or password.";
           Notifications.addNotification(new Notification(NotificationsClass.LOGIN, NotificationsType.ERROR, this.error, 5))

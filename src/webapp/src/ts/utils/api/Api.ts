@@ -61,6 +61,11 @@ export class Api {
         Notifications.addNotification(new Notification(NotificationsClass.SESSION_EXPIRED, NotificationsType.WARNING, "Your session expired.", 6));
         Routing.goToScreen(Endpoints.LOGIN, true);
       }
+      // A 403 means the session is fine but the web login's password is still temporary.
+      if (response.status === 403) {
+        Auth.setPasswordChangeRequired(true);
+        Routing.goToScreen(Endpoints.CHANGE_PASSWORD, true);
+      }
       throw new Error(message);
     }
     return payload.result as O;

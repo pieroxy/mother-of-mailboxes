@@ -21,6 +21,7 @@ import java.util.Map;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * {@link SettingsService#start()}: resolves the web server's own login credential (if configured
@@ -184,5 +185,78 @@ public class SettingsServiceTest {
     SettingsService settingsService = buildSettingsServiceWithAccounts(credentials, List.of("acct-cred"), null, credentialsFilePath);
 
     settingsService.cleanUpDanglingCredentials();
+  }
+
+  private Credential temporaryWebCredential(String password) {
+    Credential c = new Credential();
+    c.setUsername("admin");
+    c.setPasswordHash(PasswordHasher.hash(password));
+    c.setTemporary(true);
+    return c;
+  }
+
+  @Test
+  public void changeWebServerPasswordReplacesTheHashAndClearsTemporaryInMemoryAndOnDisk() throws Exception {
+    Credential webServerCredential = temporaryWebCredential("temp-password");
+    File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
+    SettingsService settingsService = buildSettingsService(webServerCredential, true, credentialsFilePath);
+    settingsService.start();
+    assertTrue(settingsService.isWebServerPasswordTemporary());
+
+    settingsService.changeWebServerPassword("new-password");
+
+    assertFalse(settingsService.isWebServerPasswordTemporary());
+    assertTrue(PasswordHasher.verify("new-password", webServerCredential.getPasswordHash()));
+
+    CredentialsFile reloaded = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
+    Credential reloadedCredential = reloaded.getCredentials().get(WEB_SERVER_CREDENTIALS_KEY);
+    assertFalse(reloadedCredential.isTemporary());
+    assertTrue(PasswordHasher.verify("new-password", reloadedCredential.getPasswordHash()));
+  }
+
+  @Test
+  public void changeWebServerPasswordRejectsTheCurrentPassword() {
+    Credential webServerCredential = temporaryWebCredential("temp-password");
+    File credentialsFilePath = new File(tmp.getRoot(), "nonexistent-dir/credentials.json");
+    SettingsService settingsService = buildSettingsService(webServerCredential, true, credentialsFilePath);
+    settingsService.start();
+
+    try {
+      settingsService.changeWebServerPassword("temp-password");
+      fail("expected IllegalArgumentException");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    assertTrue(settingsService.isWebServerPasswordTemporary());
+  }
+
+  @Test
+  public void changeWebServerPasswordRejectsABlankPassword() {
+    Credential webServerCredential = temporaryWebCredential("temp-password");
+    File credentialsFilePath = new File(tmp.getRoot(), "nonexistent-dir/credentials.json");
+    SettingsService settingsService = buildSettingsService(webServerCredential, true, credentialsFilePath);
+    settingsService.start();
+
+    try {
+      settingsService.changeWebServerPassword("  ");
+      fail("expected IllegalArgumentException");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    assertTrue(settingsService.isWebServerPasswordTemporary());
+  }
+
+  @Test
+  public void startKeepsTheTemporaryFlagWhenMigratingAPlaintextPassword() {
+    Credential webServerCredential = new Credential();
+    webServerCredential.setUsername("admin");
+    webServerCredential.setPassword("plaintext-password");
+    webServerCredential.setTemporary(true);
+    File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
+    SettingsService settingsService = buildSettingsService(webServerCredential, true, credentialsFilePath);
+
+    settingsService.start();
+
+    assertTrue(settingsService.isWebServerPasswordTemporary());
   }
 }

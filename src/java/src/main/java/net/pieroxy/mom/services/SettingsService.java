@@ -84,6 +84,27 @@ public class SettingsService implements Service {
     return webServerCredential;
   }
 
+  public boolean isWebServerPasswordTemporary() {
+    return webServerCredential != null && webServerCredential.isTemporary();
+  }
+
+  /** Replaces the web login's password and clears its {@code temporary} flag. */
+  public synchronized void changeWebServerPassword(String newPassword) {
+    if (webServerCredential == null) {
+      throw new IllegalStateException("The web server has no login credential.");
+    }
+    if (newPassword == null || newPassword.isBlank()) {
+      throw new IllegalArgumentException("The new password must not be blank.");
+    }
+    if (PasswordHasher.verify(newPassword, webServerCredential.getPasswordHash())) {
+      throw new IllegalArgumentException("The new password must differ from the current one.");
+    }
+    webServerCredential.setPasswordHash(PasswordHasher.hash(newPassword));
+    webServerCredential.setPassword(null);
+    webServerCredential.setTemporary(false);
+    persistCredentialsFile();
+  }
+
   /**
    * @param context human-readable description of the caller, used in the error message (e.g.
    *                {@code "mail account \"personal\""}).
@@ -184,6 +205,7 @@ public class SettingsService implements Service {
       if (webServerPassword != null && !webServerPassword.isBlank()) {
         webServerCredential.setPasswordHash(PasswordHasher.hash(webServerPassword));
         webServerCredential.setPassword(null);
+        webServerCredential.setTemporary(false);
       }
       persistCredentialsFile();
     }

@@ -1,5 +1,6 @@
 export enum Endpoints {
   LOGIN = "/login",
+  CHANGE_PASSWORD = "/change-password",
   PROFILE = "/profile",
   HOME = "/",
   GENERAL_SETTINGS = "/general-settings",

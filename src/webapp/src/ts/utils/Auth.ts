@@ -5,6 +5,8 @@ const STORAGE_KEY = "mom.sessionId";
 
 export enum AuthStatus {
   LOGGED_IN,
+  /** Logged in, but every API call except ChangePassword is refused until the temporary password is replaced. */
+  PASSWORD_CHANGE_REQUIRED,
   NO_SESSION,
   CHECKING,
 }
@@ -17,10 +19,11 @@ export enum AuthStatus {
  */
 export class Auth {
   private static sessionId: string | undefined;
+  private static passwordChangeRequired = false;
   private static checkInProgress = false;
 
   static getStatus(): AuthStatus {
-    if (Auth.sessionId) return AuthStatus.LOGGED_IN;
+    if (Auth.sessionId) return Auth.passwordChangeRequired ? AuthStatus.PASSWORD_CHANGE_REQUIRED : AuthStatus.LOGGED_IN;
 
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return AuthStatus.NO_SESSION;
@@ -32,6 +35,7 @@ export class Auth {
           Auth.checkInProgress = false;
           if (output.authenticated) {
             Auth.sessionId = stored;
+            Auth.passwordChangeRequired = output.passwordChangeRequired;
           } else {
             localStorage.removeItem(STORAGE_KEY);
           }
@@ -45,15 +49,21 @@ export class Auth {
     return AuthStatus.CHECKING;
   }
 
-  static setSession(sessionId: string) {
+  static setSession(sessionId: string, passwordChangeRequired: boolean) {
     Auth.sessionId = sessionId;
+    Auth.passwordChangeRequired = passwordChangeRequired;
     localStorage.setItem(STORAGE_KEY, sessionId);
+  }
+
+  static setPasswordChangeRequired(passwordChangeRequired: boolean) {
+    Auth.passwordChangeRequired = passwordChangeRequired;
   }
 
   /** @return the session ID that was active, if any (e.g. so the caller can tell the server to invalidate it). */
   static clearSession(): string | undefined {
     const sessionId = Auth.sessionId;
     Auth.sessionId = undefined;
+    Auth.passwordChangeRequired = false;
     localStorage.removeItem(STORAGE_KEY);
     return sessionId;
   }

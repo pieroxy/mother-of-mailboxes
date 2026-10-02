@@ -195,6 +195,10 @@ file's `credentials` map:
 Every `credentials` key referenced from `config.json` must exist in this map — MOM fails fast
 at startup otherwise.
 
+On the web server's credential only, `"temporary": true` forces a password change right after
+login: until then, the web UI shows only the change-password screen and every other API call is
+refused. Changing the password clears the flag.
+
 ## Matchers and actions
 
 A rule is a `matcher` + an `action`. When a matcher matches a message, its action runs.
