@@ -231,7 +231,7 @@ A rule is a `matcher` + an `action`. When a matcher matches a message, its actio
 | [`MOVE_TO_AND_READ`](actions/move-to-and-read.md) | Mark as read, then move. |
 | [`AND`](actions/and.md) | Composite: run children in order, stop at first failure. |
 | [`OR`](actions/or.md) | Composite: run children in order, stop at first success. |
-| [`NOOP`](actions/noop.md) | Does nothing, always succeeds — for observing a match without acting on it. |
+| [`NOOP`](actions/noop.md) | Does nothing, always succeeds — for observing a match without acting on it, or allow-listing (it still stops evaluation). |
 
 Every matcher and action config accepts an optional `logLevel` field (`"DEBUG"`, `"INFO"`,
 `"WARNING"`, or `"ERROR"`; default `"INFO"`) controlling **only that node's own** log verbosity
@@ -320,8 +320,8 @@ Only "learnable" matcher/action types support this (everything except the compos
    the way in, regardless of its state before: a clear indicator in the mail client that
    something there still needs to be manually sorted.
 
-Learned rules always come **after** manual rules in evaluation order, so a manual rule always
-wins if both would match.
+Learned rules come **after** manual rules in evaluation order unless a `LEARNED_RULES` entry
+places them elsewhere (see [Rule evaluation order](#rule-evaluation-order)).
 
 ### Learning shortcuts
 

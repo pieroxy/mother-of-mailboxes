@@ -35,12 +35,15 @@ const SHORTCUT_MATCHER_TYPE_OPTIONS: ShortcutMatcherTypeOption[] = [
 interface ShortcutActionTypeOption {
   value: ActionType;
   label: string;
+  keyLabel: string;
+  isFolderName: boolean;
 }
 
-// Same reasoning: only the two "learnable" leaf action types (see ActionType.learnableValues()).
+// Same reasoning: only the "learnable" leaf action types (see ActionType.learnableValues()).
 const SHORTCUT_ACTION_TYPE_OPTIONS: ShortcutActionTypeOption[] = [
-  { value: ActionType.MOVE_TO, label: "Move to folder" },
-  { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read" },
+  { value: ActionType.MOVE_TO, label: "Move to folder", keyLabel: "Destination folder", isFolderName: true },
+  { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read", keyLabel: "Destination folder", isFolderName: true },
+  { value: ActionType.NOOP, label: "Do nothing (stop processing, log only)", keyLabel: "Log message", isFolderName: false },
 ];
 
 // Mirrors RuleLearner.isReservedName: "Done" plus every learnable matcher type's own name, since
@@ -107,7 +110,7 @@ export class ShortcutEditPage extends AbstractPage<ShortcutEditPageAttrs> {
         value: this.actionType,
         onchange: (e: Event) => (this.actionType = (e.target as HTMLSelectElement).value as ActionType),
       }, SHORTCUT_ACTION_TYPE_OPTIONS.map((o) => m("option", { value: o.value }, o.label)))),
-      this.field("Destination folder", this.renderFolderField()),
+      this.field(this.actionOption().keyLabel, this.actionOption().isFolderName ? this.renderFolderField() : this.renderTextKeyField()),
       m(".edit-actions", [
         m("button.ok-button", { onclick: () => this.apply() }, "OK"),
         m("button.cancel-button", { onclick: () => this.cancel() }, "Cancel"),
@@ -124,6 +127,17 @@ export class ShortcutEditPage extends AbstractPage<ShortcutEditPageAttrs> {
       }),
       m("datalist#" + FOLDER_DATALIST_ID, this.accountFolders.map((folder) => m("option", { key: folder, value: folder }))),
     ];
+  }
+
+  private renderTextKeyField(): m.Children {
+    return m("input", {
+      type: "text", value: this.actionKey, placeholder: "What to log when a learned rule matches",
+      oninput: (e: Event) => (this.actionKey = (e.target as HTMLInputElement).value),
+    });
+  }
+
+  private actionOption(): ShortcutActionTypeOption {
+    return SHORTCUT_ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType) || SHORTCUT_ACTION_TYPE_OPTIONS[0];
   }
 
   private field(label: string, control: m.Children): m.Children {
@@ -182,7 +196,7 @@ export class ShortcutEditPage extends AbstractPage<ShortcutEditPageAttrs> {
       index !== this.shortcutIndex && !pending.deleted && pending.shortcut.name === trimmedName);
     if (collides) return "A shortcut named \"" + trimmedName + "\" already exists.";
 
-    if (!this.actionKey.trim()) return "The action needs a destination folder.";
+    if (!this.actionKey.trim()) return "The action needs a " + this.actionOption().keyLabel.toLowerCase() + ".";
     return undefined;
   }
 

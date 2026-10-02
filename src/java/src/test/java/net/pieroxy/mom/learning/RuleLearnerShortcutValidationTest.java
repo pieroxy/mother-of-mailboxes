@@ -83,7 +83,7 @@ public class RuleLearnerShortcutValidationTest extends AbstractRuleLearnerTest {
 
   @Test
   public void rejectsAnUnlearnableActionType() throws Exception {
-    expectRejected(shortcut("Shortcut", MatcherType.FROM_DOMAIN_EQUALS, ActionType.NOOP, null));
+    expectRejected(shortcut("Shortcut", MatcherType.FROM_DOMAIN_EQUALS, ActionType.READ, "Read"));
   }
 
   @Test

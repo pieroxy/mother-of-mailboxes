@@ -18,16 +18,20 @@ import static org.junit.Assert.assertTrue;
 public class RuleLearnerShortcutTest extends AbstractRuleLearnerTest {
 
   private LearningShortcutConfiguration moveSameDomainToSpam() {
+    return shortcut("MoveSameDomainToSpam", ActionType.MOVE_TO_AND_READ, "Spam");
+  }
+
+  private LearningShortcutConfiguration shortcut(String name, ActionType actionType, String actionKey) {
     LearningShortcutConfiguration shortcut = new LearningShortcutConfiguration();
-    shortcut.setName("MoveSameDomainToSpam");
+    shortcut.setName(name);
 
     MailFilterRuleMatcherConfiguration matcher = new MailFilterRuleMatcherConfiguration();
     matcher.setType(MatcherType.FROM_DOMAIN_EQUALS);
     shortcut.setMatcher(matcher);
 
     MailFilterRuleActionConfiguration action = new MailFilterRuleActionConfiguration();
-    action.setType(ActionType.MOVE_TO_AND_READ);
-    action.setKey("Spam");
+    action.setType(actionType);
+    action.setKey(actionKey);
     shortcut.setAction(action);
 
     return shortcut;
@@ -69,6 +73,29 @@ public class RuleLearnerShortcutTest extends AbstractRuleLearnerTest {
       assertEquals(1, mailbox.getAllMessages(mailbox.getOrCreateFolder("Spam")).length);
       assertEquals(0, mailbox.getAllMessages(mailbox.getOrCreateFolder("mom-rules", "MoveSameDomainToSpam")).length);
       assertEquals(0, mailbox.getAllMessages(mailbox.getOrCreateFolder("mom-rules", "Done")).length);
+    }
+  }
+
+  @Test
+  public void learnsANoopRuleAndFilesTheExampleInDone() throws Exception {
+    LearningShortcutConfiguration whitelist = shortcut("DomainWhitelisted", ActionType.NOOP, "Whitelisted");
+    fixture.appendMessage(messageFrom("sender@trusted.example.com"), "mom-rules", "DomainWhitelisted");
+
+    try (ImapMailboxConnection mailbox = fixture.connectAsImapMailbox()) {
+      RuleLearner learner = new RuleLearner(mailbox, store(), List.of(whitelist));
+      learner.ensureFolderSkeleton();
+      assertTrue(learner.learnFromExamples());
+    }
+
+    List<MailFilterRuleConfiguration> learned = store().load();
+    assertEquals(1, learned.size());
+    assertEquals("trusted.example.com", learned.get(0).getMatcher().getKey());
+    assertEquals(ActionType.NOOP, learned.get(0).getAction().getType());
+    assertEquals("Whitelisted", learned.get(0).getAction().getKey());
+
+    try (ImapMailboxConnection mailbox = fixture.connectAsImapMailbox()) {
+      assertEquals(0, mailbox.getAllMessages(mailbox.getOrCreateFolder("mom-rules", "DomainWhitelisted")).length);
+      assertEquals(1, mailbox.getAllMessages(mailbox.getOrCreateFolder("mom-rules", "Done")).length);
     }
   }
 

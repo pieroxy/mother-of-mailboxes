@@ -42,9 +42,10 @@ public enum ActionType {
   }, true),
   AND(AndAction::new, false),
   OR(OrAction::new, false),
-  // Not learnable: no folder/key to speak of, and "learn me a rule that does nothing" makes no
-  // sense as a by-example action.
-  NOOP(NoopAction::new, false);
+  // Learnable: a matching rule without keepProcessing stops evaluation, so a learned NOOP acts as
+  // an allow-list entry for the rules after LEARNED_RULES (e.g. SPF/DKIM checks). Its key is only
+  // the log label.
+  NOOP(NoopAction::new, true);
 
   private final ActionProvider provider;
   private final boolean learnable;

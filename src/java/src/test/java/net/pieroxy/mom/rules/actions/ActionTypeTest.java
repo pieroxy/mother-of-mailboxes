@@ -21,7 +21,7 @@ public class ActionTypeTest {
     assertTrue(ActionType.learnableValues().contains(ActionType.MOVE_TO_AND_READ));
     assertFalse(ActionType.learnableValues().contains(ActionType.AND));
     assertFalse(ActionType.learnableValues().contains(ActionType.OR));
-    assertFalse(ActionType.learnableValues().contains(ActionType.NOOP));
+    assertTrue(ActionType.learnableValues().contains(ActionType.NOOP));
   }
 
   @Test
