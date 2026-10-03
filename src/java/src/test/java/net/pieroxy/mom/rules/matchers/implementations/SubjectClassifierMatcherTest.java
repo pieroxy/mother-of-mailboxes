@@ -40,7 +40,7 @@ public class SubjectClassifierMatcherTest {
     MailFilterRuleMatcherConfiguration config = new MailFilterRuleMatcherConfiguration();
     config.setType(MatcherType.SUBJECT_CLASSIFIER_EQUALS);
     config.setKey(threshold);
-    return (SubjectClassifierMatcher) Matcher.build(config, new RuleContext(modelFile, null, null, null));
+    return (SubjectClassifierMatcher) Matcher.build(config, new RuleContext(modelFile, null, null, null, 0));
   }
 
   private MimeMessage messageWithSubject(String subject) throws Exception {

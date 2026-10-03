@@ -78,7 +78,7 @@ public class RuleTest {
     MailFilterRuleConfiguration config = new MailFilterRuleConfiguration();
     config.setMatcher(fromEquals("alice@example.com"));
     config.setAction(noopAction());
-    RuleContext context = new RuleContext(null, null, null, statsDir);
+    RuleContext context = new RuleContext(null, null, null, statsDir, 0);
 
     Rule rule = new Rule(config, context);
     rule.apply(messageFrom("alice@example.com"));
@@ -95,7 +95,7 @@ public class RuleTest {
     MailFilterRuleConfiguration config = new MailFilterRuleConfiguration();
     config.setMatcher(fromEquals("alice@example.com"));
     config.setAction(noopAction());
-    RuleContext context = new RuleContext(null, null, null, statsDir);
+    RuleContext context = new RuleContext(null, null, null, statsDir, 0);
 
     Rule rule = new Rule(config, context);
     rule.apply(messageFrom("carol@example.com"));

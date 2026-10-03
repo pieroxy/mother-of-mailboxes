@@ -41,7 +41,7 @@ public class HeaderClassifierMatcherTest {
     MailFilterRuleMatcherConfiguration config = new MailFilterRuleMatcherConfiguration();
     config.setType(MatcherType.HEADER_CLASSIFIER_EQUALS);
     config.setKey(threshold);
-    return (HeaderClassifierMatcher) Matcher.build(config, new RuleContext(null, modelFile, null, null));
+    return (HeaderClassifierMatcher) Matcher.build(config, new RuleContext(null, modelFile, null, null, 0));
   }
 
   private static ClassifierExample example(ClassifierLabel label) {

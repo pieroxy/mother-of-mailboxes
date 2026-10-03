@@ -1,6 +1,7 @@
 package net.pieroxy.mom.rules;
 
 import net.pieroxy.mom.utils.logging.StatsLog;
+import net.pieroxy.mom.utils.logging.DecisionLog;
 
 import java.io.File;
 
@@ -10,11 +11,14 @@ import java.io.File;
  * {@code MailFilterRuleActionConfiguration}) knows nothing about the account it happens to run
  * under, so this is the other half. Currently the classifier model files (used by
  * {@code SubjectClassifierMatcher}/{@code HeaderClassifierMatcher}/{@code BodyClassifierMatcher},
- * replacing what used to be a per-thread ThreadLocal) and the stats log directory (see
- * {@code Rule#apply}, {@link StatsLog}); expected to grow further — e.g.
- * the account's own address, once REPLY/FORWARD actions exist and need it.
+ * replacing what used to be a per-thread ThreadLocal), the stats log directory (see
+ * {@code Rule#apply}, {@link StatsLog}) — also where {@link DecisionLog} writes its own
+ * {@code decisions-yyyy-MM-dd.json} files, alongside {@code stats-yyyy-MM-dd.json} — and that
+ * log's retention, in days (see {@link #decisionLogRetentionDays}); expected to grow further —
+ * e.g. the account's own address, once REPLY/FORWARD actions exist and need it.
  */
-public record RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir) {
+public record RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir,
+                           int decisionLogRetentionDays) {
   /** No account-specific info available — matches how things behaved before this existed. */
-  public static final RuleContext EMPTY = new RuleContext(null, null, null, null);
+  public static final RuleContext EMPTY = new RuleContext(null, null, null, null, 0);
 }

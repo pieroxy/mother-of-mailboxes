@@ -4,12 +4,14 @@ import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.mom.rules.RuleContext;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.rules.actions.Action;
 import net.pieroxy.mom.rules.actions.ActionType;
 import net.pieroxy.mom.rules.matchers.Matcher;
 import net.pieroxy.mom.rules.matchers.MatcherType;
 import net.pieroxy.mom.utils.MailTools;
+import net.pieroxy.mom.utils.logging.DecisionLog;
 
 import javax.mail.Flags;
 import javax.mail.Folder;
@@ -44,6 +46,7 @@ public class RuleLearner {
   private final LearnedRulesStore store;
   private final List<LearningShortcutConfiguration> shortcuts;
   private final boolean discoveryTreeDisabled;
+  private final RuleContext context;
 
   public RuleLearner(ImapMailbox mailbox, LearnedRulesStore store) {
     this(mailbox, store, List.of());
@@ -61,10 +64,17 @@ public class RuleLearner {
    */
   public RuleLearner(ImapMailbox mailbox, LearnedRulesStore store, List<LearningShortcutConfiguration> shortcuts,
                       boolean discoveryTreeDisabled) {
+    this(mailbox, store, shortcuts, discoveryTreeDisabled, RuleContext.EMPTY);
+  }
+
+  /** @param context used only for {@link DecisionLog} (statsDir + retention) — see {@link #learnFromExample}. */
+  public RuleLearner(ImapMailbox mailbox, LearnedRulesStore store, List<LearningShortcutConfiguration> shortcuts,
+                      boolean discoveryTreeDisabled, RuleContext context) {
     this.mailbox = mailbox;
     this.store = store;
     this.shortcuts = shortcuts != null ? shortcuts : List.of();
     this.discoveryTreeDisabled = discoveryTreeDisabled;
+    this.context = context;
     validateShortcuts(this.shortcuts);
   }
 
@@ -186,6 +196,8 @@ public class RuleLearner {
   }
 
   private boolean learnFromExample(MatcherType matcherType, ActionType actionType, String actionKey, Message example) {
+    String subject = MailTools.describeSubjectSafely(example);
+    String from = MailTools.describeFromSafely(example);
     try {
       Matcher matcher = matcherType.getImplementation();
       String matcherKey = matcher.extractKeyFromExample(example);
@@ -202,9 +214,10 @@ public class RuleLearner {
       ruleConfig.setMatcher(matcherConfig);
       ruleConfig.setAction(actionConfig);
 
+      String ruleDescription = matcherType + "(" + matcherKey + ") -> " + actionType + "(" + actionKey + ")";
       boolean learned = store.addIfAbsent(ruleConfig);
       if (learned) {
-        LOGGER.info("Learned rule: " + matcherType + "(" + matcherKey + ") -> " + actionType + "(" + actionKey + ")");
+        LOGGER.info("Learned rule: " + ruleDescription);
       }
 
       Action action = Action.build(actionConfig);
@@ -217,11 +230,14 @@ public class RuleLearner {
                 + MailTools.describeFromSafely(example), e);
       }
 
+      String reasonForMoveToDone = null;
       if (!example.isSet(Flags.Flag.DELETED)) {
         // The action neither moved nor deleted the example message: file it away anyway so the
         // same rule isn't relearned in a loop on every cycle.
         moveToDone(example);
+        reasonForMoveToDone = "learned successfully, but its action didn't relocate the message";
       }
+      DecisionLog.recordLearningOutcome(context.statsDir(), context.decisionLogRetentionDays(), subject, from, ruleDescription, reasonForMoveToDone);
       return learned;
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to learn a rule from example message for " + matcherType + "/" + actionType
@@ -235,6 +251,8 @@ public class RuleLearner {
       } catch (MessagingException moveException) {
         LOGGER.log(Level.WARNING, "Also failed to move the unlearnable example to " + ROOT_FOLDER + "/" + DONE_FOLDER, moveException);
       }
+      DecisionLog.recordLearningOutcome(context.statsDir(), context.decisionLogRetentionDays(), subject, from, null,
+              "could not learn a rule: " + e.getMessage());
       return false;
     }
   }

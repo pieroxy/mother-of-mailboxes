@@ -2,6 +2,7 @@ package net.pieroxy.mom.rules;
 
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.utils.MailTools;
+import net.pieroxy.mom.utils.logging.DecisionLog;
 
 import javax.mail.Flags;
 import javax.mail.Folder;
@@ -60,7 +61,7 @@ public class ManualReprocessor {
     try {
       LOGGER.info(() -> "Reprocessing message from " + MailTools.describeFromSafely(message));
       boolean matched = RuleHelper.processRules(ruleCatalog.get(), ruleCatalog.getLearnedRulesFallback(), message, LOGGER,
-          ROOT_FOLDER + "/" + TO_PROCESS_FOLDER, ruleCatalog.getContext()).matched();
+          ROOT_FOLDER + "/" + TO_PROCESS_FOLDER, ruleCatalog.getContext(), DecisionLog.Trigger.MANUAL_REPROCESSING).matched();
       if (message.isSet(Flags.Flag.DELETED)) {
         LOGGER.info(() -> "Message from " + MailTools.describeFromSafely(message) + " was relocated by its matching rule's action");
         return;

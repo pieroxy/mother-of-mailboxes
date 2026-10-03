@@ -62,6 +62,16 @@ public class MailAccountConfiguration {
   /** Whether this account's thread runs (default true). Paused via the settings page, not deleted — see {@link net.pieroxy.mom.services.AccountService#setAccountActive}. */
   private boolean active = true;
 
+  /**
+   * Days of {@code decisions-yyyy-MM-dd.json} files to keep for this account (0 or absent =
+   * disabled) — see {@code net.pieroxy.mom.utils.logging.DecisionLog}. One entry per message
+   * processed, naming every rule reached and what it decided (or what was learned, for a message
+   * handled by the learning pathway), so a user can see exactly why a given message ended up
+   * where it did. Unlike every other retention-style setting in this class, this one carries real
+   * mail metadata (Subject, From) — so it defaults to disabled rather than defaulting on.
+   */
+  private int decisionLogRetentionDays;
+
   public String getHost() {
     return host;
   }
@@ -164,5 +174,13 @@ public class MailAccountConfiguration {
 
   public void setActive(boolean active) {
     this.active = active;
+  }
+
+  public int getDecisionLogRetentionDays() {
+    return decisionLogRetentionDays;
+  }
+
+  public void setDecisionLogRetentionDays(int decisionLogRetentionDays) {
+    this.decisionLogRetentionDays = decisionLogRetentionDays;
   }
 }

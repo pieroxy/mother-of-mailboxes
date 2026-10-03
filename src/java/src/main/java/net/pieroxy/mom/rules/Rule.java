@@ -56,7 +56,7 @@ public class Rule implements RuleInterface {
       matchResult = matcher.matches(message);
     } catch (Exception e) {
       matcher.getLogger().log(Level.WARNING, "Matcher failed on message from " + MailTools.describeFromSafely(message), e);
-      return RuleExecutionResult.NOT_APPLIED;
+      return RuleExecutionResult.notApplied(e.toString());
     }
     if (!matchResult.matched()) {
       return RuleExecutionResult.NOT_APPLIED;
@@ -64,12 +64,14 @@ public class Rule implements RuleInterface {
     matcher.getLogger().info(() -> matchResult.debugString() + " matched message from " + MailTools.describeFromSafely(message));
     StatsLog.recordMatch(context.statsDir(), matchResult.debugString());
 
+    String actionException = null;
     try {
       boolean result = action.run(message);
       action.getLogger().info(() -> "Action "+action.describe()+" applied (success=" + result + ") to message from " + MailTools.describeFromSafely(message));
     } catch (Exception e) {
       action.getLogger().log(Level.WARNING, "Action failed on message from " + MailTools.describeFromSafely(message), e);
+      actionException = e.toString();
     }
-    return RuleExecutionResult.applied(config.isKeepProcessing(), matchResult.debugString(), config.getAction().getType() != ActionType.NOOP);
+    return RuleExecutionResult.applied(config.isKeepProcessing(), matchResult.debugString(), config.getAction().getType() != ActionType.NOOP, actionException);
   }
 }

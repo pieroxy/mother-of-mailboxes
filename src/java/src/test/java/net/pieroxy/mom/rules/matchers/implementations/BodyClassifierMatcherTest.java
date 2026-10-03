@@ -40,7 +40,7 @@ public class BodyClassifierMatcherTest {
     MailFilterRuleMatcherConfiguration config = new MailFilterRuleMatcherConfiguration();
     config.setType(MatcherType.BODY_CLASSIFIER_EQUALS);
     config.setKey(threshold);
-    return (BodyClassifierMatcher) Matcher.build(config, new RuleContext(null, null, modelFile, null));
+    return (BodyClassifierMatcher) Matcher.build(config, new RuleContext(null, null, modelFile, null, 0));
   }
 
   private MimeMessage messageWithHtmlBody(String html) throws Exception {

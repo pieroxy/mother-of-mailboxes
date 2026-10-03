@@ -15,6 +15,7 @@ import net.pieroxy.mom.learning.LearnedRulesStore;
 import net.pieroxy.mom.learning.RuleLearner;
 import net.pieroxy.mom.rules.actions.ActionType;
 import net.pieroxy.mom.utils.FileNameValidator;
+import net.pieroxy.mom.utils.logging.DecisionLog;
 import net.pieroxy.mom.utils.mail.ImapIdleWatcher;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.utils.mail.ImapMailboxConnection;
@@ -104,7 +105,8 @@ public class MailAccount implements Runnable {
     // BodyClassifierMatcher have no other way to know which account's model file to load, since
     // they're built without context by MatcherType.getImplementation() — see RuleContext.
     RuleContext ruleContext = new RuleContext(classifierCorpusStore.getModelFile(), classifierCorpusStore.getHeaderModelFile(),
-        classifierCorpusStore.getBodyModelFile(), new File(new File(dataFolder, "logs"), config.getDisplayName()));
+        classifierCorpusStore.getBodyModelFile(), new File(new File(dataFolder, "logs"), config.getDisplayName()),
+        config.getDecisionLogRetentionDays());
     this.ruleCatalog = new RuleCatalog(config.getRules(), learnedRulesStore, ruleContext);
     this.subjectClassifierTrainer = new SubjectClassifierTrainer(classifierCorpusStore);
     this.headerClassifierTrainer = new HeaderClassifierTrainer(classifierCorpusStore);
@@ -352,7 +354,7 @@ public class MailAccount implements Runnable {
   /** Applies the first matching rule (manual config, then learned rules). */
   private void inspect(Message message) {
     RuleHelper.ProcessOutcome outcome = RuleHelper.processRules(ruleCatalog.get(), ruleCatalog.getLearnedRulesFallback(), message, LOGGER,
-        "account " + config.getDisplayName(), ruleCatalog.getContext());
+        "account " + config.getDisplayName(), ruleCatalog.getContext(), DecisionLog.Trigger.INBOX);
     messagesProcessed.incrementAndGet();
     if (outcome.nonNoopActionApplied()) messagesMatched.incrementAndGet();
   }
@@ -361,7 +363,7 @@ public class MailAccount implements Runnable {
   void processMessages() throws MessagingException {
     LOGGER.info("Processing account " + config.getDisplayName());
     try (ImapMailbox mailbox = mailboxFactory.connect(config, credential)) {
-      RuleLearner learner = new RuleLearner(mailbox, learnedRulesStore, config.getLearningShortcuts(), config.isDiscoveryTreeDisabled());
+      RuleLearner learner = new RuleLearner(mailbox, learnedRulesStore, config.getLearningShortcuts(), config.isDiscoveryTreeDisabled(), ruleCatalog.getContext());
       ManualReprocessor reprocessor = new ManualReprocessor(mailbox, ruleCatalog);
       ensureFolderSkeletonsIfDue(learner, reprocessor);
 

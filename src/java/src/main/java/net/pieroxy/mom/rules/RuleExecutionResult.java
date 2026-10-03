@@ -24,12 +24,29 @@ package net.pieroxy.mom.rules;
  *                             {@code ActionType}) — lets {@link RuleHelper#processRules} tell
  *                             {@code MailAccount} whether this message actually got acted upon,
  *                             for the live per-account counters (see {@code AccountsApi}).
+ * @param exception            {@code toString()} of whatever the matcher or the action threw (see
+ *                             {@code Rule#apply}, which catches both internally rather than
+ *                             letting either abort the rule chain) — null on a clean run, whether
+ *                             or not it matched. Bubbled up so {@code DecisionLog} can show a rule
+ *                             that errored as a distinct outcome from one that simply didn't
+ *                             match (see {@code RuleHelper}'s per-rule decision-log entries).
  */
-public record RuleExecutionResult(boolean ruleApplied, boolean keepProcessing, boolean learnedRulesExecuted, String matchedDescription, boolean nonNoopActionApplied) {
+public record RuleExecutionResult(boolean ruleApplied, boolean keepProcessing, boolean learnedRulesExecuted,
+                                   String matchedDescription, boolean nonNoopActionApplied, String exception) {
   /** No match: keepProcessing is irrelevant here (nothing to keep processing from), left true by convention. */
-  public static final RuleExecutionResult NOT_APPLIED = new RuleExecutionResult(false, true, false, null, false);
+  public static final RuleExecutionResult NOT_APPLIED = new RuleExecutionResult(false, true, false, null, false, null);
 
   public static RuleExecutionResult applied(boolean keepProcessing, String matchedDescription, boolean nonNoopActionApplied) {
-    return new RuleExecutionResult(true, keepProcessing, false, matchedDescription, nonNoopActionApplied);
+    return new RuleExecutionResult(true, keepProcessing, false, matchedDescription, nonNoopActionApplied, null);
+  }
+
+  /** Like {@link #applied}, but the action threw after a clean match — see {@code exception} above. */
+  public static RuleExecutionResult applied(boolean keepProcessing, String matchedDescription, boolean nonNoopActionApplied, String exception) {
+    return new RuleExecutionResult(true, keepProcessing, false, matchedDescription, nonNoopActionApplied, exception);
+  }
+
+  /** Like {@link #NOT_APPLIED}, but the matcher threw before a match could even be determined. */
+  public static RuleExecutionResult notApplied(String exception) {
+    return new RuleExecutionResult(false, true, false, null, false, exception);
   }
 }

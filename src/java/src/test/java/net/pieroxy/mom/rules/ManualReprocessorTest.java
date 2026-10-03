@@ -1,5 +1,7 @@
 package net.pieroxy.mom.rules;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleMatcherConfiguration;
@@ -19,6 +21,10 @@ import javax.mail.Message;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.io.File;
+import java.nio.file.Files;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Properties;
 
@@ -133,5 +139,27 @@ public class ManualReprocessorTest {
       assertFalse("a message filed into Done must stand out as needing attention in the mail client",
               inDone[0].isSet(Flags.Flag.SEEN));
     }
+  }
+
+  @Test
+  public void recordsAMANUAL_REPROCESSINGDecisionLogEntry() throws Exception {
+    fixture.appendMessage(messageFrom("sender@spammy.example.com"), "mom-rules", "ToProcess");
+
+    File statsDir = new File(tempFolder.getRoot(), "logs");
+    RuleContext context = new RuleContext(null, null, null, statsDir, 10);
+    LearnedRulesStore learnedRulesStore = new LearnedRulesStore(tempFolder.getRoot().getAbsolutePath(), "test-account");
+    RuleCatalog catalog = new RuleCatalog(List.of(moveToSpamOnDomain("spammy.example.com")), learnedRulesStore, context);
+
+    try (ImapMailboxConnection mailbox = fixture.connectAsImapMailbox()) {
+      ManualReprocessor reprocessor = new ManualReprocessor(mailbox, catalog);
+      reprocessor.ensureFolderSkeleton();
+      reprocessor.reprocessPending();
+    }
+
+    String today = LocalDate.now(ZoneOffset.UTC).toString();
+    List<String> lines = Files.readAllLines(new File(statsDir, "decisions-" + today + ".json").toPath());
+    assertEquals(1, lines.size());
+    JsonObject entry = new Gson().fromJson(lines.get(0), JsonObject.class);
+    assertEquals("MANUAL_REPROCESSING", entry.get("trigger").getAsString());
   }
 }

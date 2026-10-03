@@ -54,6 +54,16 @@ public class MailTools {
         }
     }
 
+    /** Subject for logs/decision records: never throws, returns a fallback text instead. */
+    public static String describeSubjectSafely(Message message) {
+        try {
+            String subject = message.getSubject();
+            return (subject == null || subject.isBlank()) ? "(no subject)" : subject;
+        } catch (MessagingException e) {
+            return "?";
+        }
+    }
+
     public static String getNiceMailAddress(Address address) throws MessagingException {
         if (address instanceof InternetAddress) {
             InternetAddress ia = (InternetAddress) address;

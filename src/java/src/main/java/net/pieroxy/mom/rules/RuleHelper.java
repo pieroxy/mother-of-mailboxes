@@ -1,9 +1,11 @@
 package net.pieroxy.mom.rules;
 
 import net.pieroxy.mom.utils.MailTools;
+import net.pieroxy.mom.utils.logging.DecisionLog;
 import net.pieroxy.mom.utils.logging.StatsLog;
 
 import javax.mail.Message;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +21,19 @@ public class RuleHelper {
    * exhausted. A rule that throws doesn't block the following ones either.
    */
   public static RuleExecutionResult evaluate(List<RuleInterface> rules, Message message, Logger logger, String logContext) {
+    return evaluate(rules, message, logger, logContext, null);
+  }
+
+  /**
+   * Same as {@link #evaluate(List, Message, Logger, String)}, but also appends one
+   * {@link DecisionLog.RuleOutcome} per rule actually reached to {@code outcomesOut} (when
+   * non-null) — used only by {@link #processRules}, the true top-level entry point, so that a
+   * {@code LEARNED_RULES} group's own *nested* call to this same method (see
+   * {@link LearnedRulesGroupRule#apply}) doesn't also produce one decision-log line per
+   * individual learned rule. Kept private: nothing outside this class needs the distinction.
+   */
+  private static RuleExecutionResult evaluate(List<RuleInterface> rules, Message message, Logger logger, String logContext,
+                                                List<DecisionLog.RuleOutcome> outcomesOut) {
     boolean anyMatched = false;
     boolean learnedRulesExecuted = false;
     boolean anyNonNoopActionApplied = false;
@@ -26,6 +41,7 @@ public class RuleHelper {
       try {
         RuleExecutionResult result = rule.apply(message);
         learnedRulesExecuted |= result.learnedRulesExecuted();
+        if (outcomesOut != null) outcomesOut.add(toOutcome(rule, result));
         if (result.ruleApplied()) {
           anyMatched = true;
           // Accumulated across every rule that applied in this loop, not just the one that
@@ -34,14 +50,26 @@ public class RuleHelper {
           // simply runs out.
           anyNonNoopActionApplied |= result.nonNoopActionApplied();
           if (!result.keepProcessing()) {
-            return new RuleExecutionResult(true, false, learnedRulesExecuted, result.matchedDescription(), anyNonNoopActionApplied);
+            return new RuleExecutionResult(true, false, learnedRulesExecuted, result.matchedDescription(), anyNonNoopActionApplied, null);
           }
         }
       } catch (Exception e) {
+        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), null, null, e.toString()));
         logger.log(Level.WARNING, "Rule failed on " + logContext + " for message from " + MailTools.describeFromSafely(message), e);
       }
     }
-    return new RuleExecutionResult(anyMatched, true, learnedRulesExecuted, null, anyNonNoopActionApplied);
+    return new RuleExecutionResult(anyMatched, true, learnedRulesExecuted, null, anyNonNoopActionApplied, null);
+  }
+
+  /**
+   * A matched rule (or crashed-before-matching rule) as a decision-log entry — see
+   * {@link DecisionLog.RuleOutcome}'s own javadoc for the exact matched/exception semantics this
+   * implements.
+   */
+  private static DecisionLog.RuleOutcome toOutcome(RuleInterface rule, RuleExecutionResult result) {
+    Boolean matched = (!result.ruleApplied() && result.exception() != null) ? null : result.ruleApplied();
+    Boolean keepProcessing = result.ruleApplied() ? result.keepProcessing() : null;
+    return new DecisionLog.RuleOutcome(rule.describe(), matched, keepProcessing, result.exception());
   }
 
   /**
@@ -57,17 +85,24 @@ public class RuleHelper {
    * call: {@code result=MATCH} (naming which rule, manual or learned, ultimately blocked the
    * message) if one did, {@code result=PASS} if the chain ran to completion without ever
    * blocking — regardless of whether a {@code keepProcessing} rule matched along the way (that
-   * match has its own {@code MATCH} entry, logged separately by {@code Rule#apply}).
+   * match has its own {@code MATCH} entry, logged separately by {@code Rule#apply}) — and exactly
+   * one {@link DecisionLog} entry (see {@code trigger}), naming every rule actually reached and
+   * what it decided.
    * @return whether at least one rule matched, and whether any of them ran a real (non-{@code NOOP}) action.
    */
-  public static ProcessOutcome processRules(List<RuleInterface> rules, RuleInterface learnedRulesFallback, Message message, Logger logger, String logContext, RuleContext context) {
+  public static ProcessOutcome processRules(List<RuleInterface> rules, RuleInterface learnedRulesFallback, Message message, Logger logger,
+                                             String logContext, RuleContext context, DecisionLog.Trigger trigger) {
     long start = System.nanoTime();
+    String subject = MailTools.describeSubjectSafely(message);
+    String from = MailTools.describeFromSafely(message);
+    List<DecisionLog.RuleOutcome> outcomes = new ArrayList<>();
+
     boolean matched;
     boolean blocked;
     boolean nonNoopActionApplied;
     String matchedDescription = null;
 
-    RuleExecutionResult result = evaluate(rules, message, logger, logContext);
+    RuleExecutionResult result = evaluate(rules, message, logger, logContext, outcomes);
     if (!result.keepProcessing()) {
       matched = true;
       blocked = true; // a blocking rule already matched: never touch the learned rules afterward
@@ -75,6 +110,7 @@ public class RuleHelper {
       nonNoopActionApplied = result.nonNoopActionApplied();
     } else if (!result.learnedRulesExecuted()) {
       RuleExecutionResult fallbackResult = learnedRulesFallback.apply(message);
+      outcomes.add(toOutcome(learnedRulesFallback, fallbackResult));
       // Bitwise |, not ||: the fallback must run even if a keepProcessing rule already matched
       // above (result.ruleApplied() true doesn't mean we can skip it, unlike the early return).
       matched = result.ruleApplied() | fallbackResult.ruleApplied();
@@ -89,6 +125,7 @@ public class RuleHelper {
 
     long processedMs = (System.nanoTime() - start) / 1_000_000;
     StatsLog.recordProcessed(context.statsDir(), blocked ? StatsLog.ProcessResult.MATCH : StatsLog.ProcessResult.PASS, matchedDescription, processedMs);
+    DecisionLog.recordRuleEvaluation(context.statsDir(), context.decisionLogRetentionDays(), trigger, subject, from, outcomes);
     return new ProcessOutcome(matched, nonNoopActionApplied);
   }
 
