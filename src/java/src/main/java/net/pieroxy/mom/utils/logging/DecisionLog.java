@@ -54,12 +54,18 @@ public final class DecisionLog {
    * One rule's outcome within a single message's {@code INBOX}/{@code MANUAL_REPROCESSING}
    * decision (see {@link #recordRuleEvaluation}) — one entry per rule actually reached, in
    * evaluation order; a rule after the one that blocked simply has no entry, since it never ran.
-   * A {@code LEARNED_RULES} group (however many individual learned rules it holds) contributes
-   * exactly one entry here, not one per learned rule — see {@code RuleHelper}.
+   * This includes every individual learned rule actually reached inside a {@code LEARNED_RULES}
+   * group, each as its own entry (tagged {@code learnedRule=true}), not one opaque entry for the
+   * whole group — a single learned rule with a long key list (e.g. 372 addresses) still counts as
+   * just one entry, same as a manual rule with a long key list; it's *distinct* learned rules
+   * that each get their own line, exactly like distinct manual rules do.
    *
    * @param rule           {@code RuleInterface#describe()} — identifies the rule; no separate
    *                       name field exists yet, so this is always the auto-generated
    *                       {@code Rule(matcher,action)} form today.
+   * @param learnedRule    true if this entry is one of the account's learned rules rather than a
+   *                       manually-configured one — the two otherwise look identical (same
+   *                       {@code describe()} format), so this is the only way to tell them apart.
    * @param matched        true/false on a clean evaluation; null if the matcher threw before a
    *                       match could even be determined (see {@code exception}) — a crashed rule
    *                       is deliberately not conflated with one that cleanly didn't match.
@@ -70,7 +76,7 @@ public final class DecisionLog {
    *                       throw; matched stays true, and this explains what went wrong applying
    *                       the consequence).
    */
-  public record RuleOutcome(String rule, Boolean matched, Boolean keepProcessing, String exception) {}
+  public record RuleOutcome(String rule, boolean learnedRule, Boolean matched, Boolean keepProcessing, String exception) {}
 
   private DecisionLog() {}
 

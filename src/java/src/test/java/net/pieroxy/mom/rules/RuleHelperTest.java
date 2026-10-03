@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.mom.learning.LearnedRulesStore;
 import net.pieroxy.mom.rules.actions.ActionType;
 import net.pieroxy.mom.rules.matchers.MatcherType;
 import net.pieroxy.mom.utils.logging.DecisionLog;
@@ -194,6 +195,42 @@ public class RuleHelperTest {
 
     JsonObject entry = onlyDecisionEntry(statsDir);
     assertEquals("only the first (blocking) rule was ever reached", 1, entry.getAsJsonArray("rules").size());
+  }
+
+  private static MailFilterRuleConfiguration moveToSpamOnDomain(String domain) {
+    MailFilterRuleMatcherConfiguration matcher = new MailFilterRuleMatcherConfiguration();
+    matcher.setType(MatcherType.FROM_DOMAIN_EQUALS);
+    matcher.setKey(domain);
+    MailFilterRuleActionConfiguration action = new MailFilterRuleActionConfiguration();
+    action.setType(ActionType.MOVE_TO);
+    action.setKey("Spam");
+    MailFilterRuleConfiguration rule = new MailFilterRuleConfiguration();
+    rule.setMatcher(matcher);
+    rule.setAction(action);
+    return rule;
+  }
+
+  @Test
+  public void aLEARNED_RULESGroupContributesOneDecisionLogLinePerDistinctLearnedRule() throws Exception {
+    File statsDir = new File(tmp.getRoot(), "logs");
+    LearnedRulesStore store = new LearnedRulesStore(tmp.getRoot().getAbsolutePath(), "test-account");
+    // Two DISTINCT learned rules (different matched domains): must end up as two separate lines,
+    // not glued into one opaque LEARNED_RULES(...) string like before this fix.
+    store.save(List.of(moveToSpamOnDomain("unrelated.example.com"), moveToSpamOnDomain("spammy.example.com")));
+    LearnedRulesGroupRule learnedRulesGroup = new LearnedRulesGroupRule(store, RuleContext.EMPTY);
+
+    RuleHelper.processRules(List.of(), learnedRulesGroup, messageFrom("alice@spammy.example.com"), logger, "test",
+        new RuleContext(null, null, null, statsDir, 10), DecisionLog.Trigger.INBOX);
+
+    JsonObject entry = onlyDecisionEntry(statsDir);
+    assertEquals("one line per distinct learned rule actually reached, not one for the whole group",
+        2, entry.getAsJsonArray("rules").size());
+    JsonObject firstLearnedRule = entry.getAsJsonArray("rules").get(0).getAsJsonObject();
+    assertTrue("every entry contributed by the group must be tagged learnedRule=true", firstLearnedRule.get("learnedRule").getAsBoolean());
+    assertFalse(firstLearnedRule.get("matched").getAsBoolean());
+    JsonObject secondLearnedRule = entry.getAsJsonArray("rules").get(1).getAsJsonObject();
+    assertTrue(secondLearnedRule.get("learnedRule").getAsBoolean());
+    assertTrue("the second learned rule is the one that actually matched", secondLearnedRule.get("matched").getAsBoolean());
   }
 
   @Test

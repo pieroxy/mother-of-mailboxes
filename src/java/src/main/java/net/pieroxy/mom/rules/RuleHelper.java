@@ -21,27 +21,37 @@ public class RuleHelper {
    * exhausted. A rule that throws doesn't block the following ones either.
    */
   public static RuleExecutionResult evaluate(List<RuleInterface> rules, Message message, Logger logger, String logContext) {
-    return evaluate(rules, message, logger, logContext, null);
+    return evaluate(rules, message, logger, logContext, null, false);
   }
 
   /**
    * Same as {@link #evaluate(List, Message, Logger, String)}, but also appends one
    * {@link DecisionLog.RuleOutcome} per rule actually reached to {@code outcomesOut} (when
-   * non-null) — used only by {@link #processRules}, the true top-level entry point, so that a
-   * {@code LEARNED_RULES} group's own *nested* call to this same method (see
-   * {@link LearnedRulesGroupRule#apply}) doesn't also produce one decision-log line per
-   * individual learned rule. Kept private: nothing outside this class needs the distinction.
+   * non-null), each tagged {@code learnedRule} — used by {@link #processRules} (the true
+   * top-level entry point) and, recursively, by {@link LearnedRulesGroupRule#applyRecordingOutcomes}
+   * for its own sub-list, so a {@code LEARNED_RULES} group reached from the top level contributes
+   * one outcome per *individual* learned rule, not one opaque entry for the whole group. Package-
+   * visible rather than private for exactly that recursive call; nothing outside this package
+   * needs it.
    */
-  private static RuleExecutionResult evaluate(List<RuleInterface> rules, Message message, Logger logger, String logContext,
-                                                List<DecisionLog.RuleOutcome> outcomesOut) {
+  static RuleExecutionResult evaluate(List<RuleInterface> rules, Message message, Logger logger, String logContext,
+                                       List<DecisionLog.RuleOutcome> outcomesOut, boolean learnedRule) {
     boolean anyMatched = false;
     boolean learnedRulesExecuted = false;
     boolean anyNonNoopActionApplied = false;
     for (RuleInterface rule : rules) {
       try {
-        RuleExecutionResult result = rule.apply(message);
+        RuleExecutionResult result;
+        if (outcomesOut != null && rule instanceof LearnedRulesGroupRule learnedRulesGroup) {
+          // Recurse instead of treating the whole group as one opaque rule: each individual
+          // learned rule it holds gets its own outcome, tagged learnedRule=true, directly in
+          // outcomesOut — see the class javadoc on DecisionLog.RuleOutcome.
+          result = learnedRulesGroup.applyRecordingOutcomes(message, outcomesOut);
+        } else {
+          result = rule.apply(message);
+          if (outcomesOut != null) outcomesOut.add(toOutcome(rule, result, learnedRule));
+        }
         learnedRulesExecuted |= result.learnedRulesExecuted();
-        if (outcomesOut != null) outcomesOut.add(toOutcome(rule, result));
         if (result.ruleApplied()) {
           anyMatched = true;
           // Accumulated across every rule that applied in this loop, not just the one that
@@ -54,7 +64,7 @@ public class RuleHelper {
           }
         }
       } catch (Exception e) {
-        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), null, null, e.toString()));
+        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), learnedRule, null, null, e.toString()));
         logger.log(Level.WARNING, "Rule failed on " + logContext + " for message from " + MailTools.describeFromSafely(message), e);
       }
     }
@@ -64,12 +74,12 @@ public class RuleHelper {
   /**
    * A matched rule (or crashed-before-matching rule) as a decision-log entry — see
    * {@link DecisionLog.RuleOutcome}'s own javadoc for the exact matched/exception semantics this
-   * implements.
+   * implements. Package-visible: also used by {@link LearnedRulesGroupRule} for its fallback case.
    */
-  private static DecisionLog.RuleOutcome toOutcome(RuleInterface rule, RuleExecutionResult result) {
+  static DecisionLog.RuleOutcome toOutcome(RuleInterface rule, RuleExecutionResult result, boolean learnedRule) {
     Boolean matched = (!result.ruleApplied() && result.exception() != null) ? null : result.ruleApplied();
     Boolean keepProcessing = result.ruleApplied() ? result.keepProcessing() : null;
-    return new DecisionLog.RuleOutcome(rule.describe(), matched, keepProcessing, result.exception());
+    return new DecisionLog.RuleOutcome(rule.describe(), learnedRule, matched, keepProcessing, result.exception());
   }
 
   /**
@@ -102,15 +112,16 @@ public class RuleHelper {
     boolean nonNoopActionApplied;
     String matchedDescription = null;
 
-    RuleExecutionResult result = evaluate(rules, message, logger, logContext, outcomes);
+    RuleExecutionResult result = evaluate(rules, message, logger, logContext, outcomes, false);
     if (!result.keepProcessing()) {
       matched = true;
       blocked = true; // a blocking rule already matched: never touch the learned rules afterward
       matchedDescription = result.matchedDescription();
       nonNoopActionApplied = result.nonNoopActionApplied();
     } else if (!result.learnedRulesExecuted()) {
-      RuleExecutionResult fallbackResult = learnedRulesFallback.apply(message);
-      outcomes.add(toOutcome(learnedRulesFallback, fallbackResult));
+      RuleExecutionResult fallbackResult = (learnedRulesFallback instanceof LearnedRulesGroupRule learnedRulesGroup)
+          ? learnedRulesGroup.applyRecordingOutcomes(message, outcomes)
+          : recordingOutcome(learnedRulesFallback, message, outcomes);
       // Bitwise |, not ||: the fallback must run even if a keepProcessing rule already matched
       // above (result.ruleApplied() true doesn't mean we can skip it, unlike the early return).
       matched = result.ruleApplied() | fallbackResult.ruleApplied();
@@ -127,6 +138,13 @@ public class RuleHelper {
     StatsLog.recordProcessed(context.statsDir(), blocked ? StatsLog.ProcessResult.MATCH : StatsLog.ProcessResult.PASS, matchedDescription, processedMs);
     DecisionLog.recordRuleEvaluation(context.statsDir(), context.decisionLogRetentionDays(), trigger, subject, from, outcomes);
     return new ProcessOutcome(matched, nonNoopActionApplied);
+  }
+
+  /** {@code rule.apply(message)}, recording its outcome — for a fallback that isn't a real {@link LearnedRulesGroupRule} (e.g. a test double). */
+  private static RuleExecutionResult recordingOutcome(RuleInterface rule, Message message, List<DecisionLog.RuleOutcome> outcomesOut) {
+    RuleExecutionResult result = rule.apply(message);
+    outcomesOut.add(toOutcome(rule, result, false));
+    return result;
   }
 
   /**

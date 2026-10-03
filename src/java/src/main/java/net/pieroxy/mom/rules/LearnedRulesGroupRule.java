@@ -1,6 +1,7 @@
 package net.pieroxy.mom.rules;
 
 import net.pieroxy.mom.learning.LearnedRulesStore;
+import net.pieroxy.mom.utils.logging.DecisionLog;
 
 import javax.mail.Message;
 import java.util.List;
@@ -36,6 +37,17 @@ public class LearnedRulesGroupRule implements RuleInterface {
   @Override
   public RuleExecutionResult apply(Message message) {
     RuleExecutionResult result = RuleHelper.evaluate(learnedRules, message, LOGGER, "learned rules");
+    return new RuleExecutionResult(result.ruleApplied(), result.keepProcessing(), true, result.matchedDescription(), result.nonNoopActionApplied(), result.exception());
+  }
+
+  /**
+   * Same as {@link #apply}, but also appends one {@link DecisionLog.RuleOutcome} per individual
+   * learned rule actually reached to {@code outcomesOut}, each tagged {@code learnedRule=true} —
+   * so a {@code LEARNED_RULES} group contributes one decision-log line per *distinct* learned
+   * rule it holds, not one opaque line for the whole group (see {@link RuleHelper#evaluate}).
+   */
+  public RuleExecutionResult applyRecordingOutcomes(Message message, List<DecisionLog.RuleOutcome> outcomesOut) {
+    RuleExecutionResult result = RuleHelper.evaluate(learnedRules, message, LOGGER, "learned rules", outcomesOut, true);
     return new RuleExecutionResult(result.ruleApplied(), result.keepProcessing(), true, result.matchedDescription(), result.nonNoopActionApplied(), result.exception());
   }
 }

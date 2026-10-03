@@ -55,8 +55,8 @@ public class DecisionLogTest {
   public void recordsOneLinePerMessageWithEveryRuleReached() throws IOException {
     File dir = new File(tmp.getRoot(), "logs");
     List<DecisionLog.RuleOutcome> rules = List.of(
-        new DecisionLog.RuleOutcome("Rule(FROM_DOMAIN_EQUALS(spam.com),MOVE_TO(Spam))", false, null, null),
-        new DecisionLog.RuleOutcome("Rule(FROM_ADDRESS_EQUALS(alice@example.com),READ())", true, false, null)
+        new DecisionLog.RuleOutcome("Rule(FROM_DOMAIN_EQUALS(spam.com),MOVE_TO(Spam))", false, false, null, null),
+        new DecisionLog.RuleOutcome("Rule(FROM_ADDRESS_EQUALS(alice@example.com),READ())", false, true, false, null)
     );
 
     DecisionLog.recordRuleEvaluation(dir, 10, DecisionLog.Trigger.INBOX, "Hello", "alice@example.com", rules);
@@ -77,7 +77,7 @@ public class DecisionLogTest {
   public void omitsMatchedButKeepsTheExceptionWhenARuleThrew() throws IOException {
     File dir = new File(tmp.getRoot(), "logs");
     List<DecisionLog.RuleOutcome> rules = List.of(
-        new DecisionLog.RuleOutcome("Rule(...)", null, null, "java.lang.RuntimeException: boom")
+        new DecisionLog.RuleOutcome("Rule(...)", false, null, null, "java.lang.RuntimeException: boom")
     );
 
     DecisionLog.recordRuleEvaluation(dir, 10, DecisionLog.Trigger.INBOX, "Subject", "bob@example.com", rules);
