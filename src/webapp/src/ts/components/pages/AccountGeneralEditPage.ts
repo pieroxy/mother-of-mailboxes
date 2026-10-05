@@ -22,6 +22,8 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
   private session: AccountEditSession | undefined;
   private displayName = "";
   private runEvery = 0;
+  private connectTimeout = 0;
+  private readTimeout = 0;
   private classifierSpamFolderName = "";
   private classifierExcludedFolders: string[] = [];
   private classifierCorpusRetentionDays = 0;
@@ -58,6 +60,14 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
       this.field("Run every (seconds)", this.originalHint(session, "runEvery", String(baseline.runEvery)), m("input", {
         type: "number", value: this.runEvery,
         oninput: (e: Event) => (this.runEvery = Number((e.target as HTMLInputElement).value)),
+      })),
+      this.field("Connect timeout (seconds, 0 = default 5)", this.originalHint(session, "connectTimeout", String(baseline.connectTimeout)), m("input", {
+        type: "number", value: this.connectTimeout,
+        oninput: (e: Event) => (this.connectTimeout = Number((e.target as HTMLInputElement).value)),
+      })),
+      this.field("Read timeout (seconds, 0 = default 60)", this.originalHint(session, "readTimeout", String(baseline.readTimeout)), m("input", {
+        type: "number", value: this.readTimeout,
+        oninput: (e: Event) => (this.readTimeout = Number((e.target as HTMLInputElement).value)),
       })),
       this.field("Spam folder", this.originalHint(session, "classifierSpamFolderName", baseline.classifierSpamFolderName || "Spam (default)"), m("input", {
         type: "text", value: this.classifierSpamFolderName, placeholder: "Spam (default)",
@@ -123,6 +133,8 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
     const config = session.workingConfig;
     this.displayName = config.displayName;
     this.runEvery = config.runEvery;
+    this.connectTimeout = config.connectTimeout;
+    this.readTimeout = config.readTimeout;
     this.classifierSpamFolderName = config.classifierSpamFolderName || "";
     this.classifierExcludedFolders = config.classifierExcludedFolders;
     this.classifierCorpusRetentionDays = config.classifierCorpusRetentionDays;
@@ -133,6 +145,7 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
   /** Mirrors the checks UpdateAccountApi itself makes — catches the common mistakes before they're staged into the session instead of only surfacing them at "Save Changes" time. */
   private validate(): string | undefined {
     if (this.runEvery <= 0) return "\"Run every\" must be a positive number of seconds.";
+    if (this.connectTimeout < 0 || this.readTimeout < 0) return "Timeouts must not be negative.";
     return undefined;
   }
 
@@ -146,6 +159,8 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
     session.workingConfig = {
       ...session.workingConfig,
       runEvery: this.runEvery,
+      connectTimeout: this.connectTimeout,
+      readTimeout: this.readTimeout,
       classifierSpamFolderName: this.classifierSpamFolderName,
       classifierExcludedFolders: this.classifierExcludedFolders,
       classifierCorpusRetentionDays: this.classifierCorpusRetentionDays,

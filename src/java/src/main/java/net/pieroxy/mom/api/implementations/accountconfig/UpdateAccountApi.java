@@ -38,6 +38,9 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
     if (input.getRunEvery() <= 0) {
       throw new IllegalArgumentException("\"Run every\" must be a positive number of seconds.");
     }
+    if (input.getConnectTimeout() < 0 || input.getReadTimeout() < 0) {
+      throw new IllegalArgumentException("Timeouts must not be negative.");
+    }
     if (input.getUsername() == null || input.getUsername().isBlank()) {
       throw new IllegalArgumentException("Username must not be blank.");
     }
@@ -49,6 +52,7 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
     RuleLearner.validateShortcuts(shortcuts);
 
     serviceProvider.getAccountService().updateAccount(input.getAccountName(), input.getHost(), input.getPort(), input.getRunEvery(),
+        input.getConnectTimeout(), input.getReadTimeout(),
         blankToNull(input.getClassifierSpamFolderName()),
         input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
         input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),
@@ -68,6 +72,8 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
   private String host;
   private int port;
   private int runEvery;
+  private int connectTimeout;
+  private int readTimeout;
   private String classifierSpamFolderName;
   private List<String> classifierExcludedFolders;
   private int classifierCorpusRetentionDays;
@@ -109,6 +115,22 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
 
   public void setRunEvery(int runEvery) {
     this.runEvery = runEvery;
+  }
+
+  public int getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(int connectTimeout) {
+    this.connectTimeout = connectTimeout;
+  }
+
+  public int getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(int readTimeout) {
+    this.readTimeout = readTimeout;
   }
 
   public String getClassifierSpamFolderName() {

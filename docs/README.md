@@ -73,6 +73,8 @@ Each entry in `configurations` is one IMAP account:
 | `port` | yes | IMAP server port. |
 | `credentials` | yes | Key into `credentials.json`'s `credentials` map, resolved into the IMAP login/password at startup. See [Credentials file](#credentials-file). |
 | `runEvery` | yes | Seconds between processing cycles (see [Running MOM](#running-mom) for how IMAP IDLE affects this). |
+| `connectTimeout` | no | Seconds to wait for the IMAP connection to be established. `0` or absent defaults to 5. |
+| `readTimeout` | no | Seconds to wait for the IMAP server to answer any single command. `0` or absent defaults to 60. |
 | `classifierSpamFolderName` | no | Folder treated as "Spam" for classifier corpus labeling. Defaults to `"Spam"`. |
 | `classifierExcludedFolders` | no | Folder names (anywhere in the tree) to skip entirely for classifier corpus collection — neither `SPAM` nor `HAM`, just ignored, like `INBOX`/`mom-rules/` already are. See [Classifier corpus collection](#classifier-corpus-collection). |
 | `classifierCorpusRetentionDays` | no | Enables classifier corpus collection for this account when `> 0` (see [Classifier corpus collection](#classifier-corpus-collection)). `0` or absent disables it. |

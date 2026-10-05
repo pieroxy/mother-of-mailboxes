@@ -11,6 +11,7 @@ import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.utils.mail.ImapMailboxConnection;
+import net.pieroxy.mom.utils.mail.ImapSessions;
 
 import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
@@ -42,6 +43,8 @@ public class TestImapConnectionApi extends AbstractAuthenticatedEndpoint<TestIma
     MailAccountConfiguration config = new MailAccountConfiguration();
     config.setHost(input.getHost());
     config.setPort(input.getPort());
+    config.setConnectTimeout(input.getConnectTimeout());
+    config.setReadTimeout(input.getReadTimeout());
     Credential credential = new Credential();
     credential.setUsername(input.getUsername());
     credential.setPassword(password);
@@ -51,7 +54,7 @@ public class TestImapConnectionApi extends AbstractAuthenticatedEndpoint<TestIma
     } catch (AuthenticationFailedException e) {
       return new TestImapConnectionApiOutput(false, "Authentication failed — check the username and password.");
     } catch (MessagingException e) {
-      return new TestImapConnectionApiOutput(false, describe(e));
+      return new TestImapConnectionApiOutput(false, describe(e, config));
     }
   }
 
@@ -66,14 +69,22 @@ public class TestImapConnectionApi extends AbstractAuthenticatedEndpoint<TestIma
   }
 
   /** Every failure but a bad login surfaces as the same MessagingException type — disambiguated here via its cause chain. */
-  private static String describe(MessagingException e) {
+  private static String describe(MessagingException e, MailAccountConfiguration config) {
     for (Throwable cause = e; cause != null; cause = cause.getCause()) {
       if (cause instanceof UnknownHostException) return "Could not resolve host \"" + cause.getMessage() + "\".";
-      if (cause instanceof SocketTimeoutException) return "Connection timed out after " + (ImapMailboxConnection.CONNECT_TIMEOUT_MS / 1000) + " seconds.";
+      if (cause instanceof SocketTimeoutException) return describeTimeout((SocketTimeoutException) cause, config);
       if (cause instanceof ConnectException) return "Connection refused — check the host and port.";
       if (cause instanceof SSLException) return "TLS handshake failed: " + cause.getMessage();
     }
     return e.getMessage() != null ? e.getMessage() : "Connection failed.";
+  }
+
+  /** The JDK only tells a connect timeout from a read timeout through its message ("Connect timed out" vs "Read timed out"). */
+  private static String describeTimeout(SocketTimeoutException e, MailAccountConfiguration config) {
+    if (e.getMessage() != null && e.getMessage().toLowerCase().startsWith("connect")) {
+      return "Connection timed out after " + ImapSessions.connectTimeoutSeconds(config) + " seconds.";
+    }
+    return "Server did not answer within " + ImapSessions.readTimeoutSeconds(config) + " seconds.";
   }
 }
 
@@ -83,6 +94,8 @@ class TestImapConnectionApiInput extends AuthenticatedApiInput {
   private String accountName;
   private String host;
   private int port;
+  private int connectTimeout;
+  private int readTimeout;
   private String username;
   private String password;
 
@@ -108,6 +121,22 @@ class TestImapConnectionApiInput extends AuthenticatedApiInput {
 
   public void setPort(int port) {
     this.port = port;
+  }
+
+  public int getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(int connectTimeout) {
+    this.connectTimeout = connectTimeout;
+  }
+
+  public int getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(int readTimeout) {
+    this.readTimeout = readTimeout;
   }
 
   public String getUsername() {

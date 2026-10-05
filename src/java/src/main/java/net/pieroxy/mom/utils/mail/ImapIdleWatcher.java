@@ -8,11 +8,9 @@ import net.pieroxy.mom.utils.scheduling.BackoffLoop;
 
 import javax.mail.Folder;
 import javax.mail.MessagingException;
-import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.event.MessageCountAdapter;
 import javax.mail.event.MessageCountEvent;
-import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,15 +66,9 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
   }
 
   private static Store connectImaps(MailAccountConfiguration config, Credential credential) throws MessagingException {
-    // Only the connect phase gets a bounded timeout: idle() below deliberately blocks far longer
-    // than that waiting for new mail (see this class's doc comment) — the same timeout applied to
-    // reads would fail every single slice and silently degrade every account to polling-only.
-    Properties props = new Properties();
-    props.setProperty("mail.imaps.connectiontimeout", String.valueOf(ImapMailboxConnection.CONNECT_TIMEOUT_MS));
-    Session session = Session.getDefaultInstance(props);
-    Store store = session.getStore("imaps");
-    store.connect(config.getHost(), config.getPort(), credential.getUsername(), credential.getPassword());
-    return store;
+    // idle() legitimately blocks for up to a whole slice: the read timeout only has to catch a
+    // server that stopped answering, after the slice timer already failed to end it.
+    return ImapSessions.connect(config, credential, SLICE_MS);
   }
 
   @Override

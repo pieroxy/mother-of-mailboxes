@@ -5,6 +5,8 @@ interface TestImapConnectionButtonAttrs {
   accountName: string;
   host: string;
   port: number;
+  connectTimeout: number;
+  readTimeout: number;
   username: string;
   /** Blank falls back to the account's already-saved password server-side — see TestImapConnectionApi. */
   password: string;
@@ -38,6 +40,8 @@ export class TestImapConnectionButton implements m.ClassComponent<TestImapConnec
       accountName: attrs.accountName,
       host: attrs.host,
       port: attrs.port,
+      connectTimeout: attrs.connectTimeout,
+      readTimeout: attrs.readTimeout,
       username: attrs.username,
       password: attrs.password,
     })

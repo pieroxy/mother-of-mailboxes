@@ -2,6 +2,7 @@ package net.pieroxy.mom.config.general;
 
 import net.pieroxy.mom.utils.CredentialsResolver;
 import net.pieroxy.mom.detection.classifier.ClassifierCorpusScanner;
+import net.pieroxy.mom.utils.mail.ImapSessions;
 
 import java.util.List;
 
@@ -15,6 +16,10 @@ public class MailAccountConfiguration {
    * Time to sleep between two runs, in seconds.
    */
   private int runEvery;
+  /** IMAP connect timeout, in seconds (0 or absent = {@link ImapSessions#DEFAULT_CONNECT_TIMEOUT_SECONDS}). */
+  private int connectTimeout;
+  /** IMAP timeout of any single read or write, in seconds (0 or absent = {@link ImapSessions#DEFAULT_READ_TIMEOUT_SECONDS}). */
+  private int readTimeout;
   /**
    * Name of the IMAP folder considered spam for the classifier corpus (varies by provider:
    * "Spam" for most, "[Gmail]/Spam" for Gmail, "Junk Email" for Outlook...). Default: "Spam"
@@ -102,6 +107,22 @@ public class MailAccountConfiguration {
 
   public void setRunEvery(int runEvery) {
     this.runEvery = runEvery;
+  }
+
+  public int getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(int connectTimeout) {
+    this.connectTimeout = connectTimeout;
+  }
+
+  public int getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(int readTimeout) {
+    this.readTimeout = readTimeout;
   }
 
   public String getClassifierSpamFolderName() {

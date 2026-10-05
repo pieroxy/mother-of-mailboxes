@@ -150,6 +150,7 @@ public class AccountService implements Service {
    * unchanged.
    */
   public synchronized void updateAccount(String accountName, String host, int port, int runEvery,
+                                          int connectTimeout, int readTimeout,
                                           String classifierSpamFolderName, List<String> classifierExcludedFolders,
                                           int classifierCorpusRetentionDays, int classifierCorpusScanBatchSize,
                                           boolean discoveryTreeDisabled, String username, String password,
@@ -159,6 +160,8 @@ public class AccountService implements Service {
     config.setHost(host);
     config.setPort(port);
     config.setRunEvery(runEvery);
+    config.setConnectTimeout(connectTimeout);
+    config.setReadTimeout(readTimeout);
     config.setClassifierSpamFolderName(classifierSpamFolderName);
     config.setClassifierExcludedFolders(classifierExcludedFolders != null ? classifierExcludedFolders : List.of());
     config.setClassifierCorpusRetentionDays(classifierCorpusRetentionDays);

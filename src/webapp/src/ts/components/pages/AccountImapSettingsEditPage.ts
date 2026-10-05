@@ -80,7 +80,8 @@ export class AccountImapSettingsEditPage extends AbstractPage<AccountImapSetting
           ? m("span.field-original", "A new password is already staged for this account.") : null,
       ]),
       m(TestImapConnectionButton, {
-        accountName: this.accountName, host: this.host, port: this.port, username: this.username, password: this.password,
+        accountName: this.accountName, host: this.host, port: this.port,
+        connectTimeout: session.workingConfig.connectTimeout, readTimeout: session.workingConfig.readTimeout, username: this.username, password: this.password,
       }),
       m(".edit-actions", [
         m("button.ok-button", { onclick: () => this.apply() }, "OK"),

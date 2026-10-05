@@ -289,6 +289,7 @@ public class AccountServiceRestartAccountTest {
   private static void updateAccount(Setup setup, String username, String password, List<MailFilterRuleConfiguration> rules,
                                      List<LearningShortcutConfiguration> shortcuts) {
     setup.accountService.updateAccount("test-account", setup.config.getHost(), setup.config.getPort(), setup.config.getRunEvery(),
+        setup.config.getConnectTimeout(), setup.config.getReadTimeout(),
         setup.config.getClassifierSpamFolderName(), setup.config.getClassifierExcludedFolders(),
         setup.config.getClassifierCorpusRetentionDays(), setup.config.getClassifierCorpusScanBatchSize(),
         setup.config.isDiscoveryTreeDisabled(), username, password, rules, shortcuts);

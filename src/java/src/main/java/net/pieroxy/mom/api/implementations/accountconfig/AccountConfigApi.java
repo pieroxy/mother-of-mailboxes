@@ -34,7 +34,7 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
     MailAccountConfiguration config = account.getConfig();
 
     AccountBasicConfigDto basicConfig = new AccountBasicConfigDto(config.getDisplayName(), config.getHost(), config.getPort(),
-        config.getRunEvery(), config.getClassifierSpamFolderName(), config.getClassifierExcludedFolders(),
+        config.getRunEvery(), config.getConnectTimeout(), config.getReadTimeout(), config.getClassifierSpamFolderName(), config.getClassifierExcludedFolders(),
         config.getClassifierCorpusRetentionDays(), config.getClassifierCorpusScanBatchSize(), config.isDiscoveryTreeDisabled());
 
     CredentialsInfoDto credentials = new CredentialsInfoDto(config.getCredentials(), account.getCredentialUsername());
@@ -132,6 +132,8 @@ class AccountBasicConfigDto {
   private String host;
   private int port;
   private int runEvery;
+  private int connectTimeout;
+  private int readTimeout;
   private String classifierSpamFolderName;
   private List<String> classifierExcludedFolders;
   private int classifierCorpusRetentionDays;
@@ -141,13 +143,16 @@ class AccountBasicConfigDto {
   public AccountBasicConfigDto() {
   }
 
-  public AccountBasicConfigDto(String displayName, String host, int port, int runEvery, String classifierSpamFolderName,
+  public AccountBasicConfigDto(String displayName, String host, int port, int runEvery, int connectTimeout, int readTimeout,
+                                String classifierSpamFolderName,
                                 List<String> classifierExcludedFolders, int classifierCorpusRetentionDays,
                                 int classifierCorpusScanBatchSize, boolean discoveryTreeDisabled) {
     this.displayName = displayName;
     this.host = host;
     this.port = port;
     this.runEvery = runEvery;
+    this.connectTimeout = connectTimeout;
+    this.readTimeout = readTimeout;
     // Never null: the webapp round-trips this DTO byte-for-byte into UpdateAccountApi's own input
     // to detect unrelated edits (see AccountEditSession's isConfigFieldChanged) — a null baseline
     // here against an edit page's "" (an <input> can't bind null) would misreport every unrelated
@@ -189,6 +194,22 @@ class AccountBasicConfigDto {
 
   public void setRunEvery(int runEvery) {
     this.runEvery = runEvery;
+  }
+
+  public int getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(int connectTimeout) {
+    this.connectTimeout = connectTimeout;
+  }
+
+  public int getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(int readTimeout) {
+    this.readTimeout = readTimeout;
   }
 
   public String getClassifierSpamFolderName() {

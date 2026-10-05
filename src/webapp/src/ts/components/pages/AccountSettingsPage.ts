@@ -86,6 +86,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         sectionHeader("IMAP settings", () => Routing.goToAccountImapSettingsEdit(this.accountName),
           m(TestImapConnectionButton, {
             accountName: this.accountName, host: session.workingConfig.host, port: session.workingConfig.port,
+            connectTimeout: session.workingConfig.connectTimeout, readTimeout: session.workingConfig.readTimeout,
             username: session.workingUsername, password: session.workingPassword,
           })),
         renderImapSettingsSection(session),
@@ -311,6 +312,8 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         host: session.workingConfig.host,
         port: session.workingConfig.port,
         runEvery: session.workingConfig.runEvery,
+        connectTimeout: session.workingConfig.connectTimeout,
+        readTimeout: session.workingConfig.readTimeout,
         classifierSpamFolderName: session.workingConfig.classifierSpamFolderName,
         classifierExcludedFolders: session.workingConfig.classifierExcludedFolders,
         classifierCorpusRetentionDays: session.workingConfig.classifierCorpusRetentionDays,
@@ -430,12 +433,22 @@ function spamFolderValue(name: string): m.Children {
   return name ? name : ["Spam", m("span.config-row-hint", " (default)")];
 }
 
+/** Mirror ImapSessions' defaults, applied server-side when a timeout is 0. */
+const DEFAULT_CONNECT_TIMEOUT_SECONDS = 5;
+const DEFAULT_READ_TIMEOUT_SECONDS = 60;
+
+function timeoutValue(seconds: number, defaultSeconds: number): m.Children {
+  return seconds > 0 ? seconds + "s" : [defaultSeconds + "s", m("span.config-row-hint", " (default)")];
+}
+
 function renderGeneralSection(session: AccountEditSession): m.Children {
   const config: AccountBasicConfigDto = session.workingConfig;
   const changed = (field: keyof AccountBasicConfigDto) => isConfigFieldChanged(session, field);
   return m(".config-grid", [
     configRow("Display name", config.displayName, false),
     configRow("Run every", config.runEvery + "s", changed("runEvery")),
+    configRow("Connect timeout", timeoutValue(config.connectTimeout, DEFAULT_CONNECT_TIMEOUT_SECONDS), changed("connectTimeout")),
+    configRow("Read timeout", timeoutValue(config.readTimeout, DEFAULT_READ_TIMEOUT_SECONDS), changed("readTimeout")),
     configRow("Spam folder", spamFolderValue(config.classifierSpamFolderName), changed("classifierSpamFolderName")),
     configRow("Classifier excluded folders", renderTokenList(config.classifierExcludedFolders), changed("classifierExcludedFolders")),
     configRow("Classifier corpus retention", config.classifierCorpusRetentionDays > 0 ? config.classifierCorpusRetentionDays + " day(s)" : "disabled", changed("classifierCorpusRetentionDays")),
