@@ -35,27 +35,33 @@ export class NotificationComponent implements m.ClassComponent<NotificationCompo
   view({attrs}: m.Vnode<NotificationComponentAttrs>): void | Children {
     let n = attrs.notification;
     let icon:m.Children = "";
+    let iconTitle = "";
     switch (n.type) {
       case NotificationsType.SUCCESS:
         icon = m(StatusOkIcon);
+        iconTitle = "Success";
         break;
       case NotificationsType.INFO:
         icon = m(StatusInfoIcon);
+        iconTitle = "Information";
         break;
       case NotificationsType.WARNING:
         icon = m(StatusWarningIcon);
+        iconTitle = "Warning";
         break;
       case NotificationsType.ERROR:
         icon = m(StatusErrorIcon);
+        iconTitle = "Error";
         break;
     }
     let ad = n.alreadyDisplayed;
     n.alreadyDisplayed = true; 
 
     return m(".notificationO" + (ad?"":".appear"), m(".notification." + n.type, [
-      m(".typeicon", icon),
+      m(".typeicon", { title: iconTitle }, icon),
       m(".content", n.content),
       m(".closebtn", {
+        title: "Dismiss",
         onclick: () => Notifications.dismiss()
       }, m(CloseIcon)),
     ]))

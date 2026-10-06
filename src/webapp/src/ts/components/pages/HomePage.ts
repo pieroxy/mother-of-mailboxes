@@ -84,7 +84,7 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
     const displayStatus = account.active ? account.status : "PAUSED";
     return m(".account.status-" + displayStatus.toLowerCase(), [
       m(".account-left", [
-        m(".account-status", [
+        m(".account-status", { title: statusDescription(displayStatus) }, [
           m(StatusIcon, { status: displayStatus }),
           m(".account-status-label", statusLabel(displayStatus)),
         ]),
@@ -130,6 +130,22 @@ class StatusIcon implements m.ClassComponent<StatusIconAttrs> {
   }
 }
 
+/** Tooltip on an account's status icon. */
+function statusDescription(status: string): string {
+  switch (status) {
+    case "OK":
+      return "Waiting for new mail";
+    case "PROCESSING":
+      return "Processing mail right now";
+    case "KO":
+      return "The last cycle failed — see the error message";
+    case "PAUSED":
+      return "Paused: no mail is processed until the account is resumed";
+    default:
+      return status;
+  }
+}
+
 /** The word shown under an account's status icon — see {@link StatusIcon} for the matching icon. */
 function statusLabel(status: string): string {
   switch (status) {
@@ -167,6 +183,18 @@ function reputationListStatus(list: ReputationListDto): string {
   return "KO";
 }
 
+/** Tooltip on a reputation list's status icon — see reputationListStatus for the thresholds. */
+function reputationListStatusDescription(status: string): string {
+  switch (status) {
+    case "OK":
+      return "Up to date";
+    case "WARNING":
+      return "One refresh missed — the last downloaded copy is still in use";
+    default:
+      return "Never downloaded, or several refreshes missed";
+  }
+}
+
 class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
   view({ attrs }: m.Vnode<ReputationListRowAttrs>): m.Children {
     const list = attrs.list;
@@ -175,7 +203,7 @@ class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
     const nextTimestamp = isNaN(lastMs) ? "" : new Date(lastMs + list.refreshHours * 3_600_000).toISOString();
 
     return m(".reputationlist.status-" + status.toLowerCase(), [
-      m(".reputationlist-left", m(StatusIcon, { status })),
+      m(".reputationlist-left", { title: reputationListStatusDescription(status) }, m(StatusIcon, { status })),
       m(".reputationlist-details", [
         m(".reputationlist-name", { title: list.url }, list.id),
         m(".reputationlist-meta", list.type + " · score " + list.score + " · " + formatCount(list.itemCount) + " entries · " + formatBytes(list.contentSizeBytes)),
