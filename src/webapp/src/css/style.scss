@@ -1166,6 +1166,49 @@ body {
               color: $text-muted;
           }
 
+          &.homepage .add-account {
+              margin: 10px;
+          }
+
+          &.accountcreatepage {
+              display: block;
+              color: $text-muted;
+
+              .edit-form {
+                  max-width: 640px;
+              }
+
+              .wizard-steps {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 6px 16px;
+                  margin-bottom: 16px;
+                  font-size: 13px;
+                  color: $text-faint;
+
+                  .wizard-step.done {
+                      color: $text-muted;
+                  }
+
+                  .wizard-step.current {
+                      color: $accent-color;
+                  }
+              }
+
+              .radio-group {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 6px;
+              }
+
+              .wizard-notice {
+                  background-color: $bg-color-d1;
+                  border-radius: 8px;
+                  padding: 4px 16px;
+                  font-size: 13px;
+              }
+          }
+
           &.accountcredentialseditpage {
               display: block;
               color: $text-muted;

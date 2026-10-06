@@ -10,6 +10,7 @@ interface TestImapConnectionButtonAttrs {
   username: string;
   /** Blank falls back to the account's already-saved password server-side — see TestImapConnectionApi. */
   password: string;
+  onResult?: (connected: boolean) => void;
 }
 
 /**
@@ -18,6 +19,7 @@ interface TestImapConnectionButtonAttrs {
  * workingPassword), so testing from either place tests the same thing. Never treats a failed
  * connection as an error to throw/toast: that's the expected, common outcome of testing, so the
  * result renders inline next to the button instead.
+ * AccountCreatePage also uses it, passing onResult to require a successful test.
  */
 export class TestImapConnectionButton implements m.ClassComponent<TestImapConnectionButtonAttrs> {
   private testing = false;
@@ -48,11 +50,13 @@ export class TestImapConnectionButton implements m.ClassComponent<TestImapConnec
       .then((output) => {
         this.testing = false;
         this.result = { connected: output.connected, message: output.message };
+        attrs.onResult?.(output.connected);
         m.redraw();
       })
       .catch((err: Error) => {
         this.testing = false;
         this.result = { connected: false, message: err.message };
+        attrs.onResult?.(false);
         m.redraw();
       });
   }

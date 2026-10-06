@@ -13,6 +13,7 @@ import { RuleEditPage } from "./components/pages/RuleEditPage";
 import { ShortcutEditPage } from "./components/pages/ShortcutEditPage";
 import { GeneralSettingsPage } from "./components/pages/GeneralSettingsPage";
 import { ChangePasswordPage } from "./components/pages/ChangePasswordPage";
+import { AccountCreatePage } from "./components/pages/AccountCreatePage";
 
 const routes: m.RouteDefs = {
   [Endpoints.LOGIN]: LoginPage,
@@ -20,6 +21,7 @@ const routes: m.RouteDefs = {
   [Endpoints.HOME]: new AuthenticatedPageResolver(HomePage),
   [Endpoints.PROFILE]: new AuthenticatedPageResolver(ProfilePage),
   [Endpoints.GENERAL_SETTINGS]: new AuthenticatedPageResolver(GeneralSettingsPage),
+  [Endpoints.ACCOUNT_CREATE]: new AuthenticatedPageResolver(AccountCreatePage),
   [Endpoints.STATS]: new AuthenticatedPageResolver(StatsPage),
   [Endpoints.ACCOUNT_SETTINGS]: new AuthenticatedPageResolver(AccountSettingsPage),
   [Endpoints.ACCOUNT_GENERAL_EDIT]: new AuthenticatedPageResolver(AccountGeneralEditPage),

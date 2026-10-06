@@ -616,4 +616,7 @@ The UI itself is a static single-page app, built from `src/webapp` and embedded 
 jar — it's extracted fresh to `<dataFolder>/webapp-ui` on every startup, so an upgraded jar never
 serves a stale UI. Responses above 1KB are gzip-compressed automatically.
 
-The current UI is a placeholder ("Hello World") — the real UI and its API are still to come.
+"Add account" on the home page opens a wizard that creates an account and, optionally, the
+[starter spam rules](../README.md#starter-configuration) — using the account's own spam folder,
+a separate classifier folder excluded from the corpus, and only the reputation rules whose lists
+are configured in `reputationLists`.

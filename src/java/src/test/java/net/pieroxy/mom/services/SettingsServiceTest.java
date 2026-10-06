@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -258,5 +259,26 @@ public class SettingsServiceTest {
     settingsService.start();
 
     assertTrue(settingsService.isWebServerPasswordTemporary());
+  }
+
+  @Test
+  public void addAccountConfigPicksAFreeCredentialsKeyAndPersistsBothFiles() throws Exception {
+    Map<String, Credential> credentials = new HashMap<>();
+    credentials.put("web-cred", credential("admin"));
+    credentials.put("work", credential("someone-else"));
+    File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
+    SettingsService settingsService = buildSettingsServiceWithAccounts(credentials, List.of("work"), "web-cred", credentialsFilePath);
+    MailAccountConfiguration account = new MailAccountConfiguration();
+    account.setDisplayName("work");
+
+    settingsService.addAccountConfig(account, "me@example.com", "secret");
+
+    assertEquals("an existing key must never be overwritten", "work-2", account.getCredentials());
+    CredentialsFile reloadedCredentials = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
+    assertEquals("someone-else", reloadedCredentials.getCredentials().get("work").getUsername());
+    assertEquals("me@example.com", reloadedCredentials.getCredentials().get("work-2").getUsername());
+    Configuration reloadedConfig = new Gson().fromJson(new FileReader(new File(tmp.getRoot(), "config.json")), Configuration.class);
+    assertEquals(2, reloadedConfig.getConfigurations().size());
+    assertEquals("work-2", reloadedConfig.getConfigurations().get(1).getCredentials());
   }
 }

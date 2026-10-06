@@ -5,6 +5,7 @@ import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
+import net.pieroxy.mom.utils.FileNameValidator;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -65,7 +66,7 @@ public class AccountService implements Service {
     }
   }
 
-  /** The accounts running in this process. Mutated only by {@link #restartAccount}. */
+  /** The accounts running in this process. */
   public List<MailAccount> getAccounts() {
     return accounts;
   }
@@ -141,6 +142,25 @@ public class AccountService implements Service {
     MailAccount fresh = new MailAccount(config, credential, settingsService.getDataFolder());
     accounts.set(index, fresh);
     if (active) fresh.start();
+  }
+
+  /**
+   * Persists a brand-new account (see {@link SettingsService#addAccountConfig}) and starts it.
+   *
+   * @throws IllegalArgumentException if the displayName is not a valid file name (it names the
+   *     account's on-disk files) or is already used by another account.
+   */
+  public synchronized void createAccount(MailAccountConfiguration config, String username, String password) {
+    FileNameValidator.validate(config.getDisplayName(), "Account name");
+    boolean taken = accounts.stream().anyMatch(a -> a.getAccountLabel().equalsIgnoreCase(config.getDisplayName()));
+    if (taken) {
+      throw new IllegalArgumentException("An account named \"" + config.getDisplayName() + "\" already exists.");
+    }
+    settingsService.addAccountConfig(config, username, password);
+    Credential credential = settingsService.resolveCredential(config.getCredentials(), "mail account \"" + config.getDisplayName() + "\"");
+    MailAccount account = new MailAccount(config, credential, settingsService.getDataFolder());
+    accounts.add(account);
+    if (config.isActive()) account.start();
   }
 
   /**

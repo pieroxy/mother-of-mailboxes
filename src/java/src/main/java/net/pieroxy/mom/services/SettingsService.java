@@ -18,6 +18,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -123,6 +124,33 @@ public class SettingsService implements Service {
         .filter(c -> accountName.equals(c.getDisplayName()))
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException("No such account: " + accountName));
+  }
+
+  /**
+   * Adds a new account to config.json and its IMAP login to credentials.json, under a fresh
+   * credentials key derived from the account's displayName, and persists both files.
+   */
+  public synchronized void addAccountConfig(MailAccountConfiguration accountConfig, String username, String password) {
+    Map<String, Credential> credentials = credentialsFile.getCredentials() != null
+        ? new HashMap<>(credentialsFile.getCredentials()) : new HashMap<>();
+    String key = accountConfig.getDisplayName();
+    for (int i = 2; credentials.containsKey(key); i++) {
+      key = accountConfig.getDisplayName() + "-" + i;
+    }
+    Credential credential = new Credential();
+    credential.setUsername(username);
+    credential.setPassword(password);
+    credentials.put(key, credential);
+    credentialsFile.setCredentials(credentials);
+    accountConfig.setCredentials(key);
+
+    List<MailAccountConfiguration> accounts = config.getConfigurations() != null
+        ? new ArrayList<>(config.getConfigurations()) : new ArrayList<>();
+    accounts.add(accountConfig);
+    config.setConfigurations(accounts);
+
+    persistCredentialsFile();
+    persistConfig();
   }
 
   /** Removes one account's entry from the in-memory config — see {@link AccountService#deleteAccount}. */

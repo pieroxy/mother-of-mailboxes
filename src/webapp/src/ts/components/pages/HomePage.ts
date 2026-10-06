@@ -12,6 +12,7 @@ import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
 import { StatsIcon } from "../atoms/icons/StatsIcon";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 import { Routing } from "../../utils/navigation/Routing";
+import { Endpoints } from "../../utils/navigation/Endpoints";
 import { formatBytes, formatCount } from "../../utils/format";
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -45,6 +46,7 @@ export class HomePage extends AbstractPage {
   render(): m.Children {
     return m("page.homepage", [
       m(".accounts", this.accounts.map((account) => m(AccountRow, { account }))),
+      m("button.add-account", { onclick: () => Routing.goToScreen(Endpoints.ACCOUNT_CREATE) }, "Add account"),
       this.error ? m(".accounts-error.errorMessage", this.error) : null,
       m("h2", "Reputation Lists"),
       this.reputationLists.length === 0
