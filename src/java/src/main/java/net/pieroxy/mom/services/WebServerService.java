@@ -120,5 +120,6 @@ public class WebServerService implements Service {
     ctx.addMimeMapping("svg", "image/svg+xml");
     ctx.addMimeMapping("png", "image/png");
     ctx.addMimeMapping("ico", "image/x-icon");
+    ctx.addMimeMapping("webmanifest", "application/manifest+json");
   }
 }
