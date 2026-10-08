@@ -37,6 +37,7 @@ public class WebServerService implements Service {
   private final static int COMPRESSION_MIN_SIZE_BYTES = 1024;
   private final static long OLD_CONNECTOR_GRACE_MS = 5_000;
   private final static long ADDRESS_SWITCH_DELAY_MS = 1_000;
+  private final static long DISABLE_DELAY_MS = 2_000;
   private final static String COMPRESSIBLE_MIME_TYPES =
       "text/html,text/css,application/javascript,image/svg+xml,application/json";
 
@@ -220,6 +221,49 @@ public class WebServerService implements Service {
     return true;
   }
 
+  /**
+   * Turns the web server off for good: saves {@code enabled=false} to config.json (the rest of
+   * the web server's settings and its login are kept), then stops Tomcat
+   * {@link #DISABLE_DELAY_MS} later, once the response is out. Only editing config.json and
+   * restarting MOM brings it back.
+   */
+  public synchronized void disable() {
+    checkRunning();
+    LOGGER.info("Web server disable requested (listening on " + describe(config.getAddress(), config.getHttpPort()) + ")");
+    config.setEnabled(false);
+    try {
+      serviceProvider.getSettingsService().persistConfig();
+    } catch (RuntimeException e) {
+      config.setEnabled(true);
+      LOGGER.log(Level.WARNING, "Web server disable failed: could not save config.json. Still listening on "
+          + describe(config.getAddress(), config.getHttpPort()) + ".", e);
+      throw new IllegalStateException("Could not save config.json: " + rootCauseMessage(e));
+    }
+    LOGGER.info("Web server disabled in config.json; stopping in " + DISABLE_DELAY_MS / 1000 + "s");
+    connector = null; // refuses any further change from now on (see checkRunning)
+    scheduler().schedule(this::stopDisabled, DISABLE_DELAY_MS, TimeUnit.MILLISECONDS);
+  }
+
+  private void stopDisabled() {
+    if (stopTomcat()) {
+      LOGGER.info("Web server stopped. To bring it back: set webServer.enabled to true in config.json and restart MOM.");
+    }
+  }
+
+  /** @return false if Tomcat was already stopped. */
+  private synchronized boolean stopTomcat() {
+    if (tomcat == null) return false;
+    try {
+      tomcat.stop();
+      tomcat.destroy();
+    } catch (LifecycleException e) {
+      LOGGER.log(Level.SEVERE, "Error stopping the web server", e);
+    }
+    tomcat = null;
+    connector = null;
+    return true;
+  }
+
   /** Why the last scheduled address switch failed, or null — see {@link #changeAddress}. */
   public String getAddressChangeError() {
     return addressChangeError;
@@ -397,13 +441,7 @@ public class WebServerService implements Service {
   @Override
   public void destroy() {
     if (scheduler != null) scheduler.shutdownNow();
-    if (tomcat == null) return;
-    try {
-      tomcat.stop();
-      tomcat.destroy();
-    } catch (LifecycleException e) {
-      LOGGER.log(Level.SEVERE, "Error stopping the web server", e);
-    }
+    stopTomcat();
   }
 
   private static void addMimeTypes(StandardContext ctx) {

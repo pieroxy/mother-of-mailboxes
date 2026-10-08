@@ -209,7 +209,16 @@ export class GeneralSettingsPage extends AbstractPage {
 
   private disableWebServer() {
     Dialogs.confirm("Disable the web server? This page will stop responding right away. To bring it back, set "
-      + "webServer.enabled to true in config.json and restart MOM.", "Disable", "Cancel", () => notImplementedYet());
+      + "webServer.enabled to true in config.json and restart MOM.", "Disable", "Cancel", () => {
+      ApiEndpoints.DisableWebServer.call({})
+        .then(() => {
+          this.webServerEnabled = false;
+          Notifications.addNotification(new Notification(NotificationsClass.WEB_SERVER_CHANGE, NotificationsType.SUCCESS,
+            "The web server is disabled and stops in a moment. To bring it back, set webServer.enabled to true in config.json and restart MOM.", 60));
+          m.redraw();
+        })
+        .catch((err: Error) => notifyError(err.message));
+    });
   }
 
   private renderWebLoginSection(): m.Children {
@@ -415,7 +424,3 @@ function actionRow(label: string, value: m.Children, action: m.Children): m.Chil
   return m(".config-row", [m(".config-row-label", label), m(".config-row-value.with-action", [m("span", value), action])]);
 }
 
-// TODO: replaced by the DisableWebServer call.
-function notImplementedYet() {
-  Notifications.addNotification(new Notification(NotificationsClass.WEB_SERVER_CHANGE, NotificationsType.INFO, "Not implemented yet.", 4));
-}

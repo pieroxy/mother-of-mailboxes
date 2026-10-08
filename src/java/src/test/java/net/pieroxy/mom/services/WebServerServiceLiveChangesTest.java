@@ -181,6 +181,28 @@ public class WebServerServiceLiveChangesTest {
     serviceProvider.getWebServerService().changeAddress(" " + LOOPBACK + " ");
   }
 
+  @Test
+  public void disablingSavesEnabledFalseKeepsTheRestAndStopsListeningShortlyAfter() throws Exception {
+    serviceProvider.getWebServerService().disable();
+
+    WebServerConfiguration saved = savedWebServer();
+    assertFalse(saved.isEnabled());
+    assertEquals(initialPort, saved.getHttpPort());
+    assertEquals(LOOPBACK, saved.getAddress());
+    assertEquals("web", saved.getCredentials());
+    long deadline = System.currentTimeMillis() + 10_000;
+    while (listening(initialPort) && System.currentTimeMillis() < deadline) {
+      Thread.sleep(100);
+    }
+    assertFalse("Tomcat must be stopped", listening(initialPort));
+    try {
+      serviceProvider.getWebServerService().changePort(freePort());
+      fail("a disabled web server must refuse any further change");
+    } catch (IllegalStateException expected) {
+      // ok
+    }
+  }
+
   private int savedPort() throws IOException {
     return savedWebServer().getHttpPort();
   }
