@@ -38,7 +38,7 @@ public class GeneralSettingsApi extends AbstractAuthenticatedEndpoint<GeneralSet
     List<ReputationListDto> reputationLists = (config.getReputationLists() != null ? config.getReputationLists() : List.<ReputationListConfig>of())
         .stream().map(ReputationListDto::new).collect(Collectors.toList());
 
-    return new GeneralSettingsApiOutput(
+    GeneralSettingsApiOutput output = new GeneralSettingsApiOutput(
         config.getDataFolder(),
         config.getKeepLogFiles(),
         webServer != null && webServer.isEnabled(),
@@ -47,6 +47,8 @@ public class GeneralSettingsApi extends AbstractAuthenticatedEndpoint<GeneralSet
         webServerCredentialsKey,
         webServerCredential != null ? webServerCredential.getUsername() : null,
         reputationLists);
+    output.setWebServerAddressChangeError(serviceProvider.getWebServerService().getAddressChangeError());
+    return output;
   }
 }
 
@@ -64,6 +66,8 @@ class GeneralSettingsApiOutput {
   private String webServerCredentialsKey;
   private String webServerUsername;
   private List<ReputationListDto> reputationLists;
+  /** Why the last scheduled address switch failed, if it did — see WebServerService#changeAddress. */
+  private String webServerAddressChangeError;
 
   public GeneralSettingsApiOutput() {
   }
@@ -83,6 +87,14 @@ class GeneralSettingsApiOutput {
 
   public String getDataFolder() {
     return dataFolder;
+  }
+
+  public String getWebServerAddressChangeError() {
+    return webServerAddressChangeError;
+  }
+
+  public void setWebServerAddressChangeError(String webServerAddressChangeError) {
+    this.webServerAddressChangeError = webServerAddressChangeError;
   }
 
   public void setDataFolder(String dataFolder) {

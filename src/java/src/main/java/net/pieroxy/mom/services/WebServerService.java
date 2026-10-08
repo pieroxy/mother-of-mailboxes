@@ -13,8 +13,12 @@ import org.apache.catalina.startup.Tomcat;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,6 +36,7 @@ public class WebServerService implements Service {
   // Below this, compressing costs more (CPU, framing overhead) than it saves on the wire.
   private final static int COMPRESSION_MIN_SIZE_BYTES = 1024;
   private final static long OLD_CONNECTOR_GRACE_MS = 5_000;
+  private final static long ADDRESS_SWITCH_DELAY_MS = 1_000;
   private final static String COMPRESSIBLE_MIME_TYPES =
       "text/html,text/css,application/javascript,image/svg+xml,application/json";
 
@@ -43,6 +48,8 @@ public class WebServerService implements Service {
   // keeps running alongside it for OLD_CONNECTOR_GRACE_MS.
   private Connector connector;
   private ScheduledExecutorService scheduler;
+  private volatile String addressChangeError;
+  private boolean addressSwitchPending;
 
   public WebServerService(WebServerConfiguration config, String dataFolder) {
     this.config = config;
@@ -142,9 +149,7 @@ public class WebServerService implements Service {
    *     nothing has changed then.
    */
   public synchronized void changePort(int newPort) {
-    if (tomcat == null) {
-      throw new IllegalStateException("The web server is not running.");
-    }
+    checkRunning();
     if (newPort < 1 || newPort > 65535) {
       throw new IllegalArgumentException("The port must be between 1 and 65535.");
     }
@@ -155,47 +160,181 @@ public class WebServerService implements Service {
     String address = config.getAddress();
     LOGGER.info("Web server port change requested: " + describe(address, oldPort) + " -> " + describe(address, newPort));
 
-    Connector added = newConnector(newPort, address);
+    Connector added;
     try {
-      checkCanListen(address, newPort);
+      added = startConnector(address, newPort);
+    } catch (ListenException e) {
+      LOGGER.warning("Web server port change failed: could not listen on " + describe(address, newPort) + " (" + e.getMessage()
+          + "). Still listening on " + describe(address, oldPort) + ", config.json unchanged.");
+      throw new IllegalArgumentException("Could not listen on port " + newPort + ": " + e.getMessage());
+    }
+    LOGGER.info("Web server now also listening on " + describe(address, newPort));
+
+    config.setHttpPort(newPort);
+    saveOrUndo(added, () -> config.setHttpPort(oldPort), describe(address, newPort), describe(address, oldPort));
+    LOGGER.info("Web server port saved to config.json: " + newPort);
+    retireCurrentConnector(added, describe(address, oldPort), describe(address, newPort));
+  }
+
+  /**
+   * Moves the web server to another address (blank = all interfaces) without a restart. When the
+   * new address can be listened on alongside the current one, it's done the same way as
+   * {@link #changePort}. Otherwise — typically between all interfaces and one of them, which
+   * share the port — the switch happens {@link #ADDRESS_SWITCH_DELAY_MS} later, once the response
+   * is out: the current address is closed, the new one opened, and the current one reopened if
+   * that fails ({@link #getAddressChangeError()} then says why).
+   *
+   * @return true if the new address already listens, false if the switch is scheduled.
+   * @throws IllegalArgumentException if the address isn't one of this machine's; nothing has
+   *     changed then.
+   */
+  public synchronized boolean changeAddress(String requestedAddress) {
+    checkRunning();
+    String newAddress = requestedAddress == null ? "" : requestedAddress.trim();
+    String oldAddress = config.getAddress() == null ? "" : config.getAddress().trim();
+    int port = config.getHttpPort();
+    if (newAddress.equals(oldAddress)) {
+      throw new IllegalArgumentException("The web server already listens on " + describe(newAddress, port) + ".");
+    }
+    checkLocalAddress(newAddress);
+    LOGGER.info("Web server address change requested: " + describe(oldAddress, port) + " -> " + describe(newAddress, port));
+    addressChangeError = null;
+
+    Connector added;
+    try {
+      added = startConnector(newAddress, port);
+    } catch (ListenException e) {
+      LOGGER.info("Web server cannot listen on " + describe(newAddress, port) + " alongside " + describe(oldAddress, port)
+          + " (" + e.getMessage() + "): switching over in " + ADDRESS_SWITCH_DELAY_MS + "ms instead");
+      Connector current = connector;
+      addressSwitchPending = true;
+      scheduler().schedule(() -> switchAddress(current, oldAddress, newAddress, port), ADDRESS_SWITCH_DELAY_MS, TimeUnit.MILLISECONDS);
+      return false;
+    }
+    LOGGER.info("Web server now also listening on " + describe(newAddress, port));
+
+    config.setAddress(newAddress.isEmpty() ? null : newAddress);
+    saveOrUndo(added, () -> config.setAddress(oldAddress.isEmpty() ? null : oldAddress), describe(newAddress, port), describe(oldAddress, port));
+    LOGGER.info("Web server address saved to config.json: " + describe(newAddress, port));
+    retireCurrentConnector(added, describe(oldAddress, port), describe(newAddress, port));
+    return true;
+  }
+
+  /** Why the last scheduled address switch failed, or null — see {@link #changeAddress}. */
+  public String getAddressChangeError() {
+    return addressChangeError;
+  }
+
+  private synchronized void switchAddress(Connector current, String oldAddress, String newAddress, int port) {
+    addressSwitchPending = false;
+    tomcat.getService().removeConnector(current);
+    destroyQuietly(current);
+    LOGGER.info("Web server stopped listening on " + describe(oldAddress, port) + " (switching to " + describe(newAddress, port) + ")");
+    try {
+      connector = startConnector(newAddress, port);
+    } catch (ListenException e) {
+      addressChangeError = "Could not listen on " + describe(newAddress, port) + ": " + e.getMessage();
+      LOGGER.warning("Web server address change failed: could not listen on " + describe(newAddress, port) + " ("
+          + e.getMessage() + "). Going back to " + describe(oldAddress, port) + ", config.json unchanged.");
+      try {
+        connector = startConnector(oldAddress, port);
+        LOGGER.info("Web server listening again on " + describe(oldAddress, port));
+      } catch (ListenException e2) {
+        connector = null;
+        LOGGER.severe("Web server could not listen again on " + describe(oldAddress, port) + " (" + e2.getMessage()
+            + "): the web UI is unreachable until MOM is restarted.");
+      }
+      return;
+    }
+    LOGGER.info("Web server listening on " + describe(newAddress, port));
+    config.setAddress(newAddress.isEmpty() ? null : newAddress);
+    try {
+      serviceProvider.getSettingsService().persistConfig();
+      LOGGER.info("Web server address saved to config.json: " + describe(newAddress, port));
+    } catch (RuntimeException e) {
+      addressChangeError = "Listening on " + describe(newAddress, port) + ", but config.json could not be saved: " + rootCauseMessage(e);
+      LOGGER.log(Level.WARNING, "Web server listening on " + describe(newAddress, port)
+          + ", but config.json could not be saved: MOM will use " + describe(oldAddress, port) + " again after a restart.", e);
+    }
+  }
+
+  /** Saves config.json, or — if that fails — runs {@code undo}, closes {@code added} and throws. */
+  private void saveOrUndo(Connector added, Runnable undo, String newDescription, String oldDescription) {
+    try {
+      serviceProvider.getSettingsService().persistConfig();
+    } catch (RuntimeException e) {
+      undo.run();
+      tomcat.getService().removeConnector(added);
+      destroyQuietly(added);
+      LOGGER.log(Level.WARNING, "Web server change failed: could not save config.json. Stopped listening on "
+          + newDescription + ", still listening on " + oldDescription + ".", e);
+      throw new IllegalStateException("Could not save config.json: " + rootCauseMessage(e));
+    }
+  }
+
+  /** Makes {@code replacement} the current connector and closes the previous one after {@link #OLD_CONNECTOR_GRACE_MS}. */
+  private void retireCurrentConnector(Connector replacement, String oldDescription, String newDescription) {
+    Connector old = connector;
+    connector = replacement;
+    scheduler().schedule(() -> closeConnector(old, oldDescription, newDescription), OLD_CONNECTOR_GRACE_MS, TimeUnit.MILLISECONDS);
+    LOGGER.info("Web server will stop listening on " + oldDescription + " in " + OLD_CONNECTOR_GRACE_MS / 1000 + "s");
+  }
+
+  private synchronized void closeConnector(Connector old, String oldDescription, String newDescription) {
+    tomcat.getService().removeConnector(old);
+    destroyQuietly(old);
+    LOGGER.info("Web server stopped listening on " + oldDescription + " (now on " + newDescription + " only)");
+  }
+
+  /** Adds a started connector to Tomcat, or leaves nothing behind and throws. */
+  private Connector startConnector(String address, int port) throws ListenException {
+    Connector added = newConnector(port, address);
+    try {
+      checkCanListen(address, port);
       tomcat.getService().addConnector(added);
       if (added.getState() != LifecycleState.STARTED) {
         // Tomcat logs the actual cause itself instead of throwing.
         throw new IllegalStateException("Tomcat could not start it, see the error above");
       }
+      return added;
     } catch (IOException | RuntimeException e) {
       tomcat.getService().removeConnector(added);
       destroyQuietly(added);
-      String reason = rootCauseMessage(e);
-      LOGGER.warning("Web server port change failed: could not listen on " + describe(address, newPort) + " (" + reason
-          + "). Still listening on " + describe(address, oldPort) + ", config.json unchanged.");
-      throw new IllegalArgumentException("Could not listen on port " + newPort + ": " + reason);
+      throw new ListenException(rootCauseMessage(e));
     }
-    LOGGER.info("Web server now also listening on " + describe(address, newPort));
-
-    config.setHttpPort(newPort);
-    try {
-      serviceProvider.getSettingsService().persistConfig();
-    } catch (RuntimeException e) {
-      config.setHttpPort(oldPort);
-      tomcat.getService().removeConnector(added);
-      destroyQuietly(added);
-      LOGGER.log(Level.WARNING, "Web server port change failed: could not save config.json. Stopped listening on "
-          + describe(address, newPort) + ", still listening on " + describe(address, oldPort) + ".", e);
-      throw new IllegalStateException("Could not save config.json: " + rootCauseMessage(e));
-    }
-    LOGGER.info("Web server port saved to config.json: " + newPort);
-
-    Connector old = connector;
-    connector = added;
-    scheduler().schedule(() -> closeConnector(old, describe(address, oldPort), newPort), OLD_CONNECTOR_GRACE_MS, TimeUnit.MILLISECONDS);
-    LOGGER.info("Web server will stop listening on " + describe(address, oldPort) + " in " + OLD_CONNECTOR_GRACE_MS / 1000 + "s");
   }
 
-  private synchronized void closeConnector(Connector old, String description, int newPort) {
-    tomcat.getService().removeConnector(old);
-    destroyQuietly(old);
-    LOGGER.info("Web server stopped listening on " + description + " (now on port " + newPort + " only)");
+  private void checkRunning() {
+    if (tomcat == null || connector == null) {
+      throw new IllegalStateException("The web server is not running.");
+    }
+    if (addressSwitchPending) {
+      throw new IllegalStateException("An address change is still being applied, try again in a moment.");
+    }
+  }
+
+  /** Blank (all interfaces), loopback, or an address of one of this machine's network interfaces. */
+  private static void checkLocalAddress(String address) {
+    if (address.isEmpty()) return;
+    InetAddress resolved;
+    try {
+      resolved = InetAddress.getByName(address);
+    } catch (UnknownHostException e) {
+      throw new IllegalArgumentException("Unknown address: " + address + ".");
+    }
+    if (resolved.isAnyLocalAddress() || resolved.isLoopbackAddress()) return;
+    try {
+      if (NetworkInterface.getByInetAddress(resolved) != null) return;
+    } catch (SocketException e) {
+      LOGGER.log(Level.FINE, "Could not list network interfaces", e);
+    }
+    throw new IllegalArgumentException(address + " is not an address of this machine.");
+  }
+
+  private static final class ListenException extends Exception {
+    ListenException(String reason) {
+      super(reason);
+    }
   }
 
   private Connector newConnector(int port, String address) {
@@ -227,7 +366,7 @@ public class WebServerService implements Service {
   private synchronized ScheduledExecutorService scheduler() {
     if (scheduler == null) {
       scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "web-server-connector-closer");
+        Thread t = new Thread(r, "web-server-connectors");
         t.setDaemon(true);
         return t;
       });

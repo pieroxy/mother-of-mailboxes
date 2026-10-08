@@ -35,8 +35,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/** {@link WebServerService#changePort} against a real embedded Tomcat bound to 127.0.0.1. */
-public class WebServerServiceChangePortTest {
+/** {@link WebServerService#changePort}/{@link WebServerService#changeAddress} against a real embedded Tomcat bound to 127.0.0.1. */
+public class WebServerServiceLiveChangesTest {
   private static final String LOOPBACK = "127.0.0.1";
 
   @Rule
@@ -150,9 +150,45 @@ public class WebServerServiceChangePortTest {
     }
   }
 
+  /** "localhost" resolves to the address already in use: forces the delayed switch-over path. */
+  @Test
+  public void switchesToAnAddressThatCantListenAlongsideTheCurrentOne() throws Exception {
+    serviceProvider.getWebServerService().changeAddress("localhost");
+
+    long deadline = System.currentTimeMillis() + 10_000;
+    while (!"localhost".equals(savedWebServer().getAddress()) && System.currentTimeMillis() < deadline) {
+      Thread.sleep(100);
+    }
+    assertEquals("localhost", savedWebServer().getAddress());
+    assertTrue(listening(initialPort));
+    assertEquals(null, serviceProvider.getWebServerService().getAddressChangeError());
+  }
+
+  @Test
+  public void rejectsAnAddressThatIsNotThisMachines() {
+    try {
+      serviceProvider.getWebServerService().changeAddress("192.0.2.1"); // TEST-NET-1, never assigned
+      fail("should have thrown");
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage(), expected.getMessage().contains("not an address of this machine"));
+    }
+    assertTrue(listening(initialPort));
+    assertFalse("config.json must not have been written", configFile.exists());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void rejectsTheCurrentAddress() {
+    serviceProvider.getWebServerService().changeAddress(" " + LOOPBACK + " ");
+  }
+
   private int savedPort() throws IOException {
+    return savedWebServer().getHttpPort();
+  }
+
+  private WebServerConfiguration savedWebServer() throws IOException {
+    if (!configFile.exists()) return new WebServerConfiguration();
     try (FileReader reader = new FileReader(configFile)) {
-      return new Gson().fromJson(reader, Configuration.class).getWebServer().getHttpPort();
+      return new Gson().fromJson(reader, Configuration.class).getWebServer();
     }
   }
 
