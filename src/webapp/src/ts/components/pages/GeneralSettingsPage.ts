@@ -6,6 +6,7 @@ import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { Dialogs } from "../../utils/Dialogs";
+import { WebServerMovedDialog } from "../WebServerMovedDialog";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
 /** One reputation list in the page's working list, tracking enough to render "New"/"Edited"/"Deleted" and to rebuild the final array on save. */
@@ -129,7 +130,19 @@ export class GeneralSettingsPage extends AbstractPage {
       if (!Number.isInteger(port) || port < 1 || port > 65535) return new Error("The port must be a number between 1 and 65535.");
       if (port === this.webServerHttpPort) return new Error("That's already the current port.");
       return port;
-    }, () => notImplementedYet());
+    }, (port) => {
+      const oldPort = this.webServerHttpPort;
+      ApiEndpoints.ChangeWebServerPort.call({ port })
+        .then(() => {
+          this.webServerHttpPort = port;
+          Dialogs.add(new WebServerMovedDialog(oldPort, port));
+          m.redraw();
+        })
+        .catch((err: Error) => {
+          Notifications.addNotification(new Notification(NotificationsClass.WEB_SERVER_CHANGE, NotificationsType.ERROR, err.message, 8));
+          m.redraw();
+        });
+    });
   }
 
   private changeWebServerAddress() {
@@ -321,7 +334,7 @@ function actionRow(label: string, value: m.Children, action: m.Children): m.Chil
   return m(".config-row", [m(".config-row-label", label), m(".config-row-value.with-action", [m("span", value), action])]);
 }
 
-// TODO: replaced by the ChangeWebServerPort/ChangeWebServerAddress/DisableWebServer calls.
+// TODO: replaced by the ChangeWebServerAddress/DisableWebServer calls.
 function notImplementedYet() {
   Notifications.addNotification(new Notification(NotificationsClass.WEB_SERVER_CHANGE, NotificationsType.INFO, "Not implemented yet.", 4));
 }
