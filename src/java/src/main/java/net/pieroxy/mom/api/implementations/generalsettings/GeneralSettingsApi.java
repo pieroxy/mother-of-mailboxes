@@ -17,11 +17,9 @@ import java.util.stream.Collectors;
 
 /**
  * The parts of config.json that aren't any one account's own settings — for the webapp's General
- * Settings page (the cog icon next to the profile icon). Every field here is editable via
- * {@code UpdateGeneralSettingsApi}, but data folder, log retention and the web server's own
- * connection settings (enabled/port/address) only take effect once the whole process is restarted
- * by hand — nothing in this webapp can trigger that itself, so the page says so next to those
- * fields. Only the web server's own login and the reputation lists apply immediately.
+ * Settings page (the cog icon next to the profile icon). The web server's connection settings
+ * (enabled/port/address) are changed through their own endpoints, applied immediately; everything
+ * else through {@code UpdateGeneralSettingsApi}.
  */
 @Endpoint(method = ApiMethod.GET)
 public class GeneralSettingsApi extends AbstractAuthenticatedEndpoint<GeneralSettingsApiInput, GeneralSettingsApiOutput> {

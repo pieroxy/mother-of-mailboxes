@@ -78,7 +78,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
 
   @Test
   public void changesTheWebServerLoginInPlaceAndPersistsIt() throws Exception {
-    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14,
         "new-admin", "new-password", List.of());
 
     assertEquals("new-admin", webServerCredential.getUsername());
@@ -99,7 +99,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
     // setUp()'s own start() call already migrated "old-password" to a hash (see
     // SettingsServiceTest) before this test ever runs — a blank password here must leave that
     // hash untouched, not the (long gone) plaintext.
-    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14,
         "new-admin", "", List.of());
 
     assertEquals("new-admin", webServerCredential.getUsername());
@@ -108,18 +108,17 @@ public class SettingsServiceUpdateGeneralSettingsTest {
   }
 
   @Test
-  public void persistsDataFolderKeepLogFilesAndWebServerConnectionSettingsButDoesNotApplyThem() throws Exception {
+  public void persistsDataFolderAndKeepLogFilesButLeavesTheWebServerConnectionSettingsAlone() throws Exception {
     File configFile = new File(tmp.getRoot(), "config.json");
+    int portBefore = settingsService.getConfiguration().getWebServer().getHttpPort();
 
-    settingsService.updateGeneralSettings("/new/data/folder", 30, false, 9090, "127.0.0.1",
-        "admin", "", List.of());
+    settingsService.updateGeneralSettings("/new/data/folder", 30, "admin", "", List.of());
 
     Configuration reloaded = new Gson().fromJson(new FileReader(configFile), Configuration.class);
     assertEquals("/new/data/folder", reloaded.getDataFolder());
     assertEquals(30, reloaded.getKeepLogFiles());
-    assertFalse(reloaded.getWebServer().isEnabled());
-    assertEquals(9090, reloaded.getWebServer().getHttpPort());
-    assertEquals("127.0.0.1", reloaded.getWebServer().getAddress());
+    assertTrue(reloaded.getWebServer().isEnabled());
+    assertEquals(portBefore, reloaded.getWebServer().getHttpPort());
   }
 
   @Test
@@ -137,7 +136,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
     assertFalse("nothing configured yet: the default empty registry must not match",
         ReputationRegistryHolder.get().ipScore("1.2.3.4", Set.of("blocklist")).isPresent());
 
-    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, true, 8080, "",
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14,
         "admin", "", List.of(blocklist));
 
     Optional<ReputationMatch> match = ReputationRegistryHolder.get().ipScore("1.2.3.4", Set.of("blocklist"));

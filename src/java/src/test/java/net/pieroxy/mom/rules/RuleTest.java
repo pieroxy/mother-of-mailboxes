@@ -1,5 +1,6 @@
 package net.pieroxy.mom.rules;
 
+import net.pieroxy.mom.utils.LogCapture;
 import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleMatcherConfiguration;
@@ -15,12 +16,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
@@ -142,21 +140,15 @@ public class RuleTest {
     config.setAction(noopAction());
     Rule rule = new Rule(config);
 
-    List<LogRecord> records = new ArrayList<>();
-    Handler capture = new Handler() {
-      @Override public void publish(LogRecord record) { records.add(record); }
-      @Override public void flush() {}
-      @Override public void close() {}
-    };
     Logger matcherLogger = Logger.getLogger(net.pieroxy.mom.rules.matchers.Matcher.class.getName());
-    matcherLogger.addHandler(capture);
+    LogCapture capture = new LogCapture(matcherLogger);
     try {
       rule.apply(messageFrom("alice@example.com"));
     } finally {
-      matcherLogger.removeHandler(capture);
+      capture.close();
     }
 
-    assertTrue(records.stream().anyMatch(r ->
+    assertTrue(capture.getRecords().stream().anyMatch(r ->
             r.getMessage().contains("FromExactMatcher(alice@example.com) matched message from")));
   }
 
@@ -244,25 +236,17 @@ public class RuleTest {
 
     List<RuleInterface> rules = Arrays.asList(new Rule(first), new Rule(second), new Rule(third));
 
-    List<LogRecord> records = new ArrayList<>();
-    Handler capture = new Handler() {
-      @Override public void publish(LogRecord record) { records.add(record); }
-      @Override public void flush() {}
-      @Override public void close() {}
-    };
     Logger matcherLogger = Logger.getLogger(net.pieroxy.mom.rules.matchers.Matcher.class.getName());
-    matcherLogger.addHandler(capture);
+    LogCapture capture = new LogCapture(matcherLogger);
     boolean matched;
     try {
       matched = RuleHelper.evaluate(rules, messageFrom("alice@example.com"), Logger.getLogger("test"), "test").ruleApplied();
     } finally {
-      matcherLogger.removeHandler(capture);
+      capture.close();
     }
 
     assertTrue(matched);
-    long matchLogCount = records.stream()
-            .filter(r -> r.getMessage() != null && r.getMessage().contains("matched message from"))
-            .count();
+    long matchLogCount = capture.count("matched message from");
     assertEquals("first (keepProcessing) and second must match, third must never be reached", 2, matchLogCount);
   }
 }

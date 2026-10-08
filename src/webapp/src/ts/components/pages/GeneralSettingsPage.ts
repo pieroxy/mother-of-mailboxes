@@ -5,6 +5,8 @@ import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
+import { Dialogs } from "../../utils/Dialogs";
+import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
 /** One reputation list in the page's working list, tracking enough to render "New"/"Edited"/"Deleted" and to rebuild the final array on save. */
 interface PendingReputationList {
@@ -26,25 +28,19 @@ function defaultReputationList(): ReputationListDto {
 
 /**
  * The parts of config.json that aren't any one account's own settings (reached via the cog icon
- * next to the profile icon, top-right). Everything on this page is editable and — like every
- * other settings page in this app — nothing is sent to the backend until "Save Changes". The web
- * server's own login and the reputation lists take effect immediately; the data folder, log
- * retention and the web server's own connection settings (enabled/port/address) are saved to
- * config.json but only actually take effect once the whole process is restarted by hand — nothing
- * here can trigger that itself, so those fields carry a hint saying so. Either way it's always a
- * single "Save Changes" call (see UpdateGeneralSettingsApi).
+ * next to the profile icon, top-right). Like every other settings page, edits are staged until
+ * "Save Changes" (UpdateGeneralSettingsApi) — except the Web Server section, whose buttons each
+ * apply one change immediately: moving or stopping the server the page is served from can't wait
+ * for, or be undone by, a later save.
  */
 export class GeneralSettingsPage extends AbstractPage {
   private baselineDataFolder = "";
   private workingDataFolder = "";
   private baselineKeepLogFiles = 0;
   private workingKeepLogFiles = 0;
-  private baselineWebServerEnabled = false;
-  private workingWebServerEnabled = false;
-  private baselineWebServerHttpPort = 0;
-  private workingWebServerHttpPort = 0;
-  private baselineWebServerAddress = "";
-  private workingWebServerAddress = "";
+  private webServerEnabled = false;
+  private webServerHttpPort = 0;
+  private webServerAddress = "";
   private webServerCredentialsKey = "";
 
   private baselineUsername = "";
@@ -80,6 +76,7 @@ export class GeneralSettingsPage extends AbstractPage {
     return m(".settings-content", [
       this.isDirty() ? this.renderChangesBar() : null,
       m(".page-card", [m("h2", "Server"), this.renderServerSection()]),
+      m(".page-card", [m("h2", "Web Server"), this.renderWebServerSection()]),
       m(".page-card", [m("h2", "Web Login"), this.renderWebLoginSection()]),
       m(".page-card", [
         m("h2", "Reputation Lists"),
@@ -110,23 +107,43 @@ export class GeneralSettingsPage extends AbstractPage {
         type: "number", value: this.workingKeepLogFiles, min: 0,
         oninput: (e: Event) => (this.workingKeepLogFiles = Number((e.target as HTMLInputElement).value)),
       })),
-      this.field("Web server", m(".checkbox-field", [
-        m("input", {
-          type: "checkbox", checked: this.workingWebServerEnabled,
-          onchange: (e: Event) => (this.workingWebServerEnabled = (e.target as HTMLInputElement).checked),
-        }),
-        m("span", "enabled"),
-      ])),
-      this.field("Web server port", m("input", {
-        type: "number", value: this.workingWebServerHttpPort, min: 1, max: 65535, disabled: !this.workingWebServerEnabled,
-        oninput: (e: Event) => (this.workingWebServerHttpPort = Number((e.target as HTMLInputElement).value)),
-      })),
-      this.field("Web server address", m("input", {
-        type: "text", value: this.workingWebServerAddress, placeholder: "(all interfaces)", disabled: !this.workingWebServerEnabled,
-        oninput: (e: Event) => (this.workingWebServerAddress = (e.target as HTMLInputElement).value),
-      })),
-      m(".field-hint", "These are saved to config.json immediately, but none of them actually take effect until the whole application is restarted by hand."),
+      m(".field-hint", "Saved to config.json, but only taken into account once MOM is restarted by hand."),
     ]);
+  }
+
+  /** Read-only values: each button applies its change immediately, outside "Save Changes". */
+  private renderWebServerSection(): m.Children {
+    return m(".config-grid", [
+      actionRow("Status", this.webServerEnabled ? "Enabled" : "Disabled",
+        this.webServerEnabled ? m("button.danger-button", { onclick: () => this.disableWebServer() }, "Disable") : null),
+      actionRow("Port", String(this.webServerHttpPort),
+        m("button.secondary", { onclick: () => this.changeWebServerPort() }, "Change")),
+      actionRow("Address", this.webServerAddress || m("span.config-row-hint", "(all interfaces)"),
+        m("button.secondary", { onclick: () => this.changeWebServerAddress() }, "Change")),
+    ]);
+  }
+
+  private changeWebServerPort() {
+    Dialogs.prompt("New web server port:", String(this.webServerHttpPort), (value) => {
+      const port = Number(value.trim());
+      if (!Number.isInteger(port) || port < 1 || port > 65535) return new Error("The port must be a number between 1 and 65535.");
+      if (port === this.webServerHttpPort) return new Error("That's already the current port.");
+      return port;
+    }, () => notImplementedYet());
+  }
+
+  private changeWebServerAddress() {
+    Dialogs.prompt("New web server address (leave empty for all interfaces):", this.webServerAddress, (value) => {
+      const address = value.trim();
+      if (/\s/.test(address)) return new Error("The address must not contain spaces.");
+      if (address === this.webServerAddress) return new Error("That's already the current address.");
+      return address;
+    }, () => notImplementedYet());
+  }
+
+  private disableWebServer() {
+    Dialogs.confirm("Disable the web server? This page will stop responding right away. To bring it back, set "
+      + "webServer.enabled to true in config.json and restart MOM.", "Disable", "Cancel", () => notImplementedYet());
   }
 
   private renderWebLoginSection(): m.Children {
@@ -219,9 +236,6 @@ export class GeneralSettingsPage extends AbstractPage {
   private isDirty(): boolean {
     return this.workingDataFolder !== this.baselineDataFolder
       || this.workingKeepLogFiles !== this.baselineKeepLogFiles
-      || this.workingWebServerEnabled !== this.baselineWebServerEnabled
-      || this.workingWebServerHttpPort !== this.baselineWebServerHttpPort
-      || this.workingWebServerAddress !== this.baselineWebServerAddress
       || this.workingUsername !== this.baselineUsername
       || this.workingPassword !== ""
       || this.reputationLists.some((r) => r.deleted || r.edited || r.originalIndex === null);
@@ -237,12 +251,9 @@ export class GeneralSettingsPage extends AbstractPage {
         this.workingDataFolder = output.dataFolder;
         this.baselineKeepLogFiles = output.keepLogFiles;
         this.workingKeepLogFiles = output.keepLogFiles;
-        this.baselineWebServerEnabled = output.webServerEnabled;
-        this.workingWebServerEnabled = output.webServerEnabled;
-        this.baselineWebServerHttpPort = output.webServerHttpPort;
-        this.workingWebServerHttpPort = output.webServerHttpPort;
-        this.baselineWebServerAddress = output.webServerAddress || "";
-        this.workingWebServerAddress = output.webServerAddress || "";
+        this.webServerEnabled = output.webServerEnabled;
+        this.webServerHttpPort = output.webServerHttpPort;
+        this.webServerAddress = output.webServerAddress || "";
         this.webServerCredentialsKey = output.webServerCredentialsKey || "";
         this.baselineUsername = output.webServerUsername || "";
         this.workingUsername = output.webServerUsername || "";
@@ -261,9 +272,6 @@ export class GeneralSettingsPage extends AbstractPage {
   private validate(): string | undefined {
     if (!this.workingDataFolder.trim()) return "The data folder must not be blank.";
     if (this.workingKeepLogFiles < 0) return "Keep log files must be zero (disabled) or a positive number of days.";
-    if (this.workingWebServerEnabled && (this.workingWebServerHttpPort < 1 || this.workingWebServerHttpPort > 65535)) {
-      return "The web server port must be between 1 and 65535.";
-    }
     if (!this.workingUsername.trim()) return "The web login needs a username.";
 
     const seenIds = new Set<string>();
@@ -292,9 +300,6 @@ export class GeneralSettingsPage extends AbstractPage {
     ApiEndpoints.UpdateGeneralSettings.call({
       dataFolder: this.workingDataFolder,
       keepLogFiles: this.workingKeepLogFiles,
-      webServerEnabled: this.workingWebServerEnabled,
-      webServerHttpPort: this.workingWebServerHttpPort,
-      webServerAddress: this.workingWebServerAddress,
       webServerUsername: this.workingUsername,
       webServerPassword: this.workingPassword,
       reputationLists: this.reputationLists.filter((r) => !r.deleted).map((r) => r.list),
@@ -310,4 +315,13 @@ export class GeneralSettingsPage extends AbstractPage {
 
 function configRow(label: string, value: m.Children): m.Children {
   return m(".config-row", [m(".config-row-label", label), m(".config-row-value", value)]);
+}
+
+function actionRow(label: string, value: m.Children, action: m.Children): m.Children {
+  return m(".config-row", [m(".config-row-label", label), m(".config-row-value.with-action", [m("span", value), action])]);
+}
+
+// TODO: replaced by the ChangeWebServerPort/ChangeWebServerAddress/DisableWebServer calls.
+function notImplementedYet() {
+  Notifications.addNotification(new Notification(NotificationsClass.WEB_SERVER_CHANGE, NotificationsType.INFO, "Not implemented yet.", 4));
 }

@@ -971,6 +971,18 @@ body {
                           font-weight: bold;
                       }
 
+                      // A read-only value followed by the button that changes it (General settings' Web Server).
+                      &.with-action {
+                          display: flex;
+                          align-items: center;
+                          gap: 12px;
+
+                          button {
+                              font-size: 12px;
+                              padding: 4px 14px;
+                          }
+                      }
+
                       // An explanation ("(default)", "(unchanged)"), not part of the value itself —
                       // styled like .config-row-label instead of the value color around it.
                       .config-row-hint {

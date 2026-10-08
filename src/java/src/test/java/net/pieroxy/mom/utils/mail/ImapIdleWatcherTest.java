@@ -9,6 +9,7 @@ import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -32,10 +33,15 @@ public class ImapIdleWatcherTest {
     MailAccountConfiguration config = fixture.accountConfig("idle-test");
     ImapIdleWatcher watcher = new ImapIdleWatcher(config, fixture.accountCredential(), (c, credential) -> fixture.connectStore());
 
+    // Delivers repeatedly: a message appended before await() is actually in idle() triggers
+    // nothing, and how long getting there takes depends on the machine's load.
+    AtomicBoolean returned = new AtomicBoolean(false);
     Thread deliverer = new Thread(() -> {
       try {
-        Thread.sleep(300); // give await() time to connect and enter idle() first
-        fixture.appendMessage(messageFrom("sender@example.com"), "INBOX");
+        while (!returned.get()) {
+          Thread.sleep(300);
+          fixture.appendMessage(messageFrom("sender@example.com"), "INBOX");
+        }
       } catch (Exception ignored) {
       }
     });
@@ -44,6 +50,7 @@ public class ImapIdleWatcherTest {
     long start = System.currentTimeMillis();
     watcher.await(60_000); // huge budget: a correct await() must return long before this elapses
     long elapsed = System.currentTimeMillis() - start;
+    returned.set(true);
 
     deliverer.join(2000);
     assertTrue("await() must return soon after the message arrives, not wait out the full budget (elapsed=" + elapsed + "ms)",
@@ -70,10 +77,14 @@ public class ImapIdleWatcherTest {
 
     long start = System.currentTimeMillis();
     waiter.start();
-    Thread.sleep(300); // give await() time to connect and enter idle() first
-    waiter.interrupt();
-    watcher.interruptNow();
-    waiter.join(5000);
+    // Repeated: interruptNow() is a no-op until await() is actually in idle(), and how long
+    // getting there takes depends on the machine's load.
+    while (waiter.isAlive() && System.currentTimeMillis() - start < 5000) {
+      Thread.sleep(300);
+      waiter.interrupt();
+      watcher.interruptNow();
+      waiter.join(200);
+    }
     long elapsed = System.currentTimeMillis() - start;
 
     assertFalse("the waiting thread must have ended, not still be blocked in idle()", waiter.isAlive());

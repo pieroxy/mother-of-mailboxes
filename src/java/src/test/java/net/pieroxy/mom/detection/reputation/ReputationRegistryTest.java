@@ -217,7 +217,11 @@ public class ReputationRegistryTest {
     ReputationRegistry registry = new ReputationRegistry(List.of(cfg), dataFolder);
     registry.start();
     try {
-      Thread.sleep(300);
+      // The download runs in the background: poll rather than guess how long it takes under load.
+      long deadline = System.currentTimeMillis() + 10_000;
+      while (!registry.ipScore("9.9.9.9", Set.of("blocklist")).isPresent() && System.currentTimeMillis() < deadline) {
+        Thread.sleep(20);
+      }
       assertTrue("a stale cache must be re-downloaded right at startup",
           registry.ipScore("9.9.9.9", Set.of("blocklist")).isPresent());
     } finally {

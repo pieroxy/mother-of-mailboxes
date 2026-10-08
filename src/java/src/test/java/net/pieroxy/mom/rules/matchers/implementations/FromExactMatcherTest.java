@@ -1,5 +1,6 @@
 package net.pieroxy.mom.rules.matchers.implementations;
 
+import net.pieroxy.mom.utils.LogCapture;
 import net.pieroxy.mom.config.general.MailFilterRuleMatcherConfiguration;
 import org.junit.Test;
 
@@ -7,13 +8,10 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -124,26 +122,18 @@ public class FromExactMatcherTest {
 
     assertEquals("logLevel=DEBUG doit se traduire en Level.FINE", Level.FINE, matcher.getLogger().getLevel());
 
-    List<LogRecord> records = new ArrayList<>();
-    Handler capture = new Handler() {
-      @Override public void publish(LogRecord record) { records.add(record); }
-      @Override public void flush() {}
-      @Override public void close() {}
-    };
-    matcher.getLogger().addHandler(capture);
-    matcher.getLogger().setUseParentHandlers(false);
+    LogCapture capture = new LogCapture(matcher.getLogger());
     try {
       MimeMessage message = new MimeMessage(session);
       message.setFrom(new InternetAddress("debug-test@example.com"));
 
       matcher.matches(message);
     } finally {
-      matcher.getLogger().removeHandler(capture);
-      matcher.getLogger().setUseParentHandlers(true);
+      capture.close();
     }
 
-    assertEquals(1, records.size());
-    assertEquals(Level.FINE, records.get(0).getLevel());
-    assertTrue(records.get(0).getMessage().contains("debug-test@example.com"));
+    assertEquals(1, capture.getRecords().size());
+    assertEquals(Level.FINE, capture.getRecords().get(0).getLevel());
+    assertTrue(capture.getRecords().get(0).getMessage().contains("debug-test@example.com"));
   }
 }

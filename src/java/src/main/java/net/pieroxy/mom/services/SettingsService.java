@@ -208,24 +208,18 @@ public class SettingsService implements Service {
   }
 
   /**
-   * Applies every field the general settings page offers. The web server's own login and the
-   * whole {@code reputationLists} list take effect immediately (login on the next request; lists
-   * via a hot-swapped {@link ReputationRegistry}). {@code dataFolder}, {@code keepLogFiles} and
-   * the web server's own connection settings are persisted to {@code config.json} but only take
-   * effect once the process is restarted by hand.
+   * Applies the general settings page's staged fields. The web server's own login and the whole
+   * {@code reputationLists} list take effect immediately (login on the next request; lists via a
+   * hot-swapped {@link ReputationRegistry}). {@code dataFolder} and {@code keepLogFiles} are
+   * persisted to {@code config.json} but only take effect once the process is restarted by hand.
    */
-  public synchronized void updateGeneralSettings(String newDataFolder, int keepLogFiles, boolean webServerEnabled,
-                                                  int webServerHttpPort, String webServerAddress,
+  public synchronized void updateGeneralSettings(String newDataFolder, int keepLogFiles,
                                                   String webServerUsername, String webServerPassword,
                                                   List<ReputationListConfig> reputationLists) {
     config.setDataFolder(newDataFolder);
     config.setKeepLogFiles(keepLogFiles);
 
     if (config.getWebServer() != null) {
-      config.getWebServer().setEnabled(webServerEnabled);
-      config.getWebServer().setHttpPort(webServerHttpPort);
-      config.getWebServer().setAddress(webServerAddress);
-
       if (webServerCredential == null) {
         webServerCredential = resolveCredential(config.getWebServer().getCredentials(), "webServer");
       }

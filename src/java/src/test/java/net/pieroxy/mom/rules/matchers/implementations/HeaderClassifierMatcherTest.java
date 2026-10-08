@@ -1,5 +1,6 @@
 package net.pieroxy.mom.rules.matchers.implementations;
 
+import net.pieroxy.mom.utils.LogCapture;
 import net.pieroxy.mom.detection.classifier.ClassifierCorpusStore;
 import net.pieroxy.mom.detection.classifier.ClassifierExample;
 import net.pieroxy.mom.detection.classifier.ClassifierLabel;
@@ -21,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
@@ -102,22 +101,16 @@ public class HeaderClassifierMatcherTest {
     File modelFile = tmp.newFile("does-not-exist.bin");
     tmp.getRoot().listFiles((dir, name) -> name.equals("does-not-exist.bin"))[0].delete();
 
-    List<LogRecord> records = new ArrayList<>();
-    Handler capture = new Handler() {
-      @Override public void publish(LogRecord record) { records.add(record); }
-      @Override public void flush() {}
-      @Override public void close() {}
-    };
     Logger root = Logger.getLogger("");
-    root.addHandler(capture);
+    LogCapture capture = new LogCapture(root);
     try {
       matcherFor(">0.5", modelFile); // the check + log must happen here, not on the first matches() call
     } finally {
-      root.removeHandler(capture);
+      capture.close();
     }
 
     assertTrue("the state must be announced at construction time, not on the first message received",
-        records.stream().anyMatch(r -> r.getMessage() != null && r.getMessage().contains("inactive")));
+        capture.count("inactive") > 0);
   }
 
   @Test
@@ -126,23 +119,15 @@ public class HeaderClassifierMatcherTest {
     tmp.getRoot().listFiles((dir, name) -> name.equals("does-not-exist.bin"))[0].delete();
     HeaderClassifierMatcher matcher = matcherFor(">0.5", modelFile); // already logs "inactive" once here, not captured
 
-    List<LogRecord> records = new ArrayList<>();
-    Handler capture = new Handler() {
-      @Override public void publish(LogRecord record) { records.add(record); }
-      @Override public void flush() {}
-      @Override public void close() {}
-    };
-    matcher.getLogger().addHandler(capture);
-    matcher.getLogger().setUseParentHandlers(false);
+    LogCapture capture = new LogCapture(matcher.getLogger());
     try {
       assertFalse(matcher.matches(new MimeMessage(session)).matched());
       assertFalse(matcher.matches(new MimeMessage(session)).matched());
     } finally {
-      matcher.getLogger().removeHandler(capture);
-      matcher.getLogger().setUseParentHandlers(true);
+      capture.close();
     }
 
-    long inactiveLogs = records.stream().filter(r -> r.getMessage().contains("inactive")).count();
+    long inactiveLogs = capture.count("inactive");
     assertEquals("already announced during setConfig(): no inspected message should re-log it", 0, inactiveLogs);
   }
 
