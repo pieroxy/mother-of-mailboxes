@@ -100,7 +100,7 @@ export class GeneralSettingsPage extends AbstractPage {
 
   private renderServerSection(): m.Children {
     return m(".edit-form", [
-      this.field("Data folder", m("input", {
+      this.field("Data folder (absolute, or relative to config.json's folder)", m("input", {
         type: "text", value: this.workingDataFolder,
         oninput: (e: Event) => (this.workingDataFolder = (e.target as HTMLInputElement).value),
       })),

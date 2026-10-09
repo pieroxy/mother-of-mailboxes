@@ -44,21 +44,25 @@ public class Runner {
 
   public static void main(String[] args) throws Exception {
     Gson gson = new Gson();
-    File configFile = new File(args[0], "config.json");
+    File configDir = new File(args[0]);
+    File configFile = new File(configDir, "config.json");
     Runner.config = gson.fromJson(new FileReader(configFile), Configuration.class);
-    File credentialsFilePath = new File(args[0], "credentials.json");
+    File credentialsFilePath = new File(configDir, "credentials.json");
     CredentialsFile credentialsFile = gson.fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
-    logFile = new File(config.getDataFolder(), "logs/log.txt").getAbsolutePath();
+    String dataFolder = config.resolveDataFolder(configDir);
+    logFile = new File(dataFolder, "logs/log.txt").getAbsolutePath();
     LoggingBootstrap.configure(logFile, config.getKeepLogFiles());
+    LOGGER.info("Config: " + configFile.getAbsoluteFile().toPath().normalize() + ", data folder: " + dataFolder
+        + (new File(config.getDataFolder()).isAbsolute() ? "" : " (\"" + config.getDataFolder() + "\", relative to the config directory)"));
 
-    reputationRegistry = new ReputationRegistry(config.getReputationLists(), config.getDataFolder());
+    reputationRegistry = new ReputationRegistry(config.getReputationLists(), dataFolder);
     reputationRegistry.start();
     ReputationRegistryHolder.set(reputationRegistry);
 
-    SettingsService settingsService = new SettingsService(config, configFile, credentialsFile, credentialsFilePath, config.getDataFolder());
+    SettingsService settingsService = new SettingsService(config, configFile, credentialsFile, credentialsFilePath, dataFolder);
     AccountService accountService = new AccountService(settingsService);
     SessionService sessionService = new SessionService();
-    WebServerService webServerService = new WebServerService(config.getWebServer(), config.getDataFolder());
+    WebServerService webServerService = new WebServerService(config.getWebServer(), dataFolder);
     serviceProvider = new ServiceProvider(settingsService, accountService, sessionService, webServerService);
     serviceProvider.init();
 

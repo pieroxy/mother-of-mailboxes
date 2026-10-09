@@ -57,7 +57,7 @@ same directory — see [Credentials file](#credentials-file).
 | Field | Required | Description |
 |---|---|---|
 | `configurations` | yes | List of accounts to monitor (see below). |
-| `dataFolder` | yes | Directory where MOM persists its own state: per-account UID cursors, learned rules, classifier corpus, and logs (`<dataFolder>/logs/log.txt`). Created if missing. |
+| `dataFolder` | yes | Directory where MOM persists its own state: per-account UID cursors, learned rules, classifier corpus, and logs (`<dataFolder>/logs/log.txt`). Absolute, or relative to the directory holding `config.json` (e.g. `"data"`, so the whole setup can be moved as one folder). Created if missing. |
 | `keepLogFiles` | no | Number of rotated, lz4-compressed daily log files to keep. `0` or absent disables rotation (the log file just keeps growing). |
 | `reputationLists` | no | IP/domain reputation lists to download and refresh (see [Reputation lists](#reputation-lists)). Absent means the feature is off. |
 | `webServer` | no | Embedded web server serving the web UI (see [Web server](#web-server)). Absent, or `enabled: false`, means the feature is off entirely — no Tomcat startup. |
