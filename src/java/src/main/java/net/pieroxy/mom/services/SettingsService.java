@@ -18,6 +18,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,10 +43,9 @@ public class SettingsService implements Service {
   private final File configFile;
   private final CredentialsFile credentialsFile;
   private final File credentialsFilePath;
-  // A saved change to dataFolder only takes effect once the whole process is restarted by hand
-  // (see updateGeneralSettings) — captured once here, rather than re-read from config after an
-  // edit, so anything that touches disk this run keeps using the value the process started with.
-  private final String dataFolder;
+  // The resolved data folder this run uses. A change from the settings page only applies after a
+  // restart (see updateGeneralSettings); only the setup wizard moves it live (saveSetupStorage).
+  private volatile String dataFolder;
 
   private Credential webServerCredential;
 
@@ -78,6 +79,62 @@ public class SettingsService implements Service {
 
   public String getDataFolder() {
     return dataFolder;
+  }
+
+  public boolean isSetupInProgress() {
+    return config.isSetupInProgress();
+  }
+
+  /**
+   * Setup wizard's storage step. The data folder applies right away for whatever is created from
+   * now on (accounts, reputation cache); the caller moves the log file.
+   *
+   * @return the previous resolved data folder if it changed, null otherwise.
+   */
+  public synchronized String saveSetupStorage(String rawDataFolder, int keepLogFiles) {
+    requireSetupInProgress();
+    if (rawDataFolder == null || rawDataFolder.isBlank()) {
+      throw new IllegalArgumentException("The data folder must not be blank.");
+    }
+    if (keepLogFiles < 0) {
+      throw new IllegalArgumentException("Keep log files must be zero (disabled) or a positive number of days.");
+    }
+    String previousRaw = config.getDataFolder();
+    config.setDataFolder(rawDataFolder.trim());
+    String resolved;
+    try {
+      resolved = config.resolveDataFolder(configFile.getAbsoluteFile().getParentFile());
+      Files.createDirectories(Path.of(resolved));
+    } catch (IOException | RuntimeException e) {
+      config.setDataFolder(previousRaw);
+      throw new IllegalArgumentException("Could not create the data folder " + rawDataFolder.trim() + ": " + e.getMessage());
+    }
+    config.setKeepLogFiles(keepLogFiles);
+    persistConfig();
+    String previous = dataFolder;
+    dataFolder = resolved;
+    return previous.equals(resolved) ? null : previous;
+  }
+
+  /** Setup wizard's last step: adds the chosen reputation lists (ids already configured are kept as is) and ends the setup. */
+  public synchronized void completeSetup(List<ReputationListConfig> listsToAdd) {
+    requireSetupInProgress();
+    List<ReputationListConfig> lists = config.getReputationLists() != null ? new ArrayList<>(config.getReputationLists()) : new ArrayList<>();
+    Set<String> ids = new HashSet<>();
+    lists.forEach(l -> ids.add(l.getId()));
+    for (ReputationListConfig list : listsToAdd) {
+      if (ids.add(list.getId())) lists.add(list);
+    }
+    config.setReputationLists(lists);
+    config.setSetupInProgress(false);
+    persistConfig();
+    replaceReputationRegistry(lists);
+  }
+
+  private void requireSetupInProgress() {
+    if (!config.isSetupInProgress()) {
+      throw new IllegalStateException("The setup is already complete.");
+    }
   }
 
   /** Null if no {@code webServer} section is configured/enabled — see {@link #start}. */
@@ -234,7 +291,11 @@ public class SettingsService implements Service {
 
     config.setReputationLists(reputationLists);
     persistConfig();
+    replaceReputationRegistry(reputationLists);
+  }
 
+  /** Hot-swaps the process-wide registry: lists apply with no restart. */
+  private void replaceReputationRegistry(List<ReputationListConfig> reputationLists) {
     ReputationRegistry old = ReputationRegistryHolder.get();
     ReputationRegistry fresh = new ReputationRegistry(reputationLists, dataFolder);
     fresh.start();

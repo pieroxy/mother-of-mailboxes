@@ -40,10 +40,14 @@ public final class LoggingBootstrap {
     }
 
     LoggingBootstrap.logFile = logFile;
-    LoggingBootstrap.keepLogFiles = keepLogFiles;
     openFileHandler();
+    setKeepLogFiles(keepLogFiles);
+  }
 
-    if (keepLogFiles > 0) {
+  /** 0 = no rotation. Takes effect at the next midnight rotation. */
+  public static synchronized void setKeepLogFiles(int keepLogFiles) {
+    LoggingBootstrap.keepLogFiles = keepLogFiles;
+    if (keepLogFiles > 0 && rotationScheduler == null) {
       rotationScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "log-rotation");
         t.setDaemon(true);
@@ -55,6 +59,21 @@ public final class LoggingBootstrap {
           TimeUnit.HOURS.toMillis(ROTATION_PERIOD_HOURS),
           TimeUnit.MILLISECONDS);
     }
+  }
+
+  public static synchronized String getLogFile() {
+    return logFile;
+  }
+
+  /** Switches to another log file, e.g. once the data folder has moved — see SettingsService#saveSetupStorage. */
+  public static synchronized void moveTo(String newLogFile) {
+    if (fileHandler != null) {
+      Logger.getLogger("").removeHandler(fileHandler);
+      fileHandler.close();
+      fileHandler = null;
+    }
+    logFile = newLogFile;
+    openFileHandler();
   }
 
   public static void shutdown() {
@@ -86,7 +105,7 @@ public final class LoggingBootstrap {
   }
 
   private static synchronized void rotate() {
-    if (fileHandler == null) return;
+    if (fileHandler == null || keepLogFiles <= 0) return;
     Logger.getLogger("").removeHandler(fileHandler);
     fileHandler.close();
     try {

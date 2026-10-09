@@ -20,6 +20,7 @@ export enum AuthStatus {
 export class Auth {
   private static sessionId: string | undefined;
   private static passwordChangeRequired = false;
+  private static setupInProgress = false;
   private static checkInProgress = false;
 
   static getStatus(): AuthStatus {
@@ -36,6 +37,7 @@ export class Auth {
           if (output.authenticated) {
             Auth.sessionId = stored;
             Auth.passwordChangeRequired = output.passwordChangeRequired;
+            Auth.setupInProgress = output.setupInProgress;
           } else {
             localStorage.removeItem(STORAGE_KEY);
           }
@@ -49,10 +51,20 @@ export class Auth {
     return AuthStatus.CHECKING;
   }
 
-  static setSession(sessionId: string, passwordChangeRequired: boolean) {
+  static setSession(sessionId: string, passwordChangeRequired: boolean, setupInProgress: boolean) {
     Auth.sessionId = sessionId;
     Auth.passwordChangeRequired = passwordChangeRequired;
+    Auth.setupInProgress = setupInProgress;
     localStorage.setItem(STORAGE_KEY, sessionId);
+  }
+
+  /** The setup wizard isn't finished: every page but it redirects there (see AuthenticatedPageResolver). */
+  static isSetupInProgress(): boolean {
+    return Auth.setupInProgress;
+  }
+
+  static setSetupInProgress(setupInProgress: boolean) {
+    Auth.setupInProgress = setupInProgress;
   }
 
   static setPasswordChangeRequired(passwordChangeRequired: boolean) {
@@ -64,6 +76,7 @@ export class Auth {
     const sessionId = Auth.sessionId;
     Auth.sessionId = undefined;
     Auth.passwordChangeRequired = false;
+    Auth.setupInProgress = false;
     localStorage.removeItem(STORAGE_KEY);
     return sessionId;
   }

@@ -23,7 +23,6 @@ public class Runner {
   private final static String GIT_REV;
   private final static String MVN_VER;
   private static Configuration config;
-  private static String logFile;
   private static ServiceProvider serviceProvider;
   private static ReputationRegistry reputationRegistry;
 
@@ -46,12 +45,19 @@ public class Runner {
     Gson gson = new Gson();
     File configDir = new File(args[0]);
     File configFile = new File(configDir, "config.json");
-    Runner.config = gson.fromJson(new FileReader(configFile), Configuration.class);
     File credentialsFilePath = new File(configDir, "credentials.json");
+    String firstStartMessage;
+    try {
+      firstStartMessage = FirstStart.createIfMissing(configDir, configFile, credentialsFilePath);
+    } catch (IllegalStateException e) {
+      System.err.println(e.getMessage());
+      System.exit(1);
+      return;
+    }
+    Runner.config = gson.fromJson(new FileReader(configFile), Configuration.class);
     CredentialsFile credentialsFile = gson.fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
     String dataFolder = config.resolveDataFolder(configDir);
-    logFile = new File(dataFolder, "logs/log.txt").getAbsolutePath();
-    LoggingBootstrap.configure(logFile, config.getKeepLogFiles());
+    LoggingBootstrap.configure(new File(dataFolder, "logs/log.txt").getAbsolutePath(), config.getKeepLogFiles());
     LOGGER.info("Config: " + configFile.getAbsoluteFile().toPath().normalize() + ", data folder: " + dataFolder
         + (new File(config.getDataFolder()).isAbsolute() ? "" : " (\"" + config.getDataFolder() + "\", relative to the config directory)"));
 
@@ -68,6 +74,8 @@ public class Runner {
 
     Runtime.getRuntime().addShutdownHook(new Thread(Runner::shutdown, "shutdown-hook"));
     LOGGER.info("Started MOM (Mother Of Mailboxes) version " + MVN_VER + " rev " + GIT_REV);
+    // Console only: the temporary password must not end up in log.txt.
+    if (firstStartMessage != null) System.out.println(firstStartMessage);
   }
 
   private static void shutdown() {
@@ -99,7 +107,7 @@ public class Runner {
   private static void logDirectly(String message) {
     String line = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + " " + message;
     System.err.println(line);
-    try (FileWriter writer = new FileWriter(logFile, true)) {
+    try (FileWriter writer = new FileWriter(LoggingBootstrap.getLogFile(), true)) {
       writer.write(line + System.lineSeparator());
     } catch (IOException ignored) {
       // best effort: nothing more reliable to do at this stage of shutdown.

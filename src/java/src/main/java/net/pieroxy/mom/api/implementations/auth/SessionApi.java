@@ -23,8 +23,10 @@ public class SessionApi extends AbstractApiEndpoint<SessionApiInput, SessionApiO
   @Override
   public SessionApiOutput process(SessionApiInput input) {
     boolean authenticated = serviceProvider.getSessionService().isValid(input.getSessionId());
-    return new SessionApiOutput(authenticated,
+    SessionApiOutput output = new SessionApiOutput(authenticated,
         authenticated && serviceProvider.getSettingsService().isWebServerPasswordTemporary());
+    output.setSetupInProgress(authenticated && serviceProvider.getSettingsService().isSetupInProgress());
+    return output;
   }
 }
 
@@ -45,6 +47,8 @@ class SessionApiInput {
 class SessionApiOutput {
   private boolean authenticated;
   private boolean passwordChangeRequired;
+  /** The web UI's setup wizard isn't finished: every page but it (and the password change) redirects there. */
+  private boolean setupInProgress;
 
   public SessionApiOutput() {
   }
@@ -68,5 +72,13 @@ class SessionApiOutput {
 
   public void setPasswordChangeRequired(boolean passwordChangeRequired) {
     this.passwordChangeRequired = passwordChangeRequired;
+  }
+
+  public boolean isSetupInProgress() {
+    return setupInProgress;
+  }
+
+  public void setSetupInProgress(boolean setupInProgress) {
+    this.setupInProgress = setupInProgress;
   }
 }

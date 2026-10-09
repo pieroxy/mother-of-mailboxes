@@ -11,6 +11,8 @@ public class Configuration {
   /** IP/domain reputation sources (see {@link ReputationListConfig}) — absent = feature disabled. */
   private List<ReputationListConfig> reputationLists;
   private WebServerConfiguration webServer;
+  /** Set by the first start (see FirstStart) until the web UI's setup wizard completes. */
+  private boolean setupInProgress;
 
   public List<MailAccountConfiguration> getConfigurations() {
     return configurations;
@@ -18,6 +20,14 @@ public class Configuration {
 
   public void setConfigurations(List<MailAccountConfiguration> configurations) {
     this.configurations = configurations;
+  }
+
+  public boolean isSetupInProgress() {
+    return setupInProgress;
+  }
+
+  public void setSetupInProgress(boolean setupInProgress) {
+    this.setupInProgress = setupInProgress;
   }
 
   public String getDataFolder() {

@@ -23,7 +23,9 @@ public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput>
         && expected.getUsername().equals(input.getLogin())
         && PasswordHasher.verify(input.getPassword(), expected.getPasswordHash());
     if (!ok) return new LoginApiOutput(false, null, false);
-    return new LoginApiOutput(true, serviceProvider.getSessionService().create(), expected.isTemporary());
+    LoginApiOutput output = new LoginApiOutput(true, serviceProvider.getSessionService().create(), expected.isTemporary());
+    output.setSetupInProgress(serviceProvider.getSettingsService().isSetupInProgress());
+    return output;
   }
 }
 
@@ -54,6 +56,8 @@ class LoginApiOutput {
   private boolean ok;
   private String sessionId;
   private boolean passwordChangeRequired;
+  /** The web UI's setup wizard isn't finished: every page but it (and the password change) redirects there. */
+  private boolean setupInProgress;
 
   public LoginApiOutput() {
   }
@@ -86,5 +90,13 @@ class LoginApiOutput {
 
   public void setPasswordChangeRequired(boolean passwordChangeRequired) {
     this.passwordChangeRequired = passwordChangeRequired;
+  }
+
+  public boolean isSetupInProgress() {
+    return setupInProgress;
+  }
+
+  public void setSetupInProgress(boolean setupInProgress) {
+    this.setupInProgress = setupInProgress;
   }
 }

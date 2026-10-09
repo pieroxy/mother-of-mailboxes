@@ -13,24 +13,33 @@ import { Routing } from "./navigation/Routing";
  * (or CHECKING -> NO_SESSION, for an expired/invalid stored session) transition. The redirect
  * check lives in view(), not oninit(), for the same reason: it must re-run on that later redraw,
  * not just once at mount time. While the password is temporary, every page but the
- * change-password one (isPasswordChangePage) redirects there.
+ * change-password one redirects there; then, while the setup is in progress, every page but the
+ * setup wizard redirects to it.
  */
+/** "passwordChange"/"setup": the page users are forced onto while that step is pending. */
+export type PageKind = "normal" | "passwordChange" | "setup";
+
 export class AuthenticatedPageResolver implements m.RouteResolver {
   private readonly component: m.ComponentTypes<any, any>;
-  private readonly isPasswordChangePage: boolean;
+  private readonly kind: PageKind;
 
-  constructor(component: m.ComponentTypes<any, any>, isPasswordChangePage: boolean = false) {
+  constructor(component: m.ComponentTypes<any, any>, kind: PageKind = "normal") {
     this.component = component;
-    this.isPasswordChangePage = isPasswordChangePage;
+    this.kind = kind;
   }
 
   onmatch(): m.ComponentTypes<any, any> {
     const wrapped = this.component;
-    const isPasswordChangePage = this.isPasswordChangePage;
+    const isPasswordChangePage = this.kind === "passwordChange";
+    const isSetupPage = this.kind === "setup";
     return {
       view(vnode: m.Vnode) {
         const status = Auth.getStatus();
         if (status === AuthStatus.LOGGED_IN) {
+          if (Auth.isSetupInProgress() && !isSetupPage) {
+            Routing.goToScreen(Endpoints.SETUP, true);
+            return null;
+          }
           return m(wrapped, vnode.attrs);
         }
         if (status === AuthStatus.PASSWORD_CHANGE_REQUIRED) {

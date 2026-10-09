@@ -11,40 +11,28 @@ DMARC/FCrDNS checks — see [What is it?](../README.md#what-is-it)).
 ```sh
 mkdir mom && cd mom
 curl -LO https://github.com/pieroxy/mother-of-mailboxes/releases/latest/download/mom-core-1.0.0.jar
-curl -LO https://raw.githubusercontent.com/pieroxy/mother-of-mailboxes/main/config.example.json
-curl -LO https://raw.githubusercontent.com/pieroxy/mother-of-mailboxes/main/credentials.example.json
-mv config.example.json config.json
-mv credentials.example.json credentials.json
-```
-
-Edit `config.json` and `credentials.json`:
-
-- In `credentials.json`, fill in `username`/`password` for the `personal` entry (or rename it —
-  just keep it matching the `credentials` key used in `config.json`).
-- In `config.json`, fill in `host` (and `port`/`displayName` if needed) under `configurations`.
-- For this first try, point `dataFolder` at a plain local path instead of `/var/lib/mom` in the
-  example — you don't have write access there yet, and you don't want to run as root just to
-  test:
-
-  ```json
-  "dataFolder": "./data",
-  ```
-
-See the [configuration reference](README.md#configuration-file) for what every field does —
-the example file is a reasonable starting point (see
-[Starter configuration](../README.md#starter-configuration)), not something to use as-is.
-
-Then run it, passing the **directory containing `config.json` and `credentials.json`** (here, the
-current directory):
-
-```sh
 java -jar mom-core-1.0.0.jar .
 ```
 
+The argument is the directory holding `config.json` and `credentials.json`. On the first start,
+neither exists: MOM creates both, and prints the web UI's address and a temporary password on the
+console (and only there). Open that address, log in as `admin`, choose a new password, and the
+setup wizard walks you through the web server, the data folder and the reputation lists, then
+through adding your first mail account.
+
+The web UI only listens on `127.0.0.1` at first. On a remote machine, either use an SSH tunnel
+(`ssh -L 8080:127.0.0.1:8080 <machine>`, with the port MOM printed), or set `webServer.address` in
+`config.json` before restarting MOM.
+
 MOM starts one thread per account, connects, creates the `mom-rules/` folder skeleton used for
-[learning rules by example](README.md#learning-rules-by-example), and begins polling every
-`runEvery` seconds. Watch `./data/logs/log.txt` (or the console) to confirm it's picking up mail
-and matching rules. Ctrl-C stops it.
+[learning rules by example](README.md#learning-rules-by-example), and processes new mail as it
+arrives. Watch `./data/logs/log.txt` (or the console) to confirm it's picking up mail and
+matching rules. Ctrl-C stops it.
+
+You can also write `config.json` and `credentials.json` by hand instead, starting from
+[`config.example.json`](../config.example.json) and
+[`credentials.example.json`](../credentials.example.json) — see the
+[configuration reference](README.md#configuration-file).
 
 Once you're satisfied it's working, move on to running it as a service.
 
@@ -62,7 +50,7 @@ sudo mkdir -p /opt/mom /var/lib/mom
 ```
 
 Put the jar and your finished `config.json`/`credentials.json` (from step 1, with `dataFolder`
-switched back to `/var/lib/mom` as in the example) into `/opt/mom`:
+set to `/var/lib/mom`) into `/opt/mom`:
 
 ```sh
 sudo cp mom-core-1.0.0.jar config.json credentials.json /opt/mom/

@@ -14,10 +14,12 @@ import { ShortcutEditPage } from "./components/pages/ShortcutEditPage";
 import { GeneralSettingsPage } from "./components/pages/GeneralSettingsPage";
 import { ChangePasswordPage } from "./components/pages/ChangePasswordPage";
 import { AccountCreatePage } from "./components/pages/AccountCreatePage";
+import { SetupWizardPage } from "./components/pages/SetupWizardPage";
 
 const routes: m.RouteDefs = {
   [Endpoints.LOGIN]: LoginPage,
-  [Endpoints.CHANGE_PASSWORD]: new AuthenticatedPageResolver(ChangePasswordPage, true),
+  [Endpoints.CHANGE_PASSWORD]: new AuthenticatedPageResolver(ChangePasswordPage, "passwordChange"),
+  [Endpoints.SETUP]: new AuthenticatedPageResolver(SetupWizardPage, "setup"),
   [Endpoints.HOME]: new AuthenticatedPageResolver(HomePage),
   [Endpoints.PROFILE]: new AuthenticatedPageResolver(ProfilePage),
   [Endpoints.GENERAL_SETTINGS]: new AuthenticatedPageResolver(GeneralSettingsPage),
