@@ -50,7 +50,8 @@ export class SetupWizardPage extends AbstractPage {
 
   render(): m.Children {
     return m("page.setupwizardpage", [
-      m(".page-header", m("h1.page-title", "Welcome to MOM")),
+      m(".page-header", m("h1.page-title", "MOM Setup")),
+      m("p.page-subtitle", "Welcome to MOM! This should take less than a minute, then you can get on with your life."),
       m(".wizard-steps", STEPS.map((title, index) =>
         m(".wizard-step" + (index === this.step ? ".current" : index < this.step ? ".done" : ""), (index + 1) + ". " + title))),
       this.error ? m(".settings-error.errorMessage", this.error) : null,

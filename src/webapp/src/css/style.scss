@@ -205,6 +205,11 @@ body {
               }
           }
 
+          .page-subtitle {
+              margin: -8px 0 16px 0;
+              color: $text-muted;
+          }
+
           .page-loading {
               color: $text-faint;
               font-style: italic;
