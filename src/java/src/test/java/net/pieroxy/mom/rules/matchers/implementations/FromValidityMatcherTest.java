@@ -35,6 +35,20 @@ public class FromValidityMatcherTest {
   }
 
   @Test
+  public void internationalizedAddressIsValid() throws Exception {
+    assertEquals(FromValidity.VALID, validityOf("From: José <josé@exämple.com>\r\n"));
+    assertEquals(FromValidity.VALID, validityOf("From: user@exämple.com\r\n"));
+    assertEquals(FromValidity.VALID, validityOf("From: 用户@例子.中国\r\n"));
+  }
+
+  @Test
+  public void malformedInternationalizedAddressIsInvalid() throws Exception {
+    assertEquals(FromValidity.INVALID, validityOf("From: jos☃@example.com\r\n"));
+    assertEquals(FromValidity.INVALID, validityOf("From: josé@-exämple.com\r\n"));
+    assertEquals(FromValidity.INVALID, validityOf("From: josé@exämple..com\r\n"));
+  }
+
+  @Test
   public void noFromHeaderIsMissingEvenWithASender() throws Exception {
     assertEquals(FromValidity.MISSING, validityOf("Sender: someone@example.com\r\n"));
     assertEquals(FromValidity.MISSING, validityOf("From: \r\n"));
