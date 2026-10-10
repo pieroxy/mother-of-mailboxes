@@ -21,6 +21,7 @@ const FORBIDDEN_NAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/;
 export class AccountCreatePage extends AbstractPage {
   private step = 0;
   private existingNames: string[] = [];
+  private accountsLoaded = false;
   private folders: string[] = [];
   private spamRulesPreview: MailFilterRuleConfiguration[] = [];
   private error: string | undefined;
@@ -47,7 +48,11 @@ export class AccountCreatePage extends AbstractPage {
 
   oninit() {
     ApiEndpoints.Accounts.call({})
-      .then((output) => (this.existingNames = output.accounts.map((account) => account.name)))
+      .then((output) => {
+        this.existingNames = output.accounts.map((account) => account.name);
+        this.accountsLoaded = true;
+        m.redraw();
+      })
       .catch(() => undefined);
   }
 
@@ -57,6 +62,9 @@ export class AccountCreatePage extends AbstractPage {
         m("a.page-back", { onclick: () => Routing.goToScreen(Endpoints.HOME) }, "‹ Back"),
         m("h1.page-title", "New account"),
       ]),
+      this.accountsLoaded && this.existingNames.length === 0
+        ? m("p.page-subtitle", "Almost there! Connect your first mailbox and MOM will start keeping your spam in check.")
+        : null,
       m(".wizard-steps", STEPS.map((title, index) =>
         m(".wizard-step" + (index === this.step ? ".current" : index < this.step ? ".done" : ""), (index + 1) + ". " + title))),
       this.error ? m(".settings-error.errorMessage", this.error) : null,
