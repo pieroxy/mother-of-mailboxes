@@ -4,6 +4,7 @@ import {
   DmarcPolicy,
   DmarcResult,
   FcrdnsResult,
+  FromValidity,
   MailFilterRuleMatcherConfiguration,
   MatcherType,
   ReputationListDto,
@@ -24,7 +25,7 @@ interface LeafMatcherTypeOption {
   reputationListType?: ReputationListType;
 }
 
-// These five are @TypeScriptNonConstEnum on the Java side specifically so they have a real
+// These six are @TypeScriptNonConstEnum on the Java side specifically so they have a real
 // runtime object here (a plain TS enum, not the default const enum) — Object.values(...) lists
 // every constant with no separate value list to keep in sync.
 const SPF_RESULT_OPTIONS: string[] = Object.values(SpfResult);
@@ -32,6 +33,7 @@ const DKIM_RESULT_OPTIONS: string[] = Object.values(DkimResult);
 const DMARC_RESULT_OPTIONS: string[] = Object.values(DmarcResult);
 const DMARC_POLICY_OPTIONS: string[] = Object.values(DmarcPolicy);
 const FCRDNS_RESULT_OPTIONS: string[] = Object.values(FcrdnsResult);
+const FROM_VALIDITY_OPTIONS: string[] = Object.values(FromValidity);
 
 const LEAF_MATCHER_TYPE_OPTIONS: LeafMatcherTypeOption[] = [
   { value: MatcherType.FROM_EQUALS, label: "From (full header) equals", fields: "keys" },
@@ -44,6 +46,7 @@ const LEAF_MATCHER_TYPE_OPTIONS: LeafMatcherTypeOption[] = [
   { value: MatcherType.DMARC_RESULT_EQUALS, label: "DMARC result equals", fields: "keys", options: DMARC_RESULT_OPTIONS },
   { value: MatcherType.DMARC_POLICY_EQUALS, label: "DMARC policy equals", fields: "keys", options: DMARC_POLICY_OPTIONS },
   { value: MatcherType.FCRDNS_RESULT_EQUALS, label: "FCrDNS result equals", fields: "keys", options: FCRDNS_RESULT_OPTIONS },
+  { value: MatcherType.FROM_VALIDITY_EQUALS, label: "From header validity equals", fields: "keys", options: FROM_VALIDITY_OPTIONS },
   { value: MatcherType.SUBJECT_CLASSIFIER_EQUALS, label: "Subject spam score", fields: "threshold" },
   { value: MatcherType.HEADER_CLASSIFIER_EQUALS, label: "Header spam score", fields: "threshold" },
   { value: MatcherType.BODY_CLASSIFIER_EQUALS, label: "Body spam score", fields: "threshold" },

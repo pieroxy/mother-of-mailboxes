@@ -11,6 +11,7 @@ import net.pieroxy.mom.rules.matchers.implementations.FromAddressMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.FromDomainMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.FromDomainReputationMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.FromExactMatcher;
+import net.pieroxy.mom.rules.matchers.implementations.FromValidityMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.HeaderClassifierMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.IpReputationMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.NotMatcher;
@@ -42,6 +43,8 @@ public enum MatcherType {
   DMARC_RESULT_EQUALS(DmarcResultMatcher::new, false),
   DMARC_POLICY_EQUALS(DmarcPolicyMatcher::new, false),
   FCRDNS_RESULT_EQUALS(FcrdnsResultMatcher::new, false),
+  // Not learnable, same reasoning as the authentication matchers above: a fixed set of keys.
+  FROM_VALIDITY_EQUALS(FromValidityMatcher::new, false),
   // Not learnable either, but for a different reason than the authentication matchers above:
   // learning here doesn't come from an example dropped in mom-rules/, but from the corpus
   // collected by ClassifierCorpusScanner and retrained by SubjectClassifierTrainer.
