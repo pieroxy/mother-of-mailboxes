@@ -5,11 +5,11 @@ import { Notification, Notifications, NotificationsClass, NotificationsType } fr
 import { WebServerMovedDialog } from "./WebServerMovedDialog";
 
 /**
- * The web server's port/address (and enabled state) as read-only values, each with a button that
- * applies its change immediately — shared by GeneralSettingsPage and SetupWizardPage.
+ * The web server's port/address/secure cookie (and enabled state) as read-only values, each with a
+ * button that applies its change immediately — shared by GeneralSettingsPage and SetupWizardPage.
  */
 export class WebServerControls {
-  constructor(private enabled: boolean, private port: number, private address: string) {
+  constructor(private enabled: boolean, private port: number, private address: string, private secureCookie: boolean) {
   }
 
   /** @param withStatus false in the setup wizard: disabling the web server there would end the wizard itself. */
@@ -21,6 +21,8 @@ export class WebServerControls {
         m("button.secondary", { onclick: () => this.changePort() }, "Change")),
       actionRow("Address", this.address || m("span.config-row-hint", "(all interfaces)"),
         m("button.secondary", { onclick: () => this.changeAddress() }, "Change")),
+      actionRow("Secure cookie", this.secureCookie ? "On (HTTPS only)" : "Off",
+        m("button.secondary", { onclick: () => this.toggleSecureCookie() }, this.secureCookie ? "Disable" : "Enable")),
     ]);
   }
 
@@ -78,6 +80,28 @@ export class WebServerControls {
           Dialogs.add(dialog);
         }
         if (!output.appliedImmediately) window.setTimeout(() => this.checkAddressSwitch(address, dialog), ADDRESS_SWITCH_CHECK_MS);
+        m.redraw();
+      })
+      .catch((err: Error) => notifyError(err.message));
+  }
+
+  private toggleSecureCookie() {
+    const secureCookie = !this.secureCookie;
+    if (secureCookie && window.location.protocol !== "https:") {
+      Dialogs.confirm("This page is served over plain HTTP. Once the session cookie is Secure, logging in from here stops "
+        + "working: only HTTPS access (e.g. through a TLS reverse proxy) will. To undo it, set webServer.secureCookie to "
+        + "false in config.json and restart MOM.", "Enable anyway", "Cancel", () => this.applySecureCookie(secureCookie));
+    } else {
+      this.applySecureCookie(secureCookie);
+    }
+  }
+
+  private applySecureCookie(secureCookie: boolean) {
+    ApiEndpoints.ChangeWebServerSecureCookie.call({ secureCookie })
+      .then(() => {
+        this.secureCookie = secureCookie;
+        Notifications.addNotification(new Notification(NotificationsClass.WEB_SERVER_CHANGE, NotificationsType.SUCCESS,
+          secureCookie ? "The session cookie is now Secure: only sent over HTTPS." : "The session cookie is no longer Secure.", 5));
         m.redraw();
       })
       .catch((err: Error) => notifyError(err.message));

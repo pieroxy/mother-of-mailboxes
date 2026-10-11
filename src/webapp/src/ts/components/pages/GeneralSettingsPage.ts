@@ -37,7 +37,7 @@ export class GeneralSettingsPage extends AbstractPage {
   private workingDataFolder = "";
   private baselineKeepLogFiles = 0;
   private workingKeepLogFiles = 0;
-  private webServer = new WebServerControls(false, 0, "");
+  private webServer = new WebServerControls(false, 0, "", false);
   private webServerCredentialsKey = "";
 
   private baselineUsername = "";
@@ -213,7 +213,7 @@ export class GeneralSettingsPage extends AbstractPage {
         this.workingDataFolder = output.dataFolder;
         this.baselineKeepLogFiles = output.keepLogFiles;
         this.workingKeepLogFiles = output.keepLogFiles;
-        this.webServer = new WebServerControls(output.webServerEnabled, output.webServerHttpPort, output.webServerAddress || "");
+        this.webServer = new WebServerControls(output.webServerEnabled, output.webServerHttpPort, output.webServerAddress || "", output.webServerSecureCookie);
         this.webServerCredentialsKey = output.webServerCredentialsKey || "";
         this.baselineUsername = output.webServerUsername || "";
         this.workingUsername = output.webServerUsername || "";

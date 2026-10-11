@@ -48,6 +48,7 @@ public class GeneralSettingsApi extends AbstractAuthenticatedEndpoint<GeneralSet
         webServerCredential != null ? webServerCredential.getUsername() : null,
         reputationLists);
     output.setWebServerAddressChangeError(serviceProvider.getWebServerService().getAddressChangeError());
+    output.setWebServerSecureCookie(webServer != null && webServer.isSecureCookie());
     return output;
   }
 }
@@ -65,6 +66,7 @@ class GeneralSettingsApiOutput {
   private String webServerAddress;
   private String webServerCredentialsKey;
   private String webServerUsername;
+  private boolean webServerSecureCookie;
   private List<ReputationListDto> reputationLists;
   /** Why the last scheduled address switch failed, if it did — see WebServerService#changeAddress. */
   private String webServerAddressChangeError;
@@ -139,6 +141,14 @@ class GeneralSettingsApiOutput {
 
   public void setWebServerCredentialsKey(String webServerCredentialsKey) {
     this.webServerCredentialsKey = webServerCredentialsKey;
+  }
+
+  public boolean isWebServerSecureCookie() {
+    return webServerSecureCookie;
+  }
+
+  public void setWebServerSecureCookie(boolean webServerSecureCookie) {
+    this.webServerSecureCookie = webServerSecureCookie;
   }
 
   public String getWebServerUsername() {

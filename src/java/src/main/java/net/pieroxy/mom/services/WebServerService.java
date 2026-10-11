@@ -244,6 +244,27 @@ public class WebServerService implements Service {
     scheduler().schedule(this::stopDisabled, DISABLE_DELAY_MS, TimeUnit.MILLISECONDS);
   }
 
+  /**
+   * Saves the session cookie's Secure flag to config.json. It applies to every session cookie set
+   * from now on (see {@code SettingsService#isSessionCookieSecure}).
+   */
+  public synchronized void changeSecureCookie(boolean secureCookie) {
+    checkRunning();
+    if (secureCookie == config.isSecureCookie()) {
+      throw new IllegalArgumentException("The session cookie is already " + (secureCookie ? "Secure." : "not Secure."));
+    }
+    LOGGER.info("Session cookie Secure flag change requested: " + !secureCookie + " -> " + secureCookie);
+    config.setSecureCookie(secureCookie);
+    try {
+      serviceProvider.getSettingsService().persistConfig();
+    } catch (RuntimeException e) {
+      config.setSecureCookie(!secureCookie);
+      LOGGER.log(Level.WARNING, "Session cookie Secure flag change failed: could not save config.json.", e);
+      throw new IllegalStateException("Could not save config.json: " + rootCauseMessage(e));
+    }
+    LOGGER.info("Session cookie Secure flag saved to config.json: " + secureCookie);
+  }
+
   private void stopDisabled() {
     if (stopTomcat()) {
       LOGGER.info("Web server stopped. To bring it back: set webServer.enabled to true in config.json and restart MOM.");

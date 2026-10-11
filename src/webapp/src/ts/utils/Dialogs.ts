@@ -65,6 +65,7 @@ class ConfirmDialog extends DialogRender {
         action:()=>{onok();Dialogs.dismiss();}
       }, this.yes),
       m(Button, {
+        secondary:true,
         action:function(){if (onko) onko();Dialogs.dismiss();}
       }, this.no)
     ])]);

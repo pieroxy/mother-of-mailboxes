@@ -177,6 +177,29 @@ public class WebServerServiceLiveChangesTest {
         read(send(initialPort, "ChangePassword", "application/json", current, "{\"newPassword\":\"again\"}")).get("ok").getAsBoolean());
   }
 
+  @Test
+  public void enablingTheSecureCookieSavesItAndReissuesTheCallersCookieAsSecure() throws Exception {
+    HttpURLConnection connection = send(initialPort, "ChangeWebServerSecureCookie", "application/json", login(), "{\"secureCookie\":true}");
+
+    assertTrue(read(connection).get("ok").getAsBoolean());
+    String setCookie = connection.getHeaderField("Set-Cookie");
+    assertTrue(setCookie, setCookie.startsWith("mom_session=") && setCookie.contains("Secure"));
+    assertTrue(savedWebServer().isSecureCookie());
+  }
+
+  @Test
+  public void otherCallsDontReissueTheCookie() throws Exception {
+    HttpURLConnection connection = send(initialPort, "ChangePassword", "application/json", login(), "{\"newPassword\":\"changed\"}");
+
+    assertTrue(read(connection).get("ok").getAsBoolean());
+    assertEquals(null, connection.getHeaderField("Set-Cookie"));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void rejectsTheCurrentSecureCookieValue() {
+    serviceProvider.getWebServerService().changeSecureCookie(false);
+  }
+
   /** @return the session cookie, as a Cookie request header value. */
   private String login() throws IOException {
     HttpURLConnection connection = send(initialPort, "Login", "application/json", null, "{\"login\":\"admin\",\"password\":\"secret\"}");

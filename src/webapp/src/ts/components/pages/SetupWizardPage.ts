@@ -20,7 +20,7 @@ export class SetupWizardPage extends AbstractPage {
   private saving = false;
   private error: string | undefined;
 
-  private webServer = new WebServerControls(true, 0, "");
+  private webServer = new WebServerControls(true, 0, "", false);
   private dataFolder = "";
   private keepLogFiles = 0;
   private recommendedLists: RecommendedReputationListDto[] = [];
@@ -33,7 +33,7 @@ export class SetupWizardPage extends AbstractPage {
   oninit() {
     Promise.all([ApiEndpoints.GeneralSettings.call({}), ApiEndpoints.RecommendedReputationLists.call({})])
       .then(([settings, recommended]) => {
-        this.webServer = new WebServerControls(settings.webServerEnabled, settings.webServerHttpPort, settings.webServerAddress || "");
+        this.webServer = new WebServerControls(settings.webServerEnabled, settings.webServerHttpPort, settings.webServerAddress || "", settings.webServerSecureCookie);
         this.dataFolder = settings.dataFolder;
         this.keepLogFiles = settings.keepLogFiles;
         this.recommendedLists = recommended.lists;
@@ -65,7 +65,7 @@ export class SetupWizardPage extends AbstractPage {
         return [
           m("p", "A few settings first, then you'll add your first mail account. Every value below already has a sensible default."),
           this.webServer.render(false),
-          m("p.field-hint", "Port and address changes apply right away. You'll also be able to disable the web server later on, from the general settings."),
+          m("p.field-hint", "These changes apply right away. You'll also be able to disable the web server later on, from the general settings."),
         ];
       case 1:
         return [

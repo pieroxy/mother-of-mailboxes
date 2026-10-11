@@ -28,7 +28,14 @@ public abstract class AbstractAuthenticatedEndpoint<I extends AuthenticatedApiIn
       throw new PasswordChangeRequiredException();
     }
     input.setSessionId(sessionId);
-    return processAuthenticated(input);
+    boolean secureCookie = serviceProvider.getSettingsService().isSessionCookieSecure();
+    O output = processAuthenticated(input);
+    // Re-issued so the caller's browser follows a Secure flag change right away.
+    boolean nowSecureCookie = serviceProvider.getSettingsService().isSessionCookieSecure();
+    if (nowSecureCookie != secureCookie) {
+      context.setSessionCookie(sessionId, nowSecureCookie);
+    }
+    return output;
   }
 
   protected boolean allowedWithTemporaryPassword() {
