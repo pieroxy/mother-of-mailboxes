@@ -70,12 +70,15 @@ A few things worth understanding before you dive in:
 ## Starter configuration
 
 [`config.example.json`](config.example.json) is a reasonable config to start from: SPF, DKIM,
-DMARC, FCrDNS, and reputation lists all enabled, with sane logging. Copy it to your `dataFolder`
+DMARC, FCrDNS, `From:` validity, and reputation lists all enabled, with sane logging. Copy it to your `dataFolder`
 as `config.json` and fill in `host`; copy
 [`credentials.example.json`](credentials.example.json) as `credentials.json` and fill in
 `username`/`password`. What it does:
 
 * **SPF/DKIM/DMARC `fail`** → Spam, pre-marked read — the strong, protocol-verified signals.
+* **Missing, duplicated or unparseable `From:`**
+  ([`FROM_VALIDITY_EQUALS`](docs/matchers/from-validity-equals.md)) → Spam, left unread: RFC 5322
+  violations that DMARC can't evaluate, but which home-made senders (scripts, NAS) sometimes produce.
 * **SPF `softfail` + FCrDNS `fail`/`none`** (`AND`) → Spam, left unread for review.
   [`FCRDNS_RESULT_EQUALS`](docs/matchers/fcrdns-result-equals.md) is the weakest of the four, so
   it's never used standalone here, only as corroboration.

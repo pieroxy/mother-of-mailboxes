@@ -90,6 +90,10 @@
           "action": { "type": "MOVE_TO", "key": "Spam" }
         },
         {
+          "matcher": { "type": "FROM_VALIDITY_EQUALS", "keys": ["missing", "multiple", "invalid"] },
+          "action": { "type": "MOVE_TO", "key": "Spam" }
+        },
+        {
           "matcher": {
             "type": "AND",
             "children": [
