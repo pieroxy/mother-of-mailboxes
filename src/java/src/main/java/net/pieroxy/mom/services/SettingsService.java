@@ -142,6 +142,10 @@ public class SettingsService implements Service {
     return webServerCredential;
   }
 
+  public boolean isSessionCookieSecure() {
+    return config.getWebServer() != null && config.getWebServer().isSecureCookie();
+  }
+
   public boolean isWebServerPasswordTemporary() {
     return webServerCredential != null && webServerCredential.isTemporary();
   }

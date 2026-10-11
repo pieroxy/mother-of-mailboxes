@@ -19,8 +19,8 @@ export class ProfilePage extends AbstractPage {
   }
 
   private logout() {
-    const sessionId = Auth.clearSession();
+    Auth.clearSession();
     Routing.goToScreen(Endpoints.LOGIN);
-    if (sessionId) ApiEndpoints.Logout.call({ sessionId });
+    ApiEndpoints.Logout.call({});
   }
 }

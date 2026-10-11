@@ -8,6 +8,8 @@ public class WebServerConfiguration {
   private String address;
   /** Key into credentials.json's top-level "credentials" map — see {@link CredentialsResolver}. */
   private String credentials;
+  /** Marks the session cookie Secure: set it when the web UI is served over HTTPS (e.g. behind a TLS reverse proxy). */
+  private boolean secureCookie;
 
   public boolean isEnabled() {
     return enabled;
@@ -39,5 +41,13 @@ public class WebServerConfiguration {
 
   public void setCredentials(String credentials) {
     this.credentials = credentials;
+  }
+
+  public boolean isSecureCookie() {
+    return secureCookie;
+  }
+
+  public void setSecureCookie(boolean secureCookie) {
+    this.secureCookie = secureCookie;
   }
 }

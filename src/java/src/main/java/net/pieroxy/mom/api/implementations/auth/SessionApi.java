@@ -2,14 +2,15 @@ package net.pieroxy.mom.api.implementations.auth;
 
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.ApiContext;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 
 /**
- * Validates a session ID the client held on to (see Auth.ts), so a page reload can silently
- * restore "logged in" state instead of bouncing back to the login page — as long as the server
- * hasn't restarted since (see SessionStore). Deliberately never requires authentication itself:
+ * Validates the session cookie (see Auth.ts), so a page reload can silently restore "logged in"
+ * state instead of bouncing back to the login page — as long as the server hasn't restarted since
+ * (see SessionService). A stale cookie is cleared. Deliberately never requires authentication itself:
  * its whole job is to answer "is this still valid?", including when the answer is no.
  */
 @Endpoint(method = ApiMethod.GET)
@@ -21,8 +22,12 @@ public class SessionApi extends AbstractApiEndpoint<SessionApiInput, SessionApiO
   }
 
   @Override
-  public SessionApiOutput process(SessionApiInput input) {
-    boolean authenticated = serviceProvider.getSessionService().isValid(input.getSessionId());
+  public SessionApiOutput process(SessionApiInput input, ApiContext context) {
+    String sessionId = context.getSessionId();
+    boolean authenticated = serviceProvider.getSessionService().isValid(sessionId);
+    if (!authenticated && sessionId != null) {
+      context.clearSessionCookie(serviceProvider.getSettingsService().isSessionCookieSecure());
+    }
     SessionApiOutput output = new SessionApiOutput(authenticated,
         authenticated && serviceProvider.getSettingsService().isWebServerPasswordTemporary());
     output.setSetupInProgress(authenticated && serviceProvider.getSettingsService().isSetupInProgress());
@@ -32,15 +37,6 @@ public class SessionApi extends AbstractApiEndpoint<SessionApiInput, SessionApiO
 
 @TypeScriptType
 class SessionApiInput {
-  private String sessionId;
-
-  public String getSessionId() {
-    return sessionId;
-  }
-
-  public void setSessionId(String sessionId) {
-    this.sessionId = sessionId;
-  }
 }
 
 @TypeScriptType

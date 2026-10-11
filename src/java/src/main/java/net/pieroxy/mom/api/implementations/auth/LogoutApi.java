@@ -2,6 +2,7 @@ package net.pieroxy.mom.api.implementations.auth;
 
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.ApiContext;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
@@ -15,23 +16,15 @@ public class LogoutApi extends AbstractApiEndpoint<LogoutApiInput, LogoutApiOutp
   }
 
   @Override
-  public LogoutApiOutput process(LogoutApiInput input) {
-    serviceProvider.getSessionService().invalidate(input.getSessionId());
+  public LogoutApiOutput process(LogoutApiInput input, ApiContext context) {
+    serviceProvider.getSessionService().invalidate(context.getSessionId());
+    context.clearSessionCookie(serviceProvider.getSettingsService().isSessionCookieSecure());
     return new LogoutApiOutput(true);
   }
 }
 
 @TypeScriptType
 class LogoutApiInput {
-  private String sessionId;
-
-  public String getSessionId() {
-    return sessionId;
-  }
-
-  public void setSessionId(String sessionId) {
-    this.sessionId = sessionId;
-  }
 }
 
 @TypeScriptType

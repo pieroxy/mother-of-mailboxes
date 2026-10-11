@@ -7,7 +7,10 @@ import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 
-/** Changes the web login's password. The only endpoint usable while that password is temporary. */
+/**
+ * Changes the web login's password, logging out every other session. The only endpoint usable
+ * while that password is temporary.
+ */
 @Endpoint(method = ApiMethod.POST)
 public class ChangePasswordApi extends AbstractAuthenticatedEndpoint<ChangePasswordApiInput, ChangePasswordApiOutput> {
   public ChangePasswordApi(IServiceProvider serviceProvider) {
@@ -22,6 +25,7 @@ public class ChangePasswordApi extends AbstractAuthenticatedEndpoint<ChangePassw
   @Override
   public ChangePasswordApiOutput processAuthenticated(ChangePasswordApiInput input) {
     serviceProvider.getSettingsService().changeWebServerPassword(input.getNewPassword());
+    serviceProvider.getSessionService().invalidateAllExcept(input.getSessionId());
     return new ChangePasswordApiOutput(true);
   }
 }

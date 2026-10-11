@@ -52,8 +52,8 @@ export class LoginPage extends AbstractPage {
     ApiEndpoints.Login.call({ login: this.login, password: this.password })
       .then((output) => {
         this.submitting = false;
-        if (output.ok && output.sessionId) {
-          Auth.setSession(output.sessionId, output.passwordChangeRequired, output.setupInProgress);
+        if (output.ok) {
+          Auth.setLoggedIn(output.passwordChangeRequired, output.setupInProgress);
           Routing.goToScreen(output.passwordChangeRequired ? Endpoints.CHANGE_PASSWORD
             : output.setupInProgress ? Endpoints.SETUP : Endpoints.HOME);
         } else {

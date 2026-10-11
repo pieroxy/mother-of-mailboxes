@@ -17,8 +17,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 /**
@@ -33,7 +32,7 @@ public class AbstractAuthenticatedEndpointTest {
   }
 
   private static final class StubEndpoint extends AbstractAuthenticatedEndpoint<StubInput, String> {
-    boolean called = false;
+    StubInput received;
 
     StubEndpoint(IServiceProvider serviceProvider) {
       super(serviceProvider);
@@ -41,7 +40,7 @@ public class AbstractAuthenticatedEndpointTest {
 
     @Override
     public String processAuthenticated(StubInput input) {
-      called = true;
+      received = input;
       return "ok";
     }
   }
@@ -60,6 +59,14 @@ public class AbstractAuthenticatedEndpointTest {
     public String processAuthenticated(StubInput input) {
       return "ok";
     }
+  }
+
+  private static ApiContext contextWith(String sessionId) {
+    return new ApiContext() {
+      @Override public String getSessionId() { return sessionId; }
+      @Override public void setSessionCookie(String id, boolean secure) { throw new UnsupportedOperationException(); }
+      @Override public void clearSessionCookie(boolean secure) { throw new UnsupportedOperationException(); }
+    };
   }
 
   private static SettingsService settingsServiceWithWebPassword(boolean temporary) {
@@ -103,29 +110,23 @@ public class AbstractAuthenticatedEndpointTest {
     String sessionId = sessionService.create();
     StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(sessionService));
 
-    StubInput input = new StubInput();
-    input.setSessionId(sessionId);
-
-    assertEquals("ok", endpoint.process(input));
-    assertTrue(endpoint.called);
+    assertEquals("ok", endpoint.process(new StubInput(), contextWith(sessionId)));
+    assertEquals("the validated session ID is handed to the endpoint", sessionId, endpoint.received.getSessionId());
   }
 
   @Test
   public void rejectsAnInvalidSessionWithoutCallingProcessAuthenticated() {
     StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(new SessionService()));
 
-    StubInput input = new StubInput();
-    input.setSessionId("not-a-real-session");
-
     try {
-      endpoint.process(input);
+      endpoint.process(new StubInput(), contextWith("not-a-real-session"));
       fail("expected NotAuthenticatedException");
     } catch (NotAuthenticatedException expected) {
       // expected
     } catch (Exception e) {
       fail("expected NotAuthenticatedException, got " + e);
     }
-    assertFalse(endpoint.called);
+    assertNull(endpoint.received);
   }
 
   @Test
@@ -133,14 +134,14 @@ public class AbstractAuthenticatedEndpointTest {
     StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(new SessionService()));
 
     try {
-      endpoint.process(new StubInput());
+      endpoint.process(new StubInput(), contextWith(null));
       fail("expected NotAuthenticatedException");
     } catch (NotAuthenticatedException expected) {
       // expected
     } catch (Exception e) {
       fail("expected NotAuthenticatedException, got " + e);
     }
-    assertFalse(endpoint.called);
+    assertNull(endpoint.received);
   }
 
   @Test
@@ -148,18 +149,15 @@ public class AbstractAuthenticatedEndpointTest {
     SessionService sessionService = new SessionService();
     StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(sessionService, settingsServiceWithWebPassword(true)));
 
-    StubInput input = new StubInput();
-    input.setSessionId(sessionService.create());
-
     try {
-      endpoint.process(input);
+      endpoint.process(new StubInput(), contextWith(sessionService.create()));
       fail("expected PasswordChangeRequiredException");
     } catch (PasswordChangeRequiredException expected) {
       // expected
     } catch (Exception e) {
       fail("expected PasswordChangeRequiredException, got " + e);
     }
-    assertFalse(endpoint.called);
+    assertNull(endpoint.received);
   }
 
   @Test
@@ -168,9 +166,6 @@ public class AbstractAuthenticatedEndpointTest {
     StubPasswordChangeEndpoint endpoint =
         new StubPasswordChangeEndpoint(serviceProviderWith(sessionService, settingsServiceWithWebPassword(true)));
 
-    StubInput input = new StubInput();
-    input.setSessionId(sessionService.create());
-
-    assertEquals("ok", endpoint.process(input));
+    assertEquals("ok", endpoint.process(new StubInput(), contextWith(sessionService.create())));
   }
 }

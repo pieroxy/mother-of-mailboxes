@@ -7,6 +7,7 @@ import net.pieroxy.mom.utils.reflection.GenericTypeArgumentResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,15 +21,22 @@ public abstract class AbstractApiEndpoint<I, O> implements ApiEndpoint {
     inputType = resolveInputType();
   }
 
-  public abstract O process(I input) throws Exception;
+  public abstract O process(I input, ApiContext context) throws Exception;
 
   @Override
   public final void process(HttpServletRequest req, HttpServletResponse res) {
     res.setContentType("application/json;charset=UTF-8");
+    // A cross-site page can't send this content type without a CORS preflight, which is never
+    // granted: together with the SameSite session cookie, this blocks CSRF.
+    if ("POST".equals(req.getMethod()) && !isJson(req.getContentType())) {
+      res.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+      writeResponse(res, ApiResponse.buildErrResult("Content-Type must be application/json."));
+      return;
+    }
     ApiResponse<O> response;
     try {
       I input = readInput(req);
-      response = ApiResponse.buildOkResult(process(input));
+      response = ApiResponse.buildOkResult(process(input, new ServletApiContext(req, res)));
     } catch (NotAuthenticatedException e) {
       // Routine (a restart, or just an old tab) — not a bug, so no SEVERE stack trace for it.
       res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -41,6 +49,10 @@ public abstract class AbstractApiEndpoint<I, O> implements ApiEndpoint {
       response = ApiResponse.buildErrResult(e.getMessage());
     }
     writeResponse(res, response);
+  }
+
+  private static boolean isJson(String contentType) {
+    return contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("application/json");
   }
 
   private I readInput(HttpServletRequest req) throws IOException {

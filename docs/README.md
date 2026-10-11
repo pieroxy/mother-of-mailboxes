@@ -611,6 +611,7 @@ block:
 | `httpPort` | yes if `enabled` | Port the web server listens on. |
 | `address` | no | Address to bind to. Absent binds all interfaces. |
 | `credentials` | yes if `enabled` | Key into `credentials.json`'s `credentials` map (see [Credentials file](#credentials-file)). |
+| `secureCookie` | no | Marks the session cookie `Secure`, so browsers only send it over HTTPS. Set it when the UI is served over HTTPS (e.g. behind a TLS reverse proxy): with it, logging in over plain HTTP no longer works. Default `false`. |
 
 The UI itself is a static single-page app, built from `src/webapp` and embedded into the release
 jar — it's extracted fresh to `<dataFolder>/webapp-ui` on every startup, so an upgraded jar never

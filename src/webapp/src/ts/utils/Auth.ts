@@ -1,7 +1,12 @@
 import m from "mithril";
 import { ApiEndpoints } from "../auto/ApiEndpoints";
 
-const STORAGE_KEY = "mom.sessionId";
+// Where the session ID used to be kept, before the session cookie.
+try {
+  localStorage.removeItem("mom.sessionId");
+} catch {
+  // Storage unavailable: nothing to clean up.
+}
 
 export enum AuthStatus {
   LOGGED_IN,
@@ -12,35 +17,28 @@ export enum AuthStatus {
 }
 
 /**
- * Client-side session state. The session ID itself lives in localStorage so a page reload
- * doesn't force a fresh login — but that ID is only ever a claim until SessionApi confirms it's
- * still valid server-side (see SessionStore: a service restart clears every session, so a stale
- * ID left over in localStorage from before a restart must be rejected, not trusted blindly).
+ * Client-side session state. The session itself is an HttpOnly cookie this code can't see: on
+ * page load, SessionApi tells whether it's (still) valid — a service restart clears every session.
  */
 export class Auth {
-  private static sessionId: string | undefined;
+  /** Undefined until SessionApi has answered. */
+  private static loggedIn: boolean | undefined;
   private static passwordChangeRequired = false;
   private static setupInProgress = false;
   private static checkInProgress = false;
 
   static getStatus(): AuthStatus {
-    if (Auth.sessionId) return Auth.passwordChangeRequired ? AuthStatus.PASSWORD_CHANGE_REQUIRED : AuthStatus.LOGGED_IN;
-
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return AuthStatus.NO_SESSION;
+    if (Auth.loggedIn === true) return Auth.passwordChangeRequired ? AuthStatus.PASSWORD_CHANGE_REQUIRED : AuthStatus.LOGGED_IN;
+    if (Auth.loggedIn === false) return AuthStatus.NO_SESSION;
 
     if (!Auth.checkInProgress) {
       Auth.checkInProgress = true;
-      ApiEndpoints.Session.call({ sessionId: stored })
+      ApiEndpoints.Session.call({})
         .then((output) => {
           Auth.checkInProgress = false;
-          if (output.authenticated) {
-            Auth.sessionId = stored;
-            Auth.passwordChangeRequired = output.passwordChangeRequired;
-            Auth.setupInProgress = output.setupInProgress;
-          } else {
-            localStorage.removeItem(STORAGE_KEY);
-          }
+          Auth.loggedIn = output.authenticated;
+          Auth.passwordChangeRequired = output.passwordChangeRequired;
+          Auth.setupInProgress = output.setupInProgress;
           m.redraw();
         })
         .catch(() => {
@@ -51,11 +49,10 @@ export class Auth {
     return AuthStatus.CHECKING;
   }
 
-  static setSession(sessionId: string, passwordChangeRequired: boolean, setupInProgress: boolean) {
-    Auth.sessionId = sessionId;
+  static setLoggedIn(passwordChangeRequired: boolean, setupInProgress: boolean) {
+    Auth.loggedIn = true;
     Auth.passwordChangeRequired = passwordChangeRequired;
     Auth.setupInProgress = setupInProgress;
-    localStorage.setItem(STORAGE_KEY, sessionId);
   }
 
   /** The setup wizard isn't finished: every page but it redirects there (see AuthenticatedPageResolver). */
@@ -71,17 +68,9 @@ export class Auth {
     Auth.passwordChangeRequired = passwordChangeRequired;
   }
 
-  /** @return the session ID that was active, if any (e.g. so the caller can tell the server to invalidate it). */
-  static clearSession(): string | undefined {
-    const sessionId = Auth.sessionId;
-    Auth.sessionId = undefined;
+  static clearSession() {
+    Auth.loggedIn = false;
     Auth.passwordChangeRequired = false;
     Auth.setupInProgress = false;
-    localStorage.removeItem(STORAGE_KEY);
-    return sessionId;
-  }
-
-  static getSessionId(): string | undefined {
-    return Auth.sessionId;
   }
 }

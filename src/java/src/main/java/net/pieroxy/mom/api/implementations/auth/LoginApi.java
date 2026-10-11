@@ -2,6 +2,7 @@ package net.pieroxy.mom.api.implementations.auth;
 
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
+import net.pieroxy.mom.api.metadata.ApiContext;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
@@ -17,13 +18,14 @@ public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput>
   }
 
   @Override
-  public LoginApiOutput process(LoginApiInput input) {
+  public LoginApiOutput process(LoginApiInput input, ApiContext context) {
     Credential expected = serviceProvider.getSettingsService().getWebServerCredential();
     boolean ok = expected != null
         && expected.getUsername().equals(input.getLogin())
         && PasswordHasher.verify(input.getPassword(), expected.getPasswordHash());
-    if (!ok) return new LoginApiOutput(false, null, false);
-    LoginApiOutput output = new LoginApiOutput(true, serviceProvider.getSessionService().create(), expected.isTemporary());
+    if (!ok) return new LoginApiOutput(false, false);
+    context.setSessionCookie(serviceProvider.getSessionService().create(), serviceProvider.getSettingsService().isSessionCookieSecure());
+    LoginApiOutput output = new LoginApiOutput(true, expected.isTemporary());
     output.setSetupInProgress(serviceProvider.getSettingsService().isSetupInProgress());
     return output;
   }
@@ -54,7 +56,6 @@ class LoginApiInput {
 @TypeScriptType
 class LoginApiOutput {
   private boolean ok;
-  private String sessionId;
   private boolean passwordChangeRequired;
   /** The web UI's setup wizard isn't finished: every page but it (and the password change) redirects there. */
   private boolean setupInProgress;
@@ -62,9 +63,8 @@ class LoginApiOutput {
   public LoginApiOutput() {
   }
 
-  public LoginApiOutput(boolean ok, String sessionId, boolean passwordChangeRequired) {
+  public LoginApiOutput(boolean ok, boolean passwordChangeRequired) {
     this.ok = ok;
-    this.sessionId = sessionId;
     this.passwordChangeRequired = passwordChangeRequired;
   }
 
@@ -74,14 +74,6 @@ class LoginApiOutput {
 
   public void setOk(boolean ok) {
     this.ok = ok;
-  }
-
-  public String getSessionId() {
-    return sessionId;
-  }
-
-  public void setSessionId(String sessionId) {
-    this.sessionId = sessionId;
   }
 
   public boolean isPasswordChangeRequired() {

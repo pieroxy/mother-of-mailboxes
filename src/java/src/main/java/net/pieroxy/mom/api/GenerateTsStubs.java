@@ -1,7 +1,6 @@
 package net.pieroxy.mom.api;
 
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
-import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiEndpoint;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
@@ -45,16 +44,11 @@ public class GenerateTsStubs {
       if (ApiEndpoint.class.isAssignableFrom(c) && c.isAnnotationPresent(Endpoint.class)) {
         System.out.println("Processing " + c.getName());
         Endpoint endpoint = c.getAnnotation(Endpoint.class);
-        String rawInput = getType(c, 0);
+        String input = getType(c, 0);
         String output = getType(c, 1);
         String name = c.getSimpleName().substring(0, c.getSimpleName().length() - "Api".length());
-        if (!rawInput.equals("any")) toImport.add(rawInput);
+        if (!input.equals("any")) toImport.add(input);
         if (!output.equals("any")) toImport.add(output);
-
-        // AbstractAuthenticatedEndpoint attaches sessionId itself (see Api.call) — callers never
-        // set it themselves, so it's typed out of what they're required to pass here.
-        boolean authenticated = AbstractAuthenticatedEndpoint.class.isAssignableFrom(c);
-        String input = authenticated ? "Omit<" + rawInput + ", \"sessionId\">" : rawInput;
 
         writeLater("    public static " + name + " = {");
         writeLater("        call:(input:" + input + "):Promise<" + output + "> => {");

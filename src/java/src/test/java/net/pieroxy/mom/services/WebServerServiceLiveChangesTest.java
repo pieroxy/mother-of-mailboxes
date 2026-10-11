@@ -101,10 +101,9 @@ public class WebServerServiceLiveChangesTest {
   @Test
   public void worksThroughTheApi() throws Exception {
     int newPort = freePort();
-    JsonObject login = post(initialPort, "Login", "{\"login\":\"admin\",\"password\":\"secret\"}");
-    String sessionId = login.getAsJsonObject("result").get("sessionId").getAsString();
+    String sessionCookie = login();
 
-    JsonObject response = post(initialPort, "ChangeWebServerPort", "{\"sessionId\":\"" + sessionId + "\",\"port\":" + newPort + "}");
+    JsonObject response = read(send(initialPort, "ChangeWebServerPort", "application/json", sessionCookie, "{\"port\":" + newPort + "}"));
 
     assertTrue(response.toString(), response.get("ok").getAsBoolean());
     assertTrue(listening(newPort));
@@ -137,14 +136,67 @@ public class WebServerServiceLiveChangesTest {
     serviceProvider.getWebServerService().changePort(70_000);
   }
 
-  private static JsonObject post(int port, String endpoint, String body) throws IOException {
+  @Test
+  public void loginSetsAnHttpOnlySameSiteSessionCookieAndReturnsNoSessionId() throws Exception {
+    HttpURLConnection connection = send(initialPort, "Login", "application/json", null, "{\"login\":\"admin\",\"password\":\"secret\"}");
+    String setCookie = connection.getHeaderField("Set-Cookie");
+
+    assertTrue(setCookie, setCookie.startsWith("mom_session="));
+    assertTrue(setCookie, setCookie.contains("HttpOnly"));
+    assertTrue(setCookie, setCookie.contains("SameSite=Strict"));
+    assertTrue(setCookie, setCookie.contains("Max-Age=" + SessionService.LIFETIME.toSeconds()));
+    assertFalse("not configured as Secure", setCookie.contains("Secure;") || setCookie.endsWith("Secure"));
+    assertFalse(read(connection).getAsJsonObject("result").has("sessionId"));
+  }
+
+  @Test
+  public void anAuthenticatedCallWithoutTheCookieIsRejected() throws Exception {
+    HttpURLConnection connection = send(initialPort, "ChangeWebServerPort", "application/json", null, "{\"port\":" + freePort() + "}");
+
+    assertEquals(401, connection.getResponseCode());
+  }
+
+  @Test
+  public void aPostThatIsNotJsonIsRejectedEvenWithAValidSession() throws Exception {
+    int newPort = freePort();
+    HttpURLConnection connection = send(initialPort, "ChangeWebServerPort", "text/plain", login(), "{\"port\":" + newPort + "}");
+
+    assertEquals(415, connection.getResponseCode());
+    assertFalse(listening(newPort));
+  }
+
+  @Test
+  public void changingThePasswordLogsOutEveryOtherSession() throws Exception {
+    String current = login();
+    String other = login();
+
+    assertTrue(read(send(initialPort, "ChangePassword", "application/json", current, "{\"newPassword\":\"changed\"}")).get("ok").getAsBoolean());
+
+    assertEquals(401, send(initialPort, "ChangePassword", "application/json", other, "{\"newPassword\":\"again\"}").getResponseCode());
+    assertTrue("the session that changed the password stays valid",
+        read(send(initialPort, "ChangePassword", "application/json", current, "{\"newPassword\":\"again\"}")).get("ok").getAsBoolean());
+  }
+
+  /** @return the session cookie, as a Cookie request header value. */
+  private String login() throws IOException {
+    HttpURLConnection connection = send(initialPort, "Login", "application/json", null, "{\"login\":\"admin\",\"password\":\"secret\"}");
+    assertTrue(read(connection).get("ok").getAsBoolean());
+    return connection.getHeaderField("Set-Cookie").split(";", 2)[0];
+  }
+
+  private static HttpURLConnection send(int port, String endpoint, String contentType, String cookie, String body) throws IOException {
     HttpURLConnection connection = (HttpURLConnection) new URL("http://" + LOOPBACK + ":" + port + "/api/" + endpoint).openConnection();
     connection.setRequestMethod("POST");
-    connection.setRequestProperty("Content-Type", "application/json");
+    connection.setRequestProperty("Content-Type", contentType);
+    if (cookie != null) connection.setRequestProperty("Cookie", cookie);
     connection.setDoOutput(true);
     try (OutputStream out = connection.getOutputStream()) {
       out.write(body.getBytes(StandardCharsets.UTF_8));
     }
+    return connection;
+  }
+
+  private static JsonObject read(HttpURLConnection connection) throws IOException {
     try (InputStreamReader in = new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)) {
       return JsonParser.parseReader(in).getAsJsonObject();
     }

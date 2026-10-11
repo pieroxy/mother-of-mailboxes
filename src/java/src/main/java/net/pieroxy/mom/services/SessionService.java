@@ -1,29 +1,57 @@
 package net.pieroxy.mom.services;
 
-import java.util.Set;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * In-memory set of valid session IDs, issued by LoginApi and checked by SessionApi. Not
- * persisted: a restart clears all sessions.
+ * In-memory sessions, issued by LoginApi and carried by the session cookie. Not persisted: a
+ * restart clears all sessions.
  */
 public class SessionService implements Service {
-  // ConcurrentHashMap-backed set: thread-safe under concurrent API requests, no ordering needed.
-  private final Set<String> sessionIds = ConcurrentHashMap.newKeySet();
+  /** Also the session cookie's Max-Age. */
+  public static final Duration LIFETIME = Duration.ofDays(30);
 
-  /** @return a new, unguessable session ID (a {@link UUID}). */
+  private final Clock clock;
+  // Session ID -> expiry.
+  private final Map<String, Instant> sessions = new ConcurrentHashMap<>();
+
+  public SessionService() {
+    this(Clock.systemUTC());
+  }
+
+  SessionService(Clock clock) {
+    this.clock = clock;
+  }
+
+  /** @return a new, unguessable session ID (a {@link UUID}), valid for {@link #LIFETIME}. */
   public String create() {
+    Instant now = clock.instant();
+    sessions.values().removeIf(expiry -> !now.isBefore(expiry));
     String id = UUID.randomUUID().toString();
-    sessionIds.add(id);
+    sessions.put(id, now.plus(LIFETIME));
     return id;
   }
 
   public boolean isValid(String sessionId) {
-    return sessionId != null && sessionIds.contains(sessionId);
+    if (sessionId == null) return false;
+    Instant expiry = sessions.get(sessionId);
+    if (expiry == null) return false;
+    if (!clock.instant().isBefore(expiry)) {
+      sessions.remove(sessionId, expiry);
+      return false;
+    }
+    return true;
   }
 
   public void invalidate(String sessionId) {
-    if (sessionId != null) sessionIds.remove(sessionId);
+    if (sessionId != null) sessions.remove(sessionId);
+  }
+
+  public void invalidateAllExcept(String sessionId) {
+    sessions.keySet().removeIf(id -> !id.equals(sessionId));
   }
 }

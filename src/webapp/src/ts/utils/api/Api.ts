@@ -18,16 +18,8 @@ export interface ApiCallOptions<I> {
 export class Api {
   static async call<I, O>(options: ApiCallOptions<I>): Promise<O> {
     const url = "/api/" + options.endpoint;
-    // Every authenticated endpoint's input carries a sessionId (see AuthenticatedApiInput) —
-    // attached here, once, rather than by every call site, so nothing can forget it. Login's
-    // input has no such field, so this is a no-op for it; Session/Logout each pass their own
-    // explicit sessionId (deliberately not always Auth.getSessionId() — e.g. Session validates a
-    // freshly-read localStorage value *before* Auth.sessionId is set at all), which this must
-    // never clobber.
-    const body: Record<string, unknown> = { ...(options.body as Record<string, unknown>) };
-    if (body.sessionId === undefined) {
-      body.sessionId = Auth.getSessionId();
-    }
+    // The session travels as an HttpOnly cookie, sent by the browser on these same-origin calls.
+    const body = options.body;
 
     let response: Response;
     let payload: ApiResponse<O>;
@@ -54,7 +46,7 @@ export class Api {
       const message = payload.error ?? ("API call to " + options.endpoint + " failed.");
       // A 401 means AbstractAuthenticatedEndpoint rejected the session (expired, or a restart
       // wiped it) — handled once, here, rather than trusting every call site to notice and react:
-      // drop the stale ID, tell the user why, and bounce to /login, regardless of which page or
+      // drop the stale session, tell the user why, and bounce to /login, regardless of which page or
       // action triggered the call.
       if (response.status === 401) {
         Auth.clearSession();

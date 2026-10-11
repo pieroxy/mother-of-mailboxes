@@ -1,13 +1,12 @@
 package net.pieroxy.mom.api.metadata;
 
 /**
- * Base for every authenticated endpoint's input: carries the session ID the frontend attaches to
- * every request (see Api.ts), checked by {@link AbstractAuthenticatedEndpoint} before the
- * endpoint's own logic ever runs. Not itself {@link TypeScriptType}-annotated — the generator
- * (Gson-backed, so field-based) still picks up this inherited field on every concrete subclass.
+ * Base for every authenticated endpoint's input. {@code sessionId} is filled by
+ * {@link AbstractAuthenticatedEndpoint} from the session cookie once validated; {@code transient}
+ * so that Gson never reads it from the request, and the TypeScript generator leaves it out.
  */
 public class AuthenticatedApiInput {
-  private String sessionId;
+  private transient String sessionId;
 
   public String getSessionId() {
     return sessionId;
