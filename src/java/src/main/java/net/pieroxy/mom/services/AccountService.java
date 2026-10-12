@@ -4,6 +4,7 @@ import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
 import net.pieroxy.mom.utils.FileNameValidator;
 
@@ -42,6 +43,7 @@ public class AccountService implements Service {
   public void start() {
     settingsService.getConfiguration().getConfigurations().forEach(conf -> {
       Credential credential = settingsService.resolveCredential(conf.getCredentials(), "mail account \"" + conf.getDisplayName() + "\"");
+      if (conf.getSmtp() != null) settingsService.resolveSmtpCredential(conf); // fails fast on a missing key
       MailAccount account = new MailAccount(conf, credential, settingsService.getDataFolder());
       accounts.add(account);
       if (conf.isActive()) account.start();
@@ -165,7 +167,8 @@ public class AccountService implements Service {
 
   /**
    * Applies every editable part of an account's configuration — Config fields, IMAP credentials,
-   * rules and learning shortcuts — and restarts it once. {@code displayName} isn't settable here
+   * SMTP settings (see {@link SettingsService#setSmtp}), rules and learning shortcuts — and
+   * restarts it once. {@code displayName} isn't settable here
    * (it names the account's on-disk files). A blank {@code password} leaves the current one
    * unchanged.
    */
@@ -175,8 +178,12 @@ public class AccountService implements Service {
                                           int classifierCorpusRetentionDays, int classifierCorpusScanBatchSize,
                                           boolean discoveryTreeDisabled, String username, String password,
                                           List<MailFilterRuleConfiguration> rules,
-                                          List<LearningShortcutConfiguration> shortcuts) {
+                                          List<LearningShortcutConfiguration> shortcuts,
+                                          SmtpConfiguration smtp, boolean smtpOwnCredentials,
+                                          String smtpUsername, String smtpPassword) {
     MailAccountConfiguration config = settingsService.findAccountConfig(accountName);
+    // First: the only step that can still refuse the update.
+    settingsService.setSmtp(config, smtp, smtpOwnCredentials, smtpUsername, smtpPassword);
     config.setHost(host);
     config.setPort(port);
     config.setRunEvery(runEvery);

@@ -9,6 +9,7 @@ import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.ReputationListConfig;
+import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.detection.reputation.ReputationRegistry;
 import net.pieroxy.mom.detection.reputation.ReputationRegistryHolder;
 import net.pieroxy.mom.utils.CredentialsResolver;
@@ -175,6 +176,52 @@ public class SettingsService implements Service {
     return CredentialsResolver.resolve(key, credentialsFile, context);
   }
 
+  /** The login used to send mail for this account: its own SMTP credential, or else its IMAP one. */
+  public Credential resolveSmtpCredential(MailAccountConfiguration account) {
+    SmtpConfiguration smtp = account.getSmtp();
+    String key = smtp != null && smtp.getCredentials() != null ? smtp.getCredentials() : account.getCredentials();
+    return resolveCredential(key, "SMTP settings of mail account \"" + account.getDisplayName() + "\"");
+  }
+
+  /**
+   * Replaces the account's SMTP settings (null: none), without persisting config.json. With
+   * {@code ownCredentials}, the SMTP login gets its own credentials.json entry — created on first
+   * use, under a key derived from the account's — and a blank {@code password} keeps the saved
+   * one. Without, the account's IMAP login is used and any SMTP-only entry is dropped.
+   *
+   * @throws IllegalArgumentException if a new SMTP login has a blank password; nothing has changed then.
+   */
+  public synchronized void setSmtp(MailAccountConfiguration account, SmtpConfiguration smtp, boolean ownCredentials,
+                                   String username, String password) {
+    String existingKey = account.getSmtp() != null ? account.getSmtp().getCredentials() : null;
+    boolean passwordGiven = password != null && !password.isBlank();
+    if (smtp != null && ownCredentials && existingKey == null && !passwordGiven) {
+      throw new IllegalArgumentException("The SMTP password must not be blank.");
+    }
+    if (smtp != null && ownCredentials) {
+      Map<String, Credential> credentials = credentialsFile.getCredentials() != null
+          ? new HashMap<>(credentialsFile.getCredentials()) : new HashMap<>();
+      String key = existingKey;
+      if (key == null) {
+        key = account.getCredentials() + "-smtp";
+        for (int i = 2; credentials.containsKey(key); i++) {
+          key = account.getCredentials() + "-smtp-" + i;
+        }
+        credentials.put(key, new Credential());
+        credentialsFile.setCredentials(credentials);
+      }
+      Credential credential = credentials.get(key);
+      credential.setUsername(username);
+      if (passwordGiven) credential.setPassword(password);
+      smtp.setCredentials(key);
+      persistCredentialsFile();
+    } else if (smtp != null) {
+      smtp.setCredentials(null);
+    }
+    account.setSmtp(smtp);
+    if (existingKey != null && (smtp == null || !ownCredentials)) cleanUpDanglingCredentials();
+  }
+
   /**
    * The account's own {@link MailAccountConfiguration}, live from the in-memory {@link Configuration}
    * (not a copy): an API endpoint mutates it in place via its setters, then calls
@@ -240,11 +287,10 @@ public class SettingsService implements Service {
 
   /**
    * Removes any credentials.json entry no longer referenced by config.json: each mail account's
-   * {@code credentials} key, plus {@code webServer}'s if that section exists at all (regardless of
-   * {@code enabled} — disabling it doesn't detach the mapping). Neither key is ever repointed once
-   * set (no API changes an existing account's or the web server's credentials key), so this is only
-   * ever called from {@link #start} and {@link AccountService#deleteAccount} — the sole two points
-   * that can actually leave an entry dangling.
+   * {@code credentials} key and SMTP one, plus {@code webServer}'s if that section exists at all
+   * (regardless of {@code enabled} — disabling it doesn't detach the mapping). Called from
+   * {@link #start}, {@link AccountService#deleteAccount} and {@link #setSmtp} — the sole points that
+   * can actually leave an entry dangling.
    */
   public synchronized void cleanUpDanglingCredentials() {
     Map<String, Credential> credentials = credentialsFile.getCredentials();
@@ -252,7 +298,10 @@ public class SettingsService implements Service {
 
     Set<String> referenced = new HashSet<>();
     if (config.getWebServer() != null) referenced.add(config.getWebServer().getCredentials());
-    for (MailAccountConfiguration c : config.getConfigurations()) referenced.add(c.getCredentials());
+    for (MailAccountConfiguration c : config.getConfigurations()) {
+      referenced.add(c.getCredentials());
+      if (c.getSmtp() != null && c.getSmtp().getCredentials() != null) referenced.add(c.getSmtp().getCredentials());
+    }
 
     Set<String> dangling = new HashSet<>(credentials.keySet());
     dangling.removeAll(referenced);

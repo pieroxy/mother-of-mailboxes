@@ -1,5 +1,5 @@
 import { ApiEndpoints } from "../auto/ApiEndpoints";
-import { AccountBasicConfigDto, LearningShortcutConfiguration, MailFilterRuleConfiguration, MailFilterRuleMatcherConfiguration } from "../auto/pieroxy-mom";
+import { AccountBasicConfigDto, LearningShortcutConfiguration, MailFilterRuleConfiguration, MailFilterRuleMatcherConfiguration, SmtpSettingsDto } from "../auto/pieroxy-mom";
 
 /** One rule in a session's working list, tracking enough to render "Moved"/"Deleted"/"New" tags and to rebuild the final rules array on save. */
 export interface PendingRule {
@@ -31,7 +31,7 @@ export interface PendingLearnedRule {
 }
 
 /**
- * One account's whole set of in-flight, unsaved edits — Config, Credentials and Rules — staged
+ * One account's whole set of in-flight, unsaved edits — Config, Credentials, SMTP and Rules — staged
  * locally while the user reviews them, and flushed to the backend in a single call only when they
  * click "Save Changes" (see UpdateAccountApi). Nothing here is persisted until then; Cancel/
  * Discard just throws the session away.
@@ -45,6 +45,11 @@ export interface AccountEditSession {
   workingUsername: string;
   /** Empty means "no new password staged" — the same "blank = unchanged" convention the backend uses. */
   workingPassword: string;
+  /** Null: no SMTP configured. */
+  baselineSmtp: SmtpSettingsDto | null;
+  workingSmtp: SmtpSettingsDto | null;
+  /** Empty means "no new SMTP password staged". Only used with workingSmtp.ownCredentials. */
+  workingSmtpPassword: string;
   rules: PendingRule[];
   shortcuts: PendingShortcut[];
   learnedRules: PendingLearnedRule[];
@@ -73,6 +78,10 @@ export function isCredentialsChanged(session: AccountEditSession): boolean {
   return session.workingUsername !== session.baselineUsername || session.workingPassword !== "";
 }
 
+export function isSmtpChanged(session: AccountEditSession): boolean {
+  return !isDeepEqual(session.baselineSmtp, session.workingSmtp) || session.workingSmtpPassword !== "";
+}
+
 export function isRuleMoved(session: AccountEditSession, pendingRule: PendingRule): boolean {
   return pendingRule.originalIndex !== null && pendingRule.originalIndex !== session.rules.indexOf(pendingRule);
 }
@@ -90,7 +99,7 @@ export function isLearnedRulesChanged(session: AccountEditSession): boolean {
 }
 
 export function isSessionChanged(session: AccountEditSession): boolean {
-  return isConfigChanged(session) || isCredentialsChanged(session) || isRulesChanged(session)
+  return isConfigChanged(session) || isCredentialsChanged(session) || isSmtpChanged(session) || isRulesChanged(session)
     || isShortcutsChanged(session) || isLearnedRulesChanged(session);
 }
 
@@ -134,6 +143,9 @@ class AccountEditSessionStore {
         baselineUsername: output.credentials.username,
         workingUsername: output.credentials.username,
         workingPassword: "",
+        baselineSmtp: output.smtp ?? null,
+        workingSmtp: output.smtp ? { ...output.smtp } : null,
+        workingSmtpPassword: "",
         rules: output.rules.map((rule, index) => ({ rule, originalIndex: index, deleted: false, edited: false })),
         shortcuts: output.shortcuts.map((shortcut, index) => ({ shortcut, originalIndex: index, deleted: false, edited: false })),
         learnedRules: learnedRulesOutput.rules.map((rule) => ({ rule, deleted: false, edited: false })),

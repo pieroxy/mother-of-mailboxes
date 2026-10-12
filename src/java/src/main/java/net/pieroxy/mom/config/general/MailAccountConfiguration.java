@@ -16,9 +16,9 @@ public class MailAccountConfiguration {
    * Time to sleep between two runs, in seconds.
    */
   private int runEvery;
-  /** IMAP connect timeout, in seconds (0 or absent = {@link ImapSessions#DEFAULT_CONNECT_TIMEOUT_SECONDS}). */
+  /** IMAP and SMTP connect timeout, in seconds (0 or absent = {@link ImapSessions#DEFAULT_CONNECT_TIMEOUT_SECONDS}). */
   private int connectTimeout;
-  /** IMAP timeout of any single read or write, in seconds (0 or absent = {@link ImapSessions#DEFAULT_READ_TIMEOUT_SECONDS}). */
+  /** IMAP and SMTP timeout of any single read or write, in seconds (0 or absent = {@link ImapSessions#DEFAULT_READ_TIMEOUT_SECONDS}). */
   private int readTimeout;
   /**
    * Name of the IMAP folder considered spam for the classifier corpus (varies by provider:
@@ -76,6 +76,17 @@ public class MailAccountConfiguration {
    * mail metadata (Subject, From) — so it defaults to disabled rather than defaulting on.
    */
   private int decisionLogRetentionDays;
+
+  /** Absent: the account can't send mail. */
+  private SmtpConfiguration smtp;
+
+  public SmtpConfiguration getSmtp() {
+    return smtp;
+  }
+
+  public void setSmtp(SmtpConfiguration smtp) {
+    this.smtp = smtp;
+  }
 
   public String getHost() {
     return host;

@@ -9,6 +9,7 @@ import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
 
 import java.util.List;
@@ -42,7 +43,24 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
     List<MailFilterRuleConfiguration> rules = config.getRules() != null ? config.getRules() : List.of();
     List<LearningShortcutConfiguration> shortcuts = config.getLearningShortcuts() != null ? config.getLearningShortcuts() : List.of();
 
-    return new AccountConfigApiOutput(basicConfig, credentials, rules, shortcuts, config.isActive());
+    AccountConfigApiOutput output = new AccountConfigApiOutput(basicConfig, credentials, rules, shortcuts, config.isActive());
+    output.setSmtp(toDto(config));
+    return output;
+  }
+
+  private SmtpSettingsDto toDto(MailAccountConfiguration config) {
+    SmtpConfiguration smtp = config.getSmtp();
+    if (smtp == null) return null;
+    SmtpSettingsDto dto = new SmtpSettingsDto();
+    dto.setHost(smtp.getHost() != null ? smtp.getHost() : "");
+    dto.setPort(smtp.getPort());
+    dto.setSecurity(smtp.getSecurity());
+    dto.setFromAddress(smtp.getFromAddress() != null ? smtp.getFromAddress() : "");
+    dto.setOwnCredentials(smtp.getCredentials() != null);
+    if (smtp.getCredentials() != null) {
+      dto.setUsername(serviceProvider.getSettingsService().resolveSmtpCredential(config).getUsername());
+    }
+    return dto;
   }
 }
 
@@ -71,6 +89,8 @@ class AccountConfigApiOutput {
    * {@code SetAccountActiveApi}), not staged and flushed together with the rest on "Save Changes".
    */
   private boolean active;
+  /** Null: no SMTP configured. */
+  private SmtpSettingsDto smtp;
 
   public AccountConfigApiOutput() {
   }
@@ -119,6 +139,14 @@ class AccountConfigApiOutput {
 
   public boolean isActive() {
     return active;
+  }
+
+  public SmtpSettingsDto getSmtp() {
+    return smtp;
+  }
+
+  public void setSmtp(SmtpSettingsDto smtp) {
+    this.smtp = smtp;
   }
 
   public void setActive(boolean active) {

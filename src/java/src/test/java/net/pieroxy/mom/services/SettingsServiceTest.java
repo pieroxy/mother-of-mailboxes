@@ -6,6 +6,8 @@ import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
+import net.pieroxy.mom.config.general.SmtpConfiguration;
+import net.pieroxy.mom.config.general.SmtpSecurity;
 import net.pieroxy.mom.config.general.WebServerConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -186,6 +189,98 @@ public class SettingsServiceTest {
     SettingsService settingsService = buildSettingsServiceWithAccounts(credentials, List.of("acct-cred"), null, credentialsFilePath);
 
     settingsService.cleanUpDanglingCredentials();
+  }
+
+  private static SmtpConfiguration smtp() {
+    SmtpConfiguration smtp = new SmtpConfiguration();
+    smtp.setHost("smtp.example.com");
+    smtp.setPort(587);
+    smtp.setSecurity(SmtpSecurity.STARTTLS);
+    smtp.setFromAddress("me@example.com");
+    return smtp;
+  }
+
+  @Test
+  public void setSmtpWithOwnCredentialsCreatesADerivedEntryAndPersistsIt() throws Exception {
+    Map<String, Credential> credentials = new HashMap<>();
+    credentials.put("acct-cred", credential("imap-user"));
+    credentials.put("acct-cred-smtp", credential("taken"));
+    File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
+    SettingsService settingsService = buildSettingsServiceWithAccounts(credentials, List.of("acct-cred"), null, credentialsFilePath);
+    MailAccountConfiguration account = settingsService.getConfiguration().getConfigurations().get(0);
+
+    settingsService.setSmtp(account, smtp(), true, "smtp-user", "smtp-pass");
+
+    assertEquals("acct-cred-smtp-2", account.getSmtp().getCredentials());
+    CredentialsFile reloaded = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
+    assertEquals("smtp-user", reloaded.getCredentials().get("acct-cred-smtp-2").getUsername());
+    assertEquals("smtp-pass", reloaded.getCredentials().get("acct-cred-smtp-2").getPassword());
+    assertEquals("smtp-user", settingsService.resolveSmtpCredential(account).getUsername());
+  }
+
+  @Test
+  public void setSmtpKeepsTheSavedPasswordWhenBlank() {
+    Map<String, Credential> credentials = new HashMap<>();
+    credentials.put("acct-cred", credential("imap-user"));
+    SettingsService settingsService = buildSettingsServiceWithAccounts(credentials, List.of("acct-cred"), null, new File(tmp.getRoot(), "credentials.json"));
+    MailAccountConfiguration account = settingsService.getConfiguration().getConfigurations().get(0);
+    settingsService.setSmtp(account, smtp(), true, "smtp-user", "smtp-pass");
+
+    settingsService.setSmtp(account, smtp(), true, "renamed", "");
+
+    assertEquals("renamed", settingsService.resolveSmtpCredential(account).getUsername());
+    assertEquals("smtp-pass", settingsService.resolveSmtpCredential(account).getPassword());
+  }
+
+  @Test
+  public void setSmtpRefusesANewLoginWithoutPasswordAndChangesNothing() {
+    Map<String, Credential> credentials = new HashMap<>();
+    credentials.put("acct-cred", credential("imap-user"));
+    // Unwritable: proves nothing is written.
+    File credentialsFilePath = new File(tmp.getRoot(), "nonexistent-dir/credentials.json");
+    SettingsService settingsService = buildSettingsServiceWithAccounts(credentials, List.of("acct-cred"), null, credentialsFilePath);
+    MailAccountConfiguration account = settingsService.getConfiguration().getConfigurations().get(0);
+
+    try {
+      settingsService.setSmtp(account, smtp(), true, "smtp-user", " ");
+      fail("should have thrown");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    assertNull(account.getSmtp());
+  }
+
+  @Test
+  public void setSmtpWithoutOwnCredentialsUsesTheImapLoginAndDropsTheSmtpEntry() throws Exception {
+    Map<String, Credential> credentials = new HashMap<>();
+    credentials.put("acct-cred", credential("imap-user"));
+    File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
+    SettingsService settingsService = buildSettingsServiceWithAccounts(credentials, List.of("acct-cred"), null, credentialsFilePath);
+    MailAccountConfiguration account = settingsService.getConfiguration().getConfigurations().get(0);
+    settingsService.setSmtp(account, smtp(), true, "smtp-user", "smtp-pass");
+
+    settingsService.setSmtp(account, smtp(), false, null, null);
+
+    assertNull(account.getSmtp().getCredentials());
+    assertEquals("imap-user", settingsService.resolveSmtpCredential(account).getUsername());
+    CredentialsFile reloaded = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
+    assertEquals(Set.of("acct-cred"), reloaded.getCredentials().keySet());
+  }
+
+  @Test
+  public void cleanUpDanglingCredentialsKeepsAnSmtpEntry() {
+    Map<String, Credential> credentials = new HashMap<>();
+    credentials.put("acct-cred", credential("imap-user"));
+    credentials.put("smtp-cred", credential("smtp-user"));
+    File credentialsFilePath = new File(tmp.getRoot(), "nonexistent-dir/credentials.json");
+    SettingsService settingsService = buildSettingsServiceWithAccounts(credentials, List.of("acct-cred"), null, credentialsFilePath);
+    SmtpConfiguration smtp = smtp();
+    smtp.setCredentials("smtp-cred");
+    settingsService.getConfiguration().getConfigurations().get(0).setSmtp(smtp);
+
+    settingsService.cleanUpDanglingCredentials();
+
+    assertEquals("smtp-user", settingsService.resolveCredential("smtp-cred", "test").getUsername());
   }
 
   private Credential temporaryWebCredential(String password) {

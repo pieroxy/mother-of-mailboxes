@@ -8,14 +8,17 @@ import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
+import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.learning.RuleLearner;
 import net.pieroxy.mom.rules.RuleCatalog;
 
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 import java.util.List;
 
 /**
- * Saves everything the account settings page lets you edit — Config, Credentials, Rules and
- * Shortcuts — in one call, and restarts the account once. The webapp stages every edit locally
+ * Saves everything the account settings page lets you edit — Config, Credentials, SMTP, Rules
+ * and Shortcuts — in one call, and restarts the account once. The webapp stages every edit locally
  * (see {@code AccountEditSession.ts}) while the user reviews them on the read-only settings page,
  * and only calls this endpoint when they click "Save Changes"; Cancel/Discard never reaches the
  * server at all. Replaces the old one-endpoint-per-section calls (UpdateAccountConfig/
@@ -47,6 +50,7 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
     if (input.getRules() == null) {
       throw new IllegalArgumentException("rules must not be null.");
     }
+    SmtpConfiguration smtp = toSmtpConfiguration(input.getSmtp());
     RuleCatalog.validateRules(input.getRules());
     List<LearningShortcutConfiguration> shortcuts = input.getShortcuts() != null ? input.getShortcuts() : List.of();
     RuleLearner.validateShortcuts(shortcuts);
@@ -56,9 +60,39 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
         blankToNull(input.getClassifierSpamFolderName()),
         input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
         input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),
-        input.isDiscoveryTreeDisabled(), input.getUsername(), input.getPassword(), input.getRules(), shortcuts);
+        input.isDiscoveryTreeDisabled(), input.getUsername(), input.getPassword(), input.getRules(), shortcuts,
+        smtp, smtp != null && input.getSmtp().isOwnCredentials(),
+        smtp != null ? input.getSmtp().getUsername() : null, input.getSmtpPassword());
 
     return new UpdateAccountApiOutput();
+  }
+
+  /** Validates the SMTP settings; null stays null (no SMTP). */
+  private static SmtpConfiguration toSmtpConfiguration(SmtpSettingsDto dto) {
+    if (dto == null) return null;
+    if (dto.getHost() == null || dto.getHost().isBlank()) {
+      throw new IllegalArgumentException("SMTP host must not be blank.");
+    }
+    if (dto.getPort() <= 0 || dto.getPort() > 65535) {
+      throw new IllegalArgumentException("SMTP port must be between 1 and 65535.");
+    }
+    if (dto.getSecurity() == null) {
+      throw new IllegalArgumentException("SMTP security must be set.");
+    }
+    try {
+      new InternetAddress(dto.getFromAddress(), true).validate();
+    } catch (AddressException | NullPointerException e) {
+      throw new IllegalArgumentException("SMTP sender address \"" + dto.getFromAddress() + "\" is not a valid email address.");
+    }
+    if (dto.isOwnCredentials() && (dto.getUsername() == null || dto.getUsername().isBlank())) {
+      throw new IllegalArgumentException("SMTP username must not be blank.");
+    }
+    SmtpConfiguration smtp = new SmtpConfiguration();
+    smtp.setHost(dto.getHost().trim());
+    smtp.setPort(dto.getPort());
+    smtp.setSecurity(dto.getSecurity());
+    smtp.setFromAddress(dto.getFromAddress().trim());
+    return smtp;
   }
 
   private static String blankToNull(String s) {
@@ -84,6 +118,26 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
   private String password;
   private List<MailFilterRuleConfiguration> rules;
   private List<LearningShortcutConfiguration> shortcuts;
+  /** Null: no SMTP. */
+  private SmtpSettingsDto smtp;
+  /** Blank means "leave the current SMTP password unchanged". */
+  private String smtpPassword;
+
+  public SmtpSettingsDto getSmtp() {
+    return smtp;
+  }
+
+  public void setSmtp(SmtpSettingsDto smtp) {
+    this.smtp = smtp;
+  }
+
+  public String getSmtpPassword() {
+    return smtpPassword;
+  }
+
+  public void setSmtpPassword(String smtpPassword) {
+    this.smtpPassword = smtpPassword;
+  }
 
   public String getAccountName() {
     return accountName;

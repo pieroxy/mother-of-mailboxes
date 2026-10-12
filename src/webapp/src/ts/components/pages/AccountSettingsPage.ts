@@ -1,6 +1,6 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { AccountBasicConfigDto, MailFilterRuleMatcherConfiguration, RuleType } from "../../auto/pieroxy-mom";
+import { AccountBasicConfigDto, MailFilterRuleMatcherConfiguration, RuleType, SmtpSecurity, SmtpSettingsDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
@@ -11,6 +11,7 @@ import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 import { TokenListEditor } from "../TokenListEditor";
 import { TestImapConnectionButton } from "../TestImapConnectionButton";
+import { TestSmtpConnectionButton } from "../TestSmtpConnectionButton";
 import { Dialogs } from "../../utils/Dialogs";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 import {
@@ -28,6 +29,7 @@ import {
   isRulesChanged,
   isSessionChanged,
   isShortcutsChanged,
+  isSmtpChanged,
 } from "../../utils/AccountEditSession";
 
 interface AccountSettingsPageAttrs {
@@ -35,8 +37,9 @@ interface AccountSettingsPageAttrs {
 }
 
 /**
- * One account's whole configuration, in four sections: General, IMAP settings, Rules, Shortcuts.
- * Nothing here calls the backend directly — every edit (General/IMAP settings fields, rule reorder/
+ * One account's whole configuration, in sections: General, IMAP settings, SMTP settings, Rules,
+ * Shortcuts, Learned Rules. Nothing here calls the backend directly — every edit (General/IMAP/SMTP
+ * settings fields, rule reorder/
  * delete/edit/add) is staged locally in an AccountEditSession (see AccountEditSession.ts) and
  * shown highlighted (see the CSS's $value-changed) until "Save Changes" flushes the whole batch
  * in one call (UpdateAccountApi) and restarts the account once; "Discard Changes" just throws the
@@ -90,6 +93,11 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
             username: session.workingUsername, password: session.workingPassword,
           })),
         renderImapSettingsSection(session),
+      ]),
+      m(".page-card", { key: "smtp-settings" }, [
+        sectionHeader("SMTP settings", () => Routing.goToAccountSmtpSettingsEdit(this.accountName),
+          session.workingSmtp ? m(TestSmtpConnectionButton, { session, smtp: session.workingSmtp, password: session.workingSmtpPassword }) : null),
+        renderSmtpSettingsSection(session),
       ]),
       m(".page-card", { key: "rules" }, [
         sectionHeader("Rules"),
@@ -306,7 +314,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
     // ServiceProvider#updateLearnedRules. Each only fires if its own part of the session actually
     // changed, so e.g. fixing a single learned-rule key never forces an unnecessary IMAP reconnect.
     const calls: Promise<unknown>[] = [];
-    if (isConfigChanged(session) || isCredentialsChanged(session) || isRulesChanged(session) || isShortcutsChanged(session)) {
+    if (isConfigChanged(session) || isCredentialsChanged(session) || isSmtpChanged(session) || isRulesChanged(session) || isShortcutsChanged(session)) {
       calls.push(ApiEndpoints.UpdateAccount.call({
         accountName: this.accountName,
         host: session.workingConfig.host,
@@ -323,6 +331,9 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         password: session.workingPassword,
         rules: session.rules.filter((pendingRule) => !pendingRule.deleted).map((pendingRule) => pendingRule.rule),
         shortcuts: session.shortcuts.filter((pendingShortcut) => !pendingShortcut.deleted).map((pendingShortcut) => pendingShortcut.shortcut),
+        // The generated type doesn't know null means "no SMTP" (see UpdateAccountApiInput).
+        smtp: session.workingSmtp as SmtpSettingsDto,
+        smtpPassword: session.workingSmtpPassword,
       }));
     }
     if (isLearnedRulesChanged(session)) {
@@ -465,5 +476,25 @@ function renderImapSettingsSection(session: AccountEditSession): m.Children {
     configRow("Port", String(config.port), changed("port")),
     configRow("Username", session.workingUsername, session.workingUsername !== session.baselineUsername),
     configRow("Password", session.workingPassword !== "" ? "(will be changed)" : m("span.config-row-hint", "(unchanged)"), session.workingPassword !== ""),
+  ]);
+}
+
+function renderSmtpSettingsSection(session: AccountEditSession): m.Children {
+  const smtp = session.workingSmtp;
+  const baseline = session.baselineSmtp;
+  if (!smtp) {
+    return m(".config-grid", configRow("Status", m("span.config-row-hint", "Not configured: this account can't send mail."), baseline !== null));
+  }
+  const changed = (field: keyof SmtpSettingsDto) => baseline === null || baseline[field] !== smtp[field];
+  return m(".config-grid", [
+    configRow("Host", smtp.host, changed("host")),
+    configRow("Port", String(smtp.port), changed("port")),
+    configRow("Security", smtp.security === SmtpSecurity.TLS ? "TLS" : "STARTTLS", changed("security")),
+    configRow("Sender address", smtp.fromAddress, changed("fromAddress")),
+    configRow("Login", smtp.ownCredentials ? smtp.username : m("span.config-row-hint", "Same as the IMAP login"),
+      changed("ownCredentials") || changed("username")),
+    smtp.ownCredentials
+      ? configRow("Password", session.workingSmtpPassword !== "" ? "(will be changed)" : m("span.config-row-hint", "(unchanged)"), session.workingSmtpPassword !== "")
+      : null,
   ]);
 }

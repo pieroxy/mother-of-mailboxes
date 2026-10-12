@@ -22,6 +22,10 @@ export class Routing {
     m.route.set(Endpoints.ACCOUNT_IMAP_SETTINGS_EDIT, { accountName });
   }
 
+  static goToAccountSmtpSettingsEdit(accountName: string) {
+    m.route.set(Endpoints.ACCOUNT_SMTP_SETTINGS_EDIT, { accountName });
+  }
+
   /** ruleIndex is the rule's position in the account's rules array, or "new" to create one. */
   static goToRuleEdit(accountName: string, ruleIndex: number | "new") {
     m.route.set(Endpoints.RULE_EDIT, { accountName, ruleIndex });

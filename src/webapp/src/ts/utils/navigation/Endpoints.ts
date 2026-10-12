@@ -10,6 +10,7 @@ export enum Endpoints {
   ACCOUNT_SETTINGS = "/settings/:accountName",
   ACCOUNT_GENERAL_EDIT = "/settings/:accountName/general/edit",
   ACCOUNT_IMAP_SETTINGS_EDIT = "/settings/:accountName/imap-settings/edit",
+  ACCOUNT_SMTP_SETTINGS_EDIT = "/settings/:accountName/smtp-settings/edit",
   RULE_EDIT = "/settings/:accountName/rules/:ruleIndex/edit",
   SHORTCUT_EDIT = "/settings/:accountName/shortcuts/:shortcutIndex/edit",
 }

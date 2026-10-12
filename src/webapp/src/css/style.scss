@@ -1501,7 +1501,7 @@ button {
     color: $text-color;
 }
 
-.test-imap-connection {
+.test-connection {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1511,7 +1511,7 @@ button {
         padding: 4px 14px;
     }
 
-    .test-imap-connection-result {
+    .test-connection-result {
         font-size: 12px;
 
         &.ok {

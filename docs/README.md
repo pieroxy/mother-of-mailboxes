@@ -73,8 +73,8 @@ Each entry in `configurations` is one IMAP account:
 | `port` | yes | IMAP server port. |
 | `credentials` | yes | Key into `credentials.json`'s `credentials` map, resolved into the IMAP login/password at startup. See [Credentials file](#credentials-file). |
 | `runEvery` | yes | Seconds between processing cycles (see [Running MOM](#running-mom) for how IMAP IDLE affects this). |
-| `connectTimeout` | no | Seconds to wait for the IMAP connection to be established. `0` or absent defaults to 5. |
-| `readTimeout` | no | Seconds to wait for the IMAP server to answer any single command. `0` or absent defaults to 60. |
+| `connectTimeout` | no | Seconds to wait for the IMAP or SMTP connection to be established. `0` or absent defaults to 5. |
+| `readTimeout` | no | Seconds to wait for the IMAP or SMTP server to answer any single command. `0` or absent defaults to 60. |
 | `classifierSpamFolderName` | no | Folder treated as "Spam" for classifier corpus labeling. Defaults to `"Spam"`. |
 | `classifierExcludedFolders` | no | Folder names (anywhere in the tree) to skip entirely for classifier corpus collection — neither `SPAM` nor `HAM`, just ignored, like `INBOX`/`mom-rules/` already are. See [Classifier corpus collection](#classifier-corpus-collection). |
 | `classifierCorpusRetentionDays` | no | Enables classifier corpus collection for this account when `> 0` (see [Classifier corpus collection](#classifier-corpus-collection)). `0` or absent disables it. |
@@ -82,8 +82,30 @@ Each entry in `configurations` is one IMAP account:
 | `rules` | no | List of manually-configured rules for this account (see [Matchers and actions](#matchers-and-actions)). Absent/empty means only learned rules (if any) apply. |
 | `learningShortcuts` | no | Named flat `mom-rules/<name>` folders bound to a fixed (matcher type, action) pair, as an alternative to the full discovery tree. See [Learning shortcuts](#learning-shortcuts). |
 | `discoveryTreeDisabled` | no | Skips creating/maintaining the `<MATCHER_TYPE>/<ACTION_TYPE>` discovery tree under `mom-rules/` entirely. `mom-rules/Done` and any `learningShortcuts` folders are unaffected. Default `false`. Useful with a mail client that shows every IMAP folder unconditionally regardless of subscription state (e.g. Apple Mail), once shortcuts cover what's actually used. See [Learning shortcuts](#learning-shortcuts). |
+| `smtp` | no | How this account sends mail (see [SMTP settings](#smtp-settings)). Absent means the account can't send mail. |
 
 Connections are always made over IMAPS (implicit TLS) — there is no plain-IMAP option.
+
+### SMTP settings
+
+```json
+"smtp": {
+  "host": "smtp.example.com",
+  "port": 587,
+  "security": "STARTTLS",
+  "fromAddress": "me@example.com"
+}
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `host` | yes | SMTP server hostname. |
+| `port` | yes | SMTP server port. |
+| `security` | yes | `TLS` (encrypted from the start, usually port 465) or `STARTTLS` (upgraded before logging in, usually port 587; refused if the server doesn't offer it). There is no plain-SMTP option. |
+| `fromAddress` | yes | Sender address of the mail MOM sends for this account. |
+| `credentials` | no | Key into `credentials.json`'s `credentials` map for the SMTP login. Absent: the account's IMAP login is used. |
+
+The server's certificate is checked against `host`, and the account's `connectTimeout`/`readTimeout` apply.
 
 ### Example `config.json`
 
