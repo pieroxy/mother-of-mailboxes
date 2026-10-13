@@ -64,7 +64,7 @@ public class RuleHelper {
           }
         }
       } catch (Exception e) {
-        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), learnedRule, null, null, e.toString()));
+        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), learnedRule, null, null, null, e.toString()));
         logger.log(Level.WARNING, "Rule failed on " + logContext + " for message from " + MailTools.describeFromSafely(message), e);
       }
     }
@@ -78,8 +78,9 @@ public class RuleHelper {
    */
   static DecisionLog.RuleOutcome toOutcome(RuleInterface rule, RuleExecutionResult result, boolean learnedRule) {
     Boolean matched = (!result.ruleApplied() && result.exception() != null) ? null : result.ruleApplied();
+    String matchDetail = result.ruleApplied() ? result.matchedDescription() : null;
     Boolean keepProcessing = result.ruleApplied() ? result.keepProcessing() : null;
-    return new DecisionLog.RuleOutcome(rule.describe(), learnedRule, matched, keepProcessing, result.exception());
+    return new DecisionLog.RuleOutcome(rule.describe(), learnedRule, matched, matchDetail, keepProcessing, result.exception());
   }
 
   /**
@@ -103,6 +104,7 @@ public class RuleHelper {
   public static ProcessOutcome processRules(List<RuleInterface> rules, RuleInterface learnedRulesFallback, Message message, Logger logger,
                                              String logContext, RuleContext context, DecisionLog.Trigger trigger) {
     long start = System.nanoTime();
+    String messageId = MailTools.messageIdSafely(message);
     String subject = MailTools.describeSubjectSafely(message);
     String from = MailTools.describeFromSafely(message);
     List<DecisionLog.RuleOutcome> outcomes = new ArrayList<>();
@@ -136,7 +138,7 @@ public class RuleHelper {
 
     long processedMs = (System.nanoTime() - start) / 1_000_000;
     StatsLog.recordProcessed(context.statsDir(), blocked ? StatsLog.ProcessResult.MATCH : StatsLog.ProcessResult.PASS, matchedDescription, processedMs);
-    DecisionLog.recordRuleEvaluation(context.statsDir(), context.decisionLogRetentionDays(), trigger, subject, from, outcomes);
+    DecisionLog.recordRuleEvaluation(context.statsDir(), context.decisionLogRetentionDays(), trigger, messageId, subject, from, processedMs, outcomes);
     return new ProcessOutcome(matched, nonNoopActionApplied);
   }
 

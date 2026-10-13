@@ -196,6 +196,7 @@ public class RuleLearner {
   }
 
   private boolean learnFromExample(MatcherType matcherType, ActionType actionType, String actionKey, Message example) {
+    String messageId = MailTools.messageIdSafely(example);
     String subject = MailTools.describeSubjectSafely(example);
     String from = MailTools.describeFromSafely(example);
     try {
@@ -237,7 +238,7 @@ public class RuleLearner {
         moveToDone(example);
         reasonForMoveToDone = "learned successfully, but its action didn't relocate the message";
       }
-      DecisionLog.recordLearningOutcome(context.statsDir(), context.decisionLogRetentionDays(), subject, from, ruleDescription, reasonForMoveToDone);
+      DecisionLog.recordLearningOutcome(context.statsDir(), context.decisionLogRetentionDays(), messageId, subject, from, ruleDescription, reasonForMoveToDone);
       return learned;
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to learn a rule from example message for " + matcherType + "/" + actionType
@@ -251,7 +252,7 @@ public class RuleLearner {
       } catch (MessagingException moveException) {
         LOGGER.log(Level.WARNING, "Also failed to move the unlearnable example to " + ROOT_FOLDER + "/" + DONE_FOLDER, moveException);
       }
-      DecisionLog.recordLearningOutcome(context.statsDir(), context.decisionLogRetentionDays(), subject, from, null,
+      DecisionLog.recordLearningOutcome(context.statsDir(), context.decisionLogRetentionDays(), messageId, subject, from, null,
               "could not learn a rule: " + e.getMessage());
       return false;
     }

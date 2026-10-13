@@ -54,6 +54,17 @@ public class MailTools {
         }
     }
 
+    /** {@code Message-ID} header for decision records: never throws, null if absent or unreadable. */
+    public static String messageIdSafely(Message message) {
+        try {
+            String[] ids = message.getHeader("Message-ID");
+            if (ids == null || ids.length == 0 || ids[0] == null || ids[0].isBlank()) return null;
+            return ids[0].trim();
+        } catch (MessagingException e) {
+            return null;
+        }
+    }
+
     /** Subject for logs/decision records: never throws, returns a fallback text instead. */
     public static String describeSubjectSafely(Message message) {
         try {

@@ -186,6 +186,22 @@ public class RuleHelperTest {
   }
 
   @Test
+  public void decisionLogEntryCarriesMessageIdProcessingTimeAndWhatMatched() throws Exception {
+    File statsDir = new File(tmp.getRoot(), "logs");
+    Message message = messageFrom("alice@example.com");
+    message.setHeader("Message-ID", "<abc@example.com>");
+
+    RuleHelper.processRules(List.of(blockingRule("alice@example.com")), new SpyRule(true),
+        message, logger, "test", new RuleContext(null, null, null, statsDir, 10), DecisionLog.Trigger.INBOX);
+
+    JsonObject entry = onlyDecisionEntry(statsDir);
+    assertEquals("<abc@example.com>", entry.get("messageId").getAsString());
+    assertTrue(entry.get("processedMs").getAsLong() >= 0);
+    JsonObject rule = entry.getAsJsonArray("rules").get(0).getAsJsonObject();
+    assertEquals("FromAddressMatcher(alice@example.com)", rule.get("matchDetail").getAsString());
+  }
+
+  @Test
   public void aRuleAfterTheOneThatBlockedHasNoDecisionLogEntryAtAll() throws Exception {
     File statsDir = new File(tmp.getRoot(), "logs");
     SpyRule fallback = new SpyRule(false);

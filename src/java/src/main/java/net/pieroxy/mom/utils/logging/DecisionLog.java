@@ -69,6 +69,8 @@ public final class DecisionLog {
    * @param matched        true/false on a clean evaluation; null if the matcher threw before a
    *                       match could even be determined (see {@code exception}) — a crashed rule
    *                       is deliberately not conflated with one that cleanly didn't match.
+   * @param matchDetail    only present when matched is true: the {@code MatchResult} debug string,
+   *                       i.e. what actually hit (which key, which list, the score...).
    * @param keepProcessing only present when matched is true: whether this match let evaluation
    *                       carry on to the next rule, or stopped it here.
    * @param exception      {@code toString()} of whatever was thrown, if anything — set whether or
@@ -76,13 +78,20 @@ public final class DecisionLog {
    *                       throw; matched stays true, and this explains what went wrong applying
    *                       the consequence).
    */
-  public record RuleOutcome(String rule, boolean learnedRule, Boolean matched, Boolean keepProcessing, String exception) {}
+  public record RuleOutcome(String rule, boolean learnedRule, Boolean matched, String matchDetail, Boolean keepProcessing, String exception) {}
 
   private DecisionLog() {}
 
-  /** One entry per message evaluated against the rule catalog — INBOX or MANUAL_REPROCESSING (see {@code RuleHelper#processRules}). */
-  public static void recordRuleEvaluation(File decisionsDir, int retentionDays, Trigger trigger, String subject, String from, List<RuleOutcome> rules) {
-    write(decisionsDir, retentionDays, trigger.name(), subject, from, rules, null, null);
+  /**
+   * One entry per message evaluated against the rule catalog — INBOX or MANUAL_REPROCESSING (see
+   * {@code RuleHelper#processRules}).
+   *
+   * @param messageId   the {@code Message-ID} header; null (omitted) if the message has none.
+   * @param processedMs time spent running the whole rule chain, same as {@code StatsLog}'s.
+   */
+  public static void recordRuleEvaluation(File decisionsDir, int retentionDays, Trigger trigger, String messageId, String subject, String from,
+                                          long processedMs, List<RuleOutcome> rules) {
+    write(decisionsDir, retentionDays, trigger.name(), messageId, subject, from, processedMs, rules, null, null);
   }
 
   /**
@@ -94,12 +103,13 @@ public final class DecisionLog {
    * relocate the message on its own. The two aren't mutually exclusive: a successful learn whose
    * action didn't move the message sets both.
    */
-  public static void recordLearningOutcome(File decisionsDir, int retentionDays, String subject, String from, String learnedRule, String reasonForMoveToDone) {
-    write(decisionsDir, retentionDays, Trigger.LEARNING.name(), subject, from, null, learnedRule, reasonForMoveToDone);
+  public static void recordLearningOutcome(File decisionsDir, int retentionDays, String messageId, String subject, String from,
+                                           String learnedRule, String reasonForMoveToDone) {
+    write(decisionsDir, retentionDays, Trigger.LEARNING.name(), messageId, subject, from, null, null, learnedRule, reasonForMoveToDone);
   }
 
-  private static synchronized void write(File decisionsDir, int retentionDays, String trigger, String subject, String from,
-                                          List<RuleOutcome> rules, String learnedRule, String reasonForMoveToDone) {
+  private static synchronized void write(File decisionsDir, int retentionDays, String trigger, String messageId, String subject, String from,
+                                          Long processedMs, List<RuleOutcome> rules, String learnedRule, String reasonForMoveToDone) {
     // 0 (or absent, same thing for a plain int field read from a config.json predating this
     // feature) means "never asked for this" — these records carry real mail metadata (Subject,
     // From), so logging is opt-in, not on-by-default like StatsLog's anonymous counts.
@@ -116,7 +126,8 @@ public final class DecisionLog {
       if (!file.isFile()) {
         rotate(decisionsDir, today, retentionDays);
       }
-      DecisionEntry entry = new DecisionEntry(EVENT_DATE_FORMAT.format(nowUtc) + "Z", trigger, subject, from, rules, learnedRule, reasonForMoveToDone);
+      DecisionEntry entry = new DecisionEntry(EVENT_DATE_FORMAT.format(nowUtc) + "Z", trigger, messageId, subject, from, processedMs, rules,
+          learnedRule, reasonForMoveToDone);
       String line = GSON.toJson(entry);
       try (Writer writer = new FileWriter(file, true)) {
         writer.write(line);
@@ -175,18 +186,22 @@ public final class DecisionLog {
   private static final class DecisionEntry {
     private final String date;
     private final String trigger;
+    private final String messageId;
     private final String subject;
     private final String from;
+    private final Long processedMs;
     private final List<RuleOutcome> rules;
     private final String learnedRule;
     private final String reasonForMoveToDone;
 
-    private DecisionEntry(String date, String trigger, String subject, String from, List<RuleOutcome> rules,
-                           String learnedRule, String reasonForMoveToDone) {
+    private DecisionEntry(String date, String trigger, String messageId, String subject, String from, Long processedMs,
+                           List<RuleOutcome> rules, String learnedRule, String reasonForMoveToDone) {
       this.date = date;
       this.trigger = trigger;
+      this.messageId = messageId;
       this.subject = subject;
       this.from = from;
+      this.processedMs = processedMs;
       this.rules = rules;
       this.learnedRule = learnedRule;
       this.reasonForMoveToDone = reasonForMoveToDone;
