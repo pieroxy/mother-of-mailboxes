@@ -52,6 +52,7 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
     }
     SmtpConfiguration smtp = toSmtpConfiguration(input.getSmtp());
     RuleCatalog.validateRules(input.getRules());
+    RuleCatalog.validateSendingActions(input.getRules(), smtp != null);
     List<LearningShortcutConfiguration> shortcuts = input.getShortcuts() != null ? input.getShortcuts() : List.of();
     RuleLearner.validateShortcuts(shortcuts);
 

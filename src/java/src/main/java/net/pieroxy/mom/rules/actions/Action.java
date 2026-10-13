@@ -25,9 +25,8 @@ public abstract class Action {
   /**
    * Recursively builds the action tree described by the config (composite actions like AND/OR
    * reference other actions via their "children"). {@code context} is bound before
-   * {@link #setConfig}, same reasoning as {@code Matcher.build} — no action needs it yet, but the
-   * ordering is set up now so a future one (e.g. REPLY/FORWARD, which would need to know the
-   * account's own address) can rely on it being available from within {@code setConfig} too.
+   * {@link #setConfig}, same reasoning as {@code Matcher.build}: FORWARD/REDIRECT check from
+   * within {@code setConfig} that the account can send mail.
    */
   public static Action build(MailFilterRuleActionConfiguration config, RuleContext context) {
     Action action = config.getType().getImplementation();
@@ -41,11 +40,7 @@ public abstract class Action {
 
   public abstract boolean run(Message message) throws MessagingException;
 
-  /**
-   * Account-level context (see {@link RuleContext}) this action was built with — no-op by
-   * default. No action type overrides this yet; the hook exists for a future one that needs to
-   * know something about the account it's running for (e.g. its own address, for REPLY/FORWARD).
-   */
+  /** Account-level context (see {@link RuleContext}) this action was built with — no-op by default. */
   protected void bindContext(RuleContext context) {}
 
   public void setConfig(MailFilterRuleActionConfiguration config) {

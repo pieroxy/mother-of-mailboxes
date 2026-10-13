@@ -20,6 +20,8 @@ import net.pieroxy.mom.utils.mail.ImapIdleWatcher;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.utils.mail.ImapMailboxConnection;
 import net.pieroxy.mom.utils.mail.ImapMailboxFactory;
+import net.pieroxy.mom.utils.mail.MailSender;
+import net.pieroxy.mom.utils.mail.SmtpMailSender;
 import net.pieroxy.mom.utils.scheduling.BackoffLoop;
 
 import javax.mail.Address;
@@ -66,6 +68,7 @@ public class MailAccount implements Runnable {
   private final String classifierSpamFolderName;
   private final List<String> classifierExcludedFolders;
   private final ImapMailboxFactory mailboxFactory;
+  private final MailSender mailSender;
   private final ImapIdleWatcher idleWatcher;
   private final BackoffLoop backoffLoop;
   private final Thread thread;
@@ -83,18 +86,27 @@ public class MailAccount implements Runnable {
   private volatile Instant lastErrorTimestamp;
   private volatile Instant lastCycleCompletedTimestamp;
 
-  public MailAccount(MailAccountConfiguration config, Credential credential, String dataFolder) {
-    this(config, credential, dataFolder, ImapMailboxConnection::connect);
+  /** @param smtpCredential the login for {@code config}'s SMTP settings; unused without. */
+  public MailAccount(MailAccountConfiguration config, Credential credential, Credential smtpCredential, String dataFolder) {
+    this(config, credential, config.getSmtp() != null ? new SmtpMailSender(config, config.getSmtp(), smtpCredential) : null,
+        dataFolder, ImapMailboxConnection::connect);
   }
 
   /** Visible for tests: lets a mailbox factory be injected without real IMAPS/TLS. */
   MailAccount(MailAccountConfiguration config, Credential credential, String dataFolder, ImapMailboxFactory mailboxFactory) {
+    this(config, credential, null, dataFolder, mailboxFactory);
+  }
+
+  /** Visible for tests: also lets a mail sender be injected without a real SMTP server. */
+  MailAccount(MailAccountConfiguration config, Credential credential, MailSender mailSender, String dataFolder,
+              ImapMailboxFactory mailboxFactory) {
     // displayName is turned directly into file/directory names below (state file, learned rules,
     // classifier corpus, stats dir) — fail fast here rather than hit an IOException deep inside
     // one of those stores, or worse, silently write somewhere unintended.
     FileNameValidator.validate(config.getDisplayName(), "mail account displayName");
     this.config = config;
     this.credential = credential;
+    this.mailSender = mailSender;
     this.stateStore = new MailAccountStateStore(dataFolder, config.getDisplayName());
     this.learnedRulesStore = new LearnedRulesStore(dataFolder, config.getDisplayName());
     this.classifierCorpusRetentionDays = config.getClassifierCorpusRetentionDays();
@@ -106,7 +118,7 @@ public class MailAccount implements Runnable {
     // they're built without context by MatcherType.getImplementation() — see RuleContext.
     RuleContext ruleContext = new RuleContext(classifierCorpusStore.getModelFile(), classifierCorpusStore.getHeaderModelFile(),
         classifierCorpusStore.getBodyModelFile(), new File(new File(dataFolder, "logs"), config.getDisplayName()),
-        config.getDecisionLogRetentionDays());
+        config.getDecisionLogRetentionDays(), mailSender);
     this.ruleCatalog = new RuleCatalog(config.getRules(), learnedRulesStore, ruleContext);
     this.subjectClassifierTrainer = new SubjectClassifierTrainer(classifierCorpusStore);
     this.headerClassifierTrainer = new HeaderClassifierTrainer(classifierCorpusStore);
@@ -489,6 +501,7 @@ public class MailAccount implements Runnable {
     LocalDate today = LocalDate.now();
     for (Message message : mailbox.getMessagesSince(state.getLastUid())) {
       long uid = mailbox.getUid(message);
+      long sentBefore = sentCount();
       try {
         String fingerprint = fingerprintOf(message);
         if (state.isProcessed(fingerprint)) {
@@ -502,10 +515,17 @@ public class MailAccount implements Runnable {
         LOGGER.log(Level.WARNING, "Failed to inspect message UID " + uid + " on account " + config.getDisplayName(), e);
       }
       state.setLastUid(uid);
+      // A sent message can't be taken back: saved right away, so a crash before the end of the
+      // cycle can't send it again.
+      if (sentCount() != sentBefore) stateStore.save(state);
     }
     state.pruneProcessedFingerprintsBefore(today.minusDays(PROCESSED_FINGERPRINT_RETENTION_DAYS));
 
     stateStore.save(state);
+  }
+
+  private long sentCount() {
+    return mailSender != null ? mailSender.getSentCount() : 0;
   }
 
   /**

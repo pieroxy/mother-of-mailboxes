@@ -1,7 +1,10 @@
 package net.pieroxy.mom.rules;
 
+import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.learning.LearnedRulesStore;
+import net.pieroxy.mom.rules.actions.ActionType;
+import net.pieroxy.mom.rules.actions.implementations.ForwardAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,6 +110,26 @@ public class RuleCatalog {
    * the API response, rather than only surfacing later when this account's background thread next
    * tries to build its RuleCatalog (see {@code MailAccount#run}) and silently fails from then on.
    */
+  /**
+   * FORWARD/REDIRECT need the account's SMTP settings and a valid recipient. Checked here too, for
+   * the same reason as {@link #validateRules}: their own check only runs when the account starts.
+   */
+  public static void validateSendingActions(List<MailFilterRuleConfiguration> rules, boolean smtpConfigured) {
+    for (MailFilterRuleConfiguration c : rules != null ? rules : List.<MailFilterRuleConfiguration>of()) {
+      if (c.getAction() != null) validateSendingAction(c.getAction(), smtpConfigured);
+    }
+  }
+
+  private static void validateSendingAction(MailFilterRuleActionConfiguration action, boolean smtpConfigured) {
+    if (action.getType() == ActionType.FORWARD || action.getType() == ActionType.REDIRECT) {
+      if (!smtpConfigured) {
+        throw new IllegalArgumentException(action.getType() + " needs the account's SMTP settings.");
+      }
+      ForwardAction.parseRecipient(action.getKey());
+    }
+    if (action.getChildren() != null) action.getChildren().forEach(child -> validateSendingAction(child, smtpConfigured));
+  }
+
   public static void validateRules(List<MailFilterRuleConfiguration> rules) {
     boolean learnedRulesEntrySeen = false;
     for (MailFilterRuleConfiguration c : rules != null ? rules : List.<MailFilterRuleConfiguration>of()) {

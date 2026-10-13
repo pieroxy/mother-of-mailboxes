@@ -142,4 +142,37 @@ public class RuleCatalogTest {
     assertSame("the same instance must be used both inline and as the implicit fallback",
         catalog.getLearnedRulesFallback(), rules.get(1));
   }
+
+  private static MailFilterRuleConfiguration forwardRule(ActionType type, String recipient) {
+    MailFilterRuleConfiguration rule = rule("example.com");
+    MailFilterRuleActionConfiguration action = new MailFilterRuleActionConfiguration();
+    action.setType(type);
+    action.setKey(recipient);
+    rule.setAction(action);
+    return rule;
+  }
+
+  @Test
+  public void sendingActionsPassWithSmtpAndAValidRecipient() {
+    RuleCatalog.validateSendingActions(List.of(forwardRule(ActionType.FORWARD, "a@example.net"), forwardRule(ActionType.REDIRECT, "b@example.net")), true);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void sendingActionsNeedSmtp() {
+    RuleCatalog.validateSendingActions(List.of(forwardRule(ActionType.REDIRECT, "a@example.net")), false);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void sendingActionsNeedAValidRecipientEvenInsideAComposite() {
+    MailFilterRuleActionConfiguration child = new MailFilterRuleActionConfiguration();
+    child.setType(ActionType.FORWARD);
+    child.setKey("nope");
+    MailFilterRuleActionConfiguration and = new MailFilterRuleActionConfiguration();
+    and.setType(ActionType.AND);
+    and.setChildren(List.of(child));
+    MailFilterRuleConfiguration rule = rule("example.com");
+    rule.setAction(and);
+
+    RuleCatalog.validateSendingActions(List.of(rule), true);
+  }
 }

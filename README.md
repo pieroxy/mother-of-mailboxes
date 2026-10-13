@@ -59,7 +59,7 @@ A few things worth understanding before you dive in:
     * COPY_TO
     * DELETE
     * SET_FLAG
-    * FORWARD/REDIRECT/REPLY — Later, it's a much bigger endeavor
+    * REPLY
 
 ## Documentation
 

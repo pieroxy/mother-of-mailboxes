@@ -29,6 +29,8 @@ interface ActionTypeOption {
   keyPlaceholder?: string;
   /** The key is an existing (or not-yet-created) IMAP folder name — offered as an editable dropdown (a text input backed by a datalist of the account's real folders, see AccountFoldersApi) instead of plain free text. */
   isFolderName?: boolean;
+  /** Sends mail through the account's SMTP settings; the key is the recipient address. */
+  sendsMail?: boolean;
 }
 
 // AND/OR excluded: editing a composite action isn't supported here yet (see COMPOSITE_ACTION_TYPES
@@ -40,6 +42,14 @@ const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
   {
     value: ActionType.NOOP, label: "Do nothing (log only)", needsKey: true,
     keyLabel: "Log message", keyPlaceholder: "What to log when this rule matches",
+  },
+  {
+    value: ActionType.FORWARD, label: "Forward (as attachment)", needsKey: true,
+    keyLabel: "Recipient address", keyPlaceholder: "someone@example.com", sendsMail: true,
+  },
+  {
+    value: ActionType.REDIRECT, label: "Redirect (resend unchanged)", needsKey: true,
+    keyLabel: "Recipient address", keyPlaceholder: "someone@example.com", sendsMail: true,
   },
 ];
 
@@ -164,9 +174,12 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
         onchange: (e: Event) => (this.actionType = (e.target as HTMLSelectElement).value as ActionType),
       }, ACTION_TYPE_OPTIONS.map((o) => m("option", { value: o.value }, o.label)))),
       option.needsKey ? this.field(option.keyLabel || "Value", option.isFolderName ? this.renderFolderField() : m("input", {
-        type: "text", value: this.actionKey, placeholder: option.keyPlaceholder,
+        type: option.sendsMail ? "email" : "text", value: this.actionKey, placeholder: option.keyPlaceholder,
         oninput: (e: Event) => (this.actionKey = (e.target as HTMLInputElement).value),
       })) : null,
+      option.sendsMail && !this.session?.workingSmtp
+        ? m("p.field-hint", "This account has no SMTP settings yet: add them on the settings page before saving this rule.")
+        : null,
     ];
   }
 
@@ -272,6 +285,10 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
       const option = ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType)!;
       if (option.needsKey && this.actionKey.trim().length === 0) {
         return "The action needs a " + (option.keyLabel || "value").toLowerCase() + ".";
+      }
+      if (option.sendsMail) {
+        if (!/^[^@\s,]+@[^@\s,]+$/.test(this.actionKey.trim())) return "The recipient must be a single valid email address.";
+        if (!this.session!.workingSmtp) return "Set up this account's SMTP settings first: this action sends mail through them.";
       }
     }
     return undefined;

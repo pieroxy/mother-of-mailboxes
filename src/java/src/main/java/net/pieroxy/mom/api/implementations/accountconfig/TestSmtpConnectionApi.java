@@ -44,7 +44,7 @@ public class TestSmtpConnectionApi extends AbstractAuthenticatedEndpoint<TestSmt
     credential.setUsername(input.getUsername());
     credential.setPassword(resolvePassword(input));
 
-    try (Transport ignored = SmtpSessions.connect(account, smtp, credential)) {
+    try (Transport ignored = SmtpSessions.connect(SmtpSessions.session(account, smtp), smtp, credential)) {
       return new TestSmtpConnectionApiOutput(true, "Connected successfully.");
     } catch (AuthenticationFailedException e) {
       return new TestSmtpConnectionApiOutput(false, "Authentication failed — check the username and password.");

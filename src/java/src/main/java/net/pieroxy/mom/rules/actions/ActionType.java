@@ -3,6 +3,7 @@ package net.pieroxy.mom.rules.actions;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.rules.actions.implementations.AndAction;
+import net.pieroxy.mom.rules.actions.implementations.ForwardAction;
 import net.pieroxy.mom.rules.actions.implementations.MoveToAction;
 import net.pieroxy.mom.rules.actions.implementations.NoopAction;
 import net.pieroxy.mom.rules.actions.implementations.OrAction;
@@ -45,7 +46,11 @@ public enum ActionType {
   // Learnable: a matching rule without keepProcessing stops evaluation, so a learned NOOP acts as
   // an allow-list entry for the rules after LEARNED_RULES (e.g. SPF/DKIM checks). Its key is only
   // the log label.
-  NOOP(NoopAction::new, true);
+  NOOP(NoopAction::new, true),
+  // Not learnable: the recipient has to be configured, and sending mail isn't something to set up
+  // by dropping an example message in a folder.
+  FORWARD(() -> new ForwardAction(false), false),
+  REDIRECT(() -> new ForwardAction(true), false);
 
   private final ActionProvider provider;
   private final boolean learnable;

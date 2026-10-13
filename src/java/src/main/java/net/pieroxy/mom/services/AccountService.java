@@ -42,12 +42,17 @@ public class AccountService implements Service {
   @Override
   public void start() {
     settingsService.getConfiguration().getConfigurations().forEach(conf -> {
-      Credential credential = settingsService.resolveCredential(conf.getCredentials(), "mail account \"" + conf.getDisplayName() + "\"");
-      if (conf.getSmtp() != null) settingsService.resolveSmtpCredential(conf); // fails fast on a missing key
-      MailAccount account = new MailAccount(conf, credential, settingsService.getDataFolder());
+      MailAccount account = newMailAccount(conf);
       accounts.add(account);
       if (conf.isActive()) account.start();
     });
+  }
+
+  /** Fails fast on a credentials key missing from credentials.json, IMAP or SMTP. */
+  private MailAccount newMailAccount(MailAccountConfiguration config) {
+    Credential credential = settingsService.resolveCredential(config.getCredentials(), "mail account \"" + config.getDisplayName() + "\"");
+    Credential smtpCredential = config.getSmtp() != null ? settingsService.resolveSmtpCredential(config) : null;
+    return new MailAccount(config, credential, smtpCredential, settingsService.getDataFolder());
   }
 
   /**
@@ -100,8 +105,7 @@ public class AccountService implements Service {
     }
 
     MailAccountConfiguration updatedConfig = settingsService.findAccountConfig(accountName);
-    Credential credential = settingsService.resolveCredential(updatedConfig.getCredentials(), "mail account \"" + accountName + "\"");
-    MailAccount fresh = new MailAccount(updatedConfig, credential, settingsService.getDataFolder());
+    MailAccount fresh = newMailAccount(updatedConfig);
     accounts.set(index, fresh);
     fresh.start();
   }
@@ -140,8 +144,7 @@ public class AccountService implements Service {
       Thread.currentThread().interrupt();
     }
 
-    Credential credential = settingsService.resolveCredential(config.getCredentials(), "mail account \"" + accountName + "\"");
-    MailAccount fresh = new MailAccount(config, credential, settingsService.getDataFolder());
+    MailAccount fresh = newMailAccount(config);
     accounts.set(index, fresh);
     if (active) fresh.start();
   }
@@ -159,8 +162,7 @@ public class AccountService implements Service {
       throw new IllegalArgumentException("An account named \"" + config.getDisplayName() + "\" already exists.");
     }
     settingsService.addAccountConfig(config, username, password);
-    Credential credential = settingsService.resolveCredential(config.getCredentials(), "mail account \"" + config.getDisplayName() + "\"");
-    MailAccount account = new MailAccount(config, credential, settingsService.getDataFolder());
+    MailAccount account = newMailAccount(config);
     accounts.add(account);
     if (config.isActive()) account.start();
   }
