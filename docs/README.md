@@ -242,6 +242,7 @@ A rule is a `matcher` + an `action`. When a matcher matches a message, its actio
 | [`DMARC_POLICY_EQUALS`](matchers/dmarc-policy-equals.md) | Match the sender domain's published DMARC policy. |
 | [`FCRDNS_RESULT_EQUALS`](matchers/fcrdns-result-equals.md) | Match a live-evaluated reverse DNS (FCrDNS) result on the connecting IP. |
 | [`FROM_VALIDITY_EQUALS`](matchers/from-validity-equals.md) | Match a missing, duplicated or unparseable `From:` header. |
+| [`DISPLAY_NAME_ADDRESS_EQUALS`](matchers/display-name-address-equals.md) | Match an email address in the `From:` display name that differs from the actual one. |
 | [`SUBJECT_CLASSIFIER_EQUALS`](matchers/subject-classifier-equals.md) | Match when a locally-trained model scores the subject above/below a threshold. |
 | [`HEADER_CLASSIFIER_EQUALS`](matchers/header-classifier-equals.md) | Match when a locally-trained model scores a message's headers above/below a threshold. |
 | [`BODY_CLASSIFIER_EQUALS`](matchers/body-classifier-equals.md) | Match when a locally-trained model scores a message's body text above/below a threshold. |

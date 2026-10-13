@@ -52,22 +52,29 @@ public enum FromValidity {
     if (nonBlank.isEmpty()) return MISSING;
     if (nonBlank.size() > 1) return MULTIPLE;
 
-    List<InternetAddress> mailboxes = new ArrayList<>();
+    List<InternetAddress> mailboxes;
     try {
-      for (InternetAddress address : InternetAddress.parseHeader(redecodeUtf8(MimeUtility.unfold(nonBlank.get(0))), false)) {
-        if (address.isGroup()) {
-          InternetAddress[] members = address.getGroup(false);
-          if (members != null) mailboxes.addAll(List.of(members));
-        } else {
-          mailboxes.add(address);
-        }
-      }
+      mailboxes = mailboxes(nonBlank.get(0));
     } catch (AddressException e) {
       return INVALID;
     }
     if (mailboxes.isEmpty()) return INVALID;
     if (mailboxes.size() > 1) return MULTIPLE;
     return isValid(mailboxes.get(0)) ? VALID : INVALID;
+  }
+
+  /** The mailboxes of a raw {@code From} header value, group members included. */
+  static List<InternetAddress> mailboxes(String header) throws AddressException {
+    List<InternetAddress> mailboxes = new ArrayList<>();
+    for (InternetAddress address : InternetAddress.parseHeader(redecodeUtf8(MimeUtility.unfold(header)), false)) {
+      if (address.isGroup()) {
+        InternetAddress[] members = address.getGroup(false);
+        if (members != null) mailboxes.addAll(List.of(members));
+      } else {
+        mailboxes.add(address);
+      }
+    }
+    return mailboxes;
   }
 
   /**

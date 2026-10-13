@@ -152,7 +152,7 @@ public class DmarcEvaluator {
     return fromOrg.equalsIgnoreCase(otherOrg);
   }
 
-  private static Optional<String> organizationalDomainOf(String domain) {
+  public static Optional<String> organizationalDomainOf(String domain) {
     try {
       InternetDomainName name = InternetDomainName.from(domain);
       if (!name.isUnderPublicSuffix()) return Optional.empty();

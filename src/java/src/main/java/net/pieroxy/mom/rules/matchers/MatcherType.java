@@ -6,6 +6,7 @@ import net.pieroxy.mom.rules.matchers.implementations.BodyClassifierMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.DkimResultMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.DmarcPolicyMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.DmarcResultMatcher;
+import net.pieroxy.mom.rules.matchers.implementations.FakeDisplayNameAddressMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.FcrdnsResultMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.FromAddressMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.FromDomainMatcher;
@@ -45,6 +46,7 @@ public enum MatcherType {
   FCRDNS_RESULT_EQUALS(FcrdnsResultMatcher::new, false),
   // Not learnable, same reasoning as the authentication matchers above: a fixed set of keys.
   FROM_VALIDITY_EQUALS(FromValidityMatcher::new, false),
+  DISPLAY_NAME_ADDRESS_EQUALS(FakeDisplayNameAddressMatcher::new, false),
   // Not learnable either, but for a different reason than the authentication matchers above:
   // learning here doesn't come from an example dropped in mom-rules/, but from the corpus
   // collected by ClassifierCorpusScanner and retrained by SubjectClassifierTrainer.
