@@ -36,7 +36,8 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
 
     AccountBasicConfigDto basicConfig = new AccountBasicConfigDto(config.getDisplayName(), config.getHost(), config.getPort(),
         config.getRunEvery(), config.getConnectTimeout(), config.getReadTimeout(), config.getClassifierSpamFolderName(), config.getClassifierExcludedFolders(),
-        config.getClassifierCorpusRetentionDays(), config.getClassifierCorpusScanBatchSize(), config.isDiscoveryTreeDisabled());
+        config.getClassifierCorpusRetentionDays(), config.getClassifierCorpusScanBatchSize(), config.isDiscoveryTreeDisabled(),
+        config.getDecisionLogRetentionDays());
 
     CredentialsInfoDto credentials = new CredentialsInfoDto(config.getCredentials(), account.getCredentialUsername());
 
@@ -167,6 +168,7 @@ class AccountBasicConfigDto {
   private int classifierCorpusRetentionDays;
   private int classifierCorpusScanBatchSize;
   private boolean discoveryTreeDisabled;
+  private int decisionLogRetentionDays;
 
   public AccountBasicConfigDto() {
   }
@@ -174,7 +176,8 @@ class AccountBasicConfigDto {
   public AccountBasicConfigDto(String displayName, String host, int port, int runEvery, int connectTimeout, int readTimeout,
                                 String classifierSpamFolderName,
                                 List<String> classifierExcludedFolders, int classifierCorpusRetentionDays,
-                                int classifierCorpusScanBatchSize, boolean discoveryTreeDisabled) {
+                                int classifierCorpusScanBatchSize, boolean discoveryTreeDisabled,
+                                int decisionLogRetentionDays) {
     this.displayName = displayName;
     this.host = host;
     this.port = port;
@@ -190,6 +193,7 @@ class AccountBasicConfigDto {
     this.classifierCorpusRetentionDays = classifierCorpusRetentionDays;
     this.classifierCorpusScanBatchSize = classifierCorpusScanBatchSize;
     this.discoveryTreeDisabled = discoveryTreeDisabled;
+    this.decisionLogRetentionDays = decisionLogRetentionDays;
   }
 
   public String getDisplayName() {
@@ -278,6 +282,14 @@ class AccountBasicConfigDto {
 
   public void setDiscoveryTreeDisabled(boolean discoveryTreeDisabled) {
     this.discoveryTreeDisabled = discoveryTreeDisabled;
+  }
+
+  public int getDecisionLogRetentionDays() {
+    return decisionLogRetentionDays;
+  }
+
+  public void setDecisionLogRetentionDays(int decisionLogRetentionDays) {
+    this.decisionLogRetentionDays = decisionLogRetentionDays;
   }
 }
 

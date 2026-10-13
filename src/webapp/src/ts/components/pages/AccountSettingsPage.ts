@@ -327,6 +327,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         classifierCorpusRetentionDays: session.workingConfig.classifierCorpusRetentionDays,
         classifierCorpusScanBatchSize: session.workingConfig.classifierCorpusScanBatchSize,
         discoveryTreeDisabled: session.workingConfig.discoveryTreeDisabled,
+        decisionLogRetentionDays: session.workingConfig.decisionLogRetentionDays,
         username: session.workingUsername,
         password: session.workingPassword,
         rules: session.rules.filter((pendingRule) => !pendingRule.deleted).map((pendingRule) => pendingRule.rule),
@@ -465,6 +466,7 @@ function renderGeneralSection(session: AccountEditSession): m.Children {
     configRow("Classifier corpus retention", config.classifierCorpusRetentionDays > 0 ? config.classifierCorpusRetentionDays + " day(s)" : "disabled", changed("classifierCorpusRetentionDays")),
     configRow("Classifier scan batch size", config.classifierCorpusScanBatchSize > 0 ? String(config.classifierCorpusScanBatchSize) : "default", changed("classifierCorpusScanBatchSize")),
     configRow("Discovery tree", config.discoveryTreeDisabled ? "disabled" : "enabled", changed("discoveryTreeDisabled")),
+    configRow("Decision log retention", config.decisionLogRetentionDays > 0 ? config.decisionLogRetentionDays + " day(s)" : "disabled", changed("decisionLogRetentionDays")),
   ]);
 }
 

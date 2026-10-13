@@ -44,6 +44,9 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
     if (input.getConnectTimeout() < 0 || input.getReadTimeout() < 0) {
       throw new IllegalArgumentException("Timeouts must not be negative.");
     }
+    if (input.getDecisionLogRetentionDays() < 0) {
+      throw new IllegalArgumentException("Decision log retention must not be negative.");
+    }
     if (input.getUsername() == null || input.getUsername().isBlank()) {
       throw new IllegalArgumentException("Username must not be blank.");
     }
@@ -61,7 +64,7 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
         blankToNull(input.getClassifierSpamFolderName()),
         input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
         input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),
-        input.isDiscoveryTreeDisabled(), input.getUsername(), input.getPassword(), input.getRules(), shortcuts,
+        input.isDiscoveryTreeDisabled(), input.getDecisionLogRetentionDays(), input.getUsername(), input.getPassword(), input.getRules(), shortcuts,
         smtp, smtp != null && input.getSmtp().isOwnCredentials(),
         smtp != null ? input.getSmtp().getUsername() : null, input.getSmtpPassword());
 
@@ -114,6 +117,7 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
   private int classifierCorpusRetentionDays;
   private int classifierCorpusScanBatchSize;
   private boolean discoveryTreeDisabled;
+  private int decisionLogRetentionDays;
   private String username;
   /** Blank means "leave the current password unchanged" — see the class javadoc. */
   private String password;
@@ -226,6 +230,14 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
 
   public void setDiscoveryTreeDisabled(boolean discoveryTreeDisabled) {
     this.discoveryTreeDisabled = discoveryTreeDisabled;
+  }
+
+  public int getDecisionLogRetentionDays() {
+    return decisionLogRetentionDays;
+  }
+
+  public void setDecisionLogRetentionDays(int decisionLogRetentionDays) {
+    this.decisionLogRetentionDays = decisionLogRetentionDays;
   }
 
   public String getUsername() {

@@ -29,6 +29,7 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
   private classifierCorpusRetentionDays = 0;
   private classifierCorpusScanBatchSize = 0;
   private discoveryTreeDisabled = false;
+  private decisionLogRetentionDays = 0;
   private loading = true;
   private error: string | undefined;
 
@@ -93,6 +94,11 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
         }),
         "Disabled",
       ])),
+      this.field("Decision log retention (days, 0 = disabled)", this.originalHint(session, "decisionLogRetentionDays", String(baseline.decisionLogRetentionDays)), m("input", {
+        type: "number", min: 0, value: this.decisionLogRetentionDays,
+        title: "Logs the Subject and From of every processed message, with the rules it went through",
+        oninput: (e: Event) => (this.decisionLogRetentionDays = Number((e.target as HTMLInputElement).value)),
+      })),
       m(".edit-actions", [
         m("button.ok-button", { onclick: () => this.apply() }, "OK"),
         m("button.cancel-button", { onclick: () => this.cancel() }, "Cancel"),
@@ -140,12 +146,14 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
     this.classifierCorpusRetentionDays = config.classifierCorpusRetentionDays;
     this.classifierCorpusScanBatchSize = config.classifierCorpusScanBatchSize;
     this.discoveryTreeDisabled = config.discoveryTreeDisabled;
+    this.decisionLogRetentionDays = config.decisionLogRetentionDays;
   }
 
   /** Mirrors the checks UpdateAccountApi itself makes — catches the common mistakes before they're staged into the session instead of only surfacing them at "Save Changes" time. */
   private validate(): string | undefined {
     if (this.runEvery <= 0) return "\"Run every\" must be a positive number of seconds.";
     if (this.connectTimeout < 0 || this.readTimeout < 0) return "Timeouts must not be negative.";
+    if (this.decisionLogRetentionDays < 0) return "Decision log retention must not be negative.";
     return undefined;
   }
 
@@ -166,6 +174,7 @@ export class AccountGeneralEditPage extends AbstractPage<AccountGeneralEditPageA
       classifierCorpusRetentionDays: this.classifierCorpusRetentionDays,
       classifierCorpusScanBatchSize: this.classifierCorpusScanBatchSize,
       discoveryTreeDisabled: this.discoveryTreeDisabled,
+      decisionLogRetentionDays: this.decisionLogRetentionDays,
     };
     Routing.goToAccountSettings(this.accountName);
   }
