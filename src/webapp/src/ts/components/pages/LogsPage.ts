@@ -32,8 +32,8 @@ const PRESETS: Preset[] = [
 ];
 
 const OUTCOME_LABELS: Record<Outcome, { label: string; title: string }> = {
-  [Outcome.BLOCKED]: { label: "Blocked", title: "A rule matched and stopped evaluation" },
-  [Outcome.PASSED]: { label: "Passed", title: "No rule stopped evaluation" },
+  [Outcome.BLOCKED]: { label: "Handled", title: "A rule matched and stopped evaluation" },
+  [Outcome.PASSED]: { label: "Not handled", title: "No rule stopped evaluation" },
   [Outcome.LEARNED]: { label: "Learned", title: "A rule was learned from this example" },
   [Outcome.NOT_LEARNED]: { label: "Not learned", title: "Nothing could be learned from this example" },
 };
