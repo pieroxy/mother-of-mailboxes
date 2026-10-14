@@ -8,17 +8,21 @@ import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.PasswordHasher;
+import net.pieroxy.mom.utils.RateLimiter;
 
 @Endpoint(method = ApiMethod.POST)
 public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput> {
   private final IServiceProvider serviceProvider;
+  private final RateLimiter limiter;
 
   public LoginApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
+    this.limiter = new RateLimiter(10000, 2);
   }
 
   @Override
   public LoginApiOutput process(LoginApiInput input, ApiContext context) {
+    limiter.applyHit(input.getLogin());
     Credential expected = serviceProvider.getSettingsService().getWebServerCredential();
     boolean ok = expected != null
         && expected.getUsername().equals(input.getLogin())
