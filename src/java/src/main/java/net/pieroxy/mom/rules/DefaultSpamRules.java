@@ -70,6 +70,7 @@ public final class DefaultSpamRules {
     MailFilterRuleActionConfiguration action = new MailFilterRuleActionConfiguration();
     action.setType(actionType);
     action.setKey(folder);
+    action.setSpam(true);
     MailFilterRuleConfiguration rule = new MailFilterRuleConfiguration();
     rule.setMatcher(matcher);
     rule.setAction(action);

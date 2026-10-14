@@ -63,11 +63,11 @@
       "rules": [
         {
           "matcher": { "type": "SPF_RESULT_EQUALS", "key": "fail" },
-          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam" }
+          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam", "spam": true }
         },
         {
           "matcher": { "type": "DKIM_RESULT_EQUALS", "key": "fail" },
-          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam" }
+          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam", "spam": true }
         },
         {
           "matcher": {
@@ -77,7 +77,7 @@
               { "type": "DMARC_POLICY_EQUALS", "key": "reject" }
             ]
           },
-          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam" }
+          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam", "spam": true }
         },
         {
           "matcher": {
@@ -87,11 +87,11 @@
               { "type": "DMARC_POLICY_EQUALS", "keys": ["quarantine", "none"] }
             ]
           },
-          "action": { "type": "MOVE_TO", "key": "Spam" }
+          "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
         },
         {
           "matcher": { "type": "FROM_VALIDITY_EQUALS", "keys": ["missing", "multiple", "invalid"] },
-          "action": { "type": "MOVE_TO", "key": "Spam" }
+          "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
         },
         {
           "matcher": {
@@ -101,11 +101,11 @@
               { "type": "FCRDNS_RESULT_EQUALS", "keys": ["fail", "none"] }
             ]
           },
-          "action": { "type": "MOVE_TO", "key": "Spam" }
+          "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
         },
         {
           "matcher": { "type": "SUBJECT_CLASSIFIER_EQUALS", "key": ">0.99" },
-          "action": { "type": "MOVE_TO_AND_READ", "key": "SpamML" }
+          "action": { "type": "MOVE_TO_AND_READ", "key": "SpamML", "spam": true }
         },
         {
           "matcher": {
@@ -115,7 +115,7 @@
               { "type": "IP_REPUTATION_EQUALS", "listIds": ["blocklist-de-mail"], "key": ">0.5" }
             ]
           },
-          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam" }
+          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam", "spam": true }
         },
         {
           "matcher": {
@@ -125,7 +125,7 @@
               { "type": "IP_REPUTATION_EQUALS", "listIds": ["blocklist-de-mail"], "key": ">0.5" }
             ]
           },
-          "action": { "type": "MOVE_TO", "key": "Spam" }
+          "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
         },
         {
           "matcher": {
@@ -135,7 +135,7 @@
               { "type": "FROM_DOMAIN_REPUTATION_EQUALS", "listIds": ["blocklist-project-phishing"], "key": ">0.5" }
             ]
           },
-          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam" }
+          "action": { "type": "MOVE_TO_AND_READ", "key": "Spam", "spam": true }
         },
         {
           "matcher": {
@@ -145,15 +145,15 @@
               { "type": "FROM_DOMAIN_REPUTATION_EQUALS", "listIds": ["blocklist-project-phishing"], "key": ">0.5" }
             ]
           },
-          "action": { "type": "MOVE_TO", "key": "Spam" }
+          "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
         },
         {
           "matcher": { "type": "FROM_DOMAIN_REPUTATION_EQUALS", "listIds": ["disposable-email-domains"], "key": ">0.5" },
-          "action": { "type": "MOVE_TO", "key": "Spam" }
+          "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
         },
         {
           "matcher": { "type": "FROM_DOMAIN_REPUTATION_EQUALS", "listIds": ["hagezi-nrd7"], "key": ">0.5" },
-          "action": { "type": "MOVE_TO", "key": "Spam" }
+          "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
         }
       ]
     }

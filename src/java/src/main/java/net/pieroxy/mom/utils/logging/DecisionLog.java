@@ -75,6 +75,9 @@ public final class DecisionLog {
    *                       is deliberately not conflated with one that cleanly didn't match.
    * @param matchDetail    only present when matched is true: the {@code MatchResult} debug string,
    *                       i.e. what actually hit (which key, which list, the score...).
+   * @param actionName     only present when matched is true: the action's name at the time (see
+   *                       {@code ActionNames#nameOf}).
+   * @param spam           only present when matched is true: the action's spam flag at the time.
    * @param keepProcessing only present when matched is true: whether this match let evaluation
    *                       carry on to the next rule, or stopped it here.
    * @param exception      {@code toString()} of whatever was thrown, if anything — set whether or
@@ -82,7 +85,8 @@ public final class DecisionLog {
    *                       throw; matched stays true, and this explains what went wrong applying
    *                       the consequence).
    */
-  public record RuleOutcome(String rule, boolean learnedRule, Boolean matched, String matchDetail, Boolean keepProcessing, String exception) {}
+  public record RuleOutcome(String rule, boolean learnedRule, Boolean matched, String matchDetail, String actionName, Boolean spam,
+                            Boolean keepProcessing, String exception) {}
 
   private DecisionLog() {}
 

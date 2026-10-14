@@ -60,10 +60,12 @@ public class DecisionsApi extends AbstractAuthenticatedEndpoint<DecisionsApiInpu
   static DecisionDto toDto(DecisionLog.Entry entry) {
     DecisionLog.RuleOutcome blocking = DecisionReader.blockingRuleOf(entry);
     List<RuleOutcomeDto> rules = entry.rules() == null ? null : entry.rules().stream()
-        .map(r -> new RuleOutcomeDto(r.rule(), r.learnedRule(), r.matched(), r.matchDetail(), r.keepProcessing(), r.exception()))
+        .map(r -> new RuleOutcomeDto(r.rule(), r.learnedRule(), r.matched(), r.matchDetail(), r.actionName(), Boolean.TRUE.equals(r.spam()),
+            r.keepProcessing(), r.exception()))
         .toList();
     return new DecisionDto(entry.date(), entry.trigger(), entry.messageId(), entry.subject(), entry.from(), entry.processedMs(),
-        DecisionReader.outcomeOf(entry), blocking != null ? blocking.rule() : null, DecisionReader.hasError(entry), rules,
+        DecisionReader.outcomeOf(entry), blocking != null ? blocking.rule() : null, blocking != null ? blocking.actionName() : null,
+        blocking != null && Boolean.TRUE.equals(blocking.spam()), DecisionReader.hasError(entry), rules,
         entry.learnedRule(), entry.reasonForMoveToDone());
   }
 
@@ -247,7 +249,7 @@ class DecisionsApiOutput {
   }
 }
 
-/** See {@link DecisionLog.Entry}; {@code outcome}, {@code blockingRule} and {@code hasError} are derived from {@code rules}. */
+/** See {@link DecisionLog.Entry}; {@code outcome}, {@code blocking*} and {@code hasError} are derived from {@code rules}. */
 @TypeScriptType
 class DecisionDto {
   /** UTC, "yyyy-MM-dd HH:mm:ssZ". */
@@ -259,6 +261,9 @@ class DecisionDto {
   private Long processedMs;
   private DecisionReader.Outcome outcome;
   private String blockingRule;
+  /** Null for an entry logged before actions were named. */
+  private String blockingActionName;
+  private boolean blockingSpam;
   private boolean hasError;
   /** Null for a LEARNING entry. */
   private List<RuleOutcomeDto> rules;
@@ -269,7 +274,8 @@ class DecisionDto {
   }
 
   public DecisionDto(String date, String trigger, String messageId, String subject, String from, Long processedMs,
-                     DecisionReader.Outcome outcome, String blockingRule, boolean hasError, List<RuleOutcomeDto> rules,
+                     DecisionReader.Outcome outcome, String blockingRule, String blockingActionName, boolean blockingSpam,
+                     boolean hasError, List<RuleOutcomeDto> rules,
                      String learnedRule, String reasonForMoveToDone) {
     this.date = date;
     this.trigger = trigger;
@@ -279,6 +285,8 @@ class DecisionDto {
     this.processedMs = processedMs;
     this.outcome = outcome;
     this.blockingRule = blockingRule;
+    this.blockingActionName = blockingActionName;
+    this.blockingSpam = blockingSpam;
     this.hasError = hasError;
     this.rules = rules;
     this.learnedRule = learnedRule;
@@ -349,6 +357,22 @@ class DecisionDto {
     this.blockingRule = blockingRule;
   }
 
+  public String getBlockingActionName() {
+    return blockingActionName;
+  }
+
+  public void setBlockingActionName(String blockingActionName) {
+    this.blockingActionName = blockingActionName;
+  }
+
+  public boolean isBlockingSpam() {
+    return blockingSpam;
+  }
+
+  public void setBlockingSpam(boolean blockingSpam) {
+    this.blockingSpam = blockingSpam;
+  }
+
   public boolean isHasError() {
     return hasError;
   }
@@ -389,17 +413,22 @@ class RuleOutcomeDto {
   private boolean learnedRule;
   private Boolean matched;
   private String matchDetail;
+  private String actionName;
+  private boolean spam;
   private Boolean keepProcessing;
   private String exception;
 
   public RuleOutcomeDto() {
   }
 
-  public RuleOutcomeDto(String rule, boolean learnedRule, Boolean matched, String matchDetail, Boolean keepProcessing, String exception) {
+  public RuleOutcomeDto(String rule, boolean learnedRule, Boolean matched, String matchDetail, String actionName, boolean spam,
+                        Boolean keepProcessing, String exception) {
     this.rule = rule;
     this.learnedRule = learnedRule;
     this.matched = matched;
     this.matchDetail = matchDetail;
+    this.actionName = actionName;
+    this.spam = spam;
     this.keepProcessing = keepProcessing;
     this.exception = exception;
   }
@@ -434,6 +463,22 @@ class RuleOutcomeDto {
 
   public void setMatchDetail(String matchDetail) {
     this.matchDetail = matchDetail;
+  }
+
+  public String getActionName() {
+    return actionName;
+  }
+
+  public void setActionName(String actionName) {
+    this.actionName = actionName;
+  }
+
+  public boolean isSpam() {
+    return spam;
+  }
+
+  public void setSpam(boolean spam) {
+    this.spam = spam;
   }
 
   public Boolean getKeepProcessing() {

@@ -22,6 +22,8 @@ export function renderActionNode(node: MailFilterRuleActionConfiguration): m.Chi
     m(".tree-node-label", [
       m("span.tree-node-type", node.type),
       node.key ? m("span.tree-node-detail", ": " + node.key) : null,
+      node.name ? m("span.tree-node-name", { title: "Name shown in the decision log" }, "“" + node.name + "”") : null,
+      node.spam ? m("span.tree-node-spam", { title: "Spam filtering" }, "spam") : null,
     ]),
     node.children && node.children.length > 0 ? m("ul.tree-children", node.children.map(renderActionNode)) : null,
   ]);

@@ -11,6 +11,7 @@ import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { renderActionNode } from "../RuleTree";
+import { defaultActionName } from "../../utils/actionNames";
 import { AccountEditSession, PendingRule, accountEditSessions } from "../../utils/AccountEditSession";
 import { MatcherNodeEditor, defaultMatcherNode, finalizeMatcherNode, validateMatcherNode } from "../MatcherNodeEditor";
 
@@ -62,7 +63,7 @@ const COMPOSITE_ACTION_TYPES: Set<string> = new Set([ActionType.AND, ActionType.
  * account's list, an index edits the rule already there. The matcher side ("When") is a fully
  * editable tree, including AND/OR/NOT composites — see MatcherNodeEditor. The action side
  * ("Then") is still leaf-only; a rule whose action is a composite (AND/OR) shows read-only (see
- * RuleTree) and OK leaves that side untouched. Nothing is sent to the backend here: "OK" just
+ * RuleTree) and OK leaves that side untouched, except for its name and spam flag. Nothing is sent to the backend here: "OK" just
  * writes the edited rule into the account's AccountEditSession and returns to the settings page,
  * where it shows tagged "New"/"Edited" until "Save Changes" persists the whole batch in one call
  * (see AccountSettingsPage/UpdateAccountApi).
@@ -81,6 +82,8 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private actionType: ActionType = ActionType.MOVE_TO;
   private actionKey = "";
   private actionIsComposite = false;
+  private actionName = "";
+  private actionSpam = false;
   private originalAction: MailFilterRuleActionConfiguration | undefined;
   private accountFolders: string[] = [];
 
@@ -129,6 +132,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
       }),
       m("h2", "Then"),
       this.actionIsComposite ? this.renderCompositeActionNotice() : this.renderActionFields(),
+      this.renderActionLabelFields(),
       this.renderActions(),
     ]);
   }
@@ -180,6 +184,24 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
       option.sendsMail && !this.session?.workingSmtp
         ? m("p.field-hint", "This account has no SMTP settings yet: add them on the settings page before saving this rule.")
         : null,
+    ];
+  }
+
+  /** How the decision log shows this action — see MailFilterRuleActionConfiguration#name/spam. */
+  private renderActionLabelFields(): m.Children {
+    return [
+      this.field("Name", m("input", {
+        type: "text", value: this.actionName, placeholder: defaultActionName(this.buildActionWithoutLabel()),
+        title: "Shown in the decision log; leave empty for the generated name",
+        oninput: (e: Event) => (this.actionName = (e.target as HTMLInputElement).value),
+      })),
+      this.field("Spam", m("label.checkbox-field", [
+        m("input", {
+          type: "checkbox", checked: this.actionSpam,
+          onchange: (e: Event) => (this.actionSpam = (e.target as HTMLInputElement).checked),
+        }),
+        "This action filters spam (display only: highlights it in the decision log)",
+      ])),
     ];
   }
 
@@ -253,6 +275,8 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
 
     const action = rule.action;
     this.originalAction = action;
+    this.actionName = action.name || "";
+    this.actionSpam = action.spam === true;
     this.actionIsComposite = COMPOSITE_ACTION_TYPES.has(action.type);
     if (!this.actionIsComposite) {
       this.actionType = action.type;
@@ -261,7 +285,17 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   }
 
   private buildAction(): MailFilterRuleActionConfiguration {
-    if (this.actionIsComposite && this.originalAction) return this.originalAction;
+    const action = this.buildActionWithoutLabel();
+    // Unset rather than empty/false, so config.json stays free of default values.
+    delete (action as Partial<MailFilterRuleActionConfiguration>).name;
+    delete (action as Partial<MailFilterRuleActionConfiguration>).spam;
+    if (this.actionName.trim()) action.name = this.actionName.trim();
+    if (this.actionSpam) action.spam = true;
+    return action;
+  }
+
+  private buildActionWithoutLabel(): MailFilterRuleActionConfiguration {
+    if (this.actionIsComposite && this.originalAction) return { ...this.originalAction };
     const option = ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType)!;
     const action = { type: this.actionType } as MailFilterRuleActionConfiguration;
     if (option.needsKey) action.key = this.actionKey.trim();

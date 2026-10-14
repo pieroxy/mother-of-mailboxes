@@ -1,5 +1,7 @@
 package net.pieroxy.mom.rules;
 
+import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
+import net.pieroxy.mom.rules.actions.ActionNames;
 import net.pieroxy.mom.utils.MailTools;
 import net.pieroxy.mom.utils.logging.DecisionLog;
 import net.pieroxy.mom.utils.logging.StatsLog;
@@ -64,7 +66,7 @@ public class RuleHelper {
           }
         }
       } catch (Exception e) {
-        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), learnedRule, null, null, null, e.toString()));
+        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), learnedRule, null, null, null, null, null, e.toString()));
         logger.log(Level.WARNING, "Rule failed on " + logContext + " for message from " + MailTools.describeFromSafely(message), e);
       }
     }
@@ -79,8 +81,12 @@ public class RuleHelper {
   static DecisionLog.RuleOutcome toOutcome(RuleInterface rule, RuleExecutionResult result, boolean learnedRule) {
     Boolean matched = (!result.ruleApplied() && result.exception() != null) ? null : result.ruleApplied();
     String matchDetail = result.ruleApplied() ? result.matchedDescription() : null;
+    // Snapshotted, so a later rename doesn't rewrite history. Null for a non-Rule (e.g. a test double).
+    MailFilterRuleActionConfiguration action = result.ruleApplied() && rule instanceof Rule r ? r.getActionConfig() : null;
+    String actionName = action != null ? ActionNames.nameOf(action) : null;
+    Boolean spam = action != null ? action.isSpam() : null;
     Boolean keepProcessing = result.ruleApplied() ? result.keepProcessing() : null;
-    return new DecisionLog.RuleOutcome(rule.describe(), learnedRule, matched, matchDetail, keepProcessing, result.exception());
+    return new DecisionLog.RuleOutcome(rule.describe(), learnedRule, matched, matchDetail, actionName, spam, keepProcessing, result.exception());
   }
 
   /**

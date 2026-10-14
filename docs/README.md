@@ -273,6 +273,14 @@ Every matcher and action config accepts an optional `logLevel` field (`"DEBUG"`,
 Composite matchers/actions (`AND`/`OR`/`NOT`) take a `children` array of nested matcher/action
 configs instead of `key`/`keys`.
 
+A rule's action also accepts two optional, display-only fields, recorded in the decision log
+for each message the rule handles:
+
+| Field | Description |
+|---|---|
+| `name` | Label shown in the decision log. Absent: generated from type and key, e.g. `"→ Backups"`, `"→ Spam (read)"`, `"Mark read"`. |
+| `spam` | `true` if the action does spam filtering rather than filing; highlights it in the decision log. Default `false`. |
+
 ## Rule evaluation order
 
 For each new message, MOM walks the rules in `config.json`, in the order they appear, and applies

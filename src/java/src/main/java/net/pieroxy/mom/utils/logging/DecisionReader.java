@@ -44,10 +44,10 @@ public final class DecisionReader {
   @TypeScriptType
   @TypeScriptNonConstEnum
   public enum Outcome {
-    /** A rule matched and stopped evaluation. */
-    BLOCKED,
+    /** A rule matched and stopped evaluation: its action took charge of the message. */
+    HANDLED,
     /** No rule stopped evaluation (a {@code keepProcessing} rule may still have matched). */
-    PASSED,
+    NOT_HANDLED,
     /** Learning example from which a rule was learned. */
     LEARNED,
     /** Learning example from which nothing could be learned. */
@@ -108,7 +108,7 @@ public final class DecisionReader {
     if (DecisionLog.Trigger.LEARNING.name().equals(entry.trigger())) {
       return entry.learnedRule() != null ? Outcome.LEARNED : Outcome.NOT_LEARNED;
     }
-    return blockingRuleOf(entry) != null ? Outcome.BLOCKED : Outcome.PASSED;
+    return blockingRuleOf(entry) != null ? Outcome.HANDLED : Outcome.NOT_HANDLED;
   }
 
   /** The outcome of the rule that stopped evaluation, null if none did. */

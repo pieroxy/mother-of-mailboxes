@@ -199,6 +199,8 @@ public class RuleHelperTest {
     assertTrue(entry.get("processedMs").getAsLong() >= 0);
     JsonObject rule = entry.getAsJsonArray("rules").get(0).getAsJsonObject();
     assertEquals("FromAddressMatcher(alice@example.com)", rule.get("matchDetail").getAsString());
+    assertEquals("Mark read", rule.get("actionName").getAsString());
+    assertFalse(rule.get("spam").getAsBoolean());
   }
 
   @Test

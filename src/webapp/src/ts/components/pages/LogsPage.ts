@@ -32,8 +32,8 @@ const PRESETS: Preset[] = [
 ];
 
 const OUTCOME_LABELS: Record<Outcome, { label: string; title: string }> = {
-  [Outcome.BLOCKED]: { label: "Handled", title: "A rule matched and stopped evaluation" },
-  [Outcome.PASSED]: { label: "Not handled", title: "No rule stopped evaluation" },
+  [Outcome.HANDLED]: { label: "Handled", title: "A rule matched and stopped evaluation" },
+  [Outcome.NOT_HANDLED]: { label: "Not handled", title: "No rule stopped evaluation" },
   [Outcome.LEARNED]: { label: "Learned", title: "A rule was learned from this example" },
   [Outcome.NOT_LEARNED]: { label: "Not learned", title: "Nothing could be learned from this example" },
 };
@@ -218,7 +218,7 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
         onclick: () => (expanded ? this.expanded.delete(entry) : this.expanded.add(entry)),
       }, [
         m("span.logs-date", formatDate(entry.date)),
-        m("span.logs-outcome.outcome-" + entry.outcome.toLowerCase(), { title: outcome.title }, outcome.label),
+        this.renderOutcomeBadge(entry, outcome),
         entry.hasError
           ? m("span.logs-error-flag", { title: "A rule failed on this message" }, m(StatusErrorIcon))
           : m("span.logs-error-flag"),
@@ -227,6 +227,16 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
       ]),
       expanded ? this.renderDetails(entry) : null,
     ]);
+  }
+
+  /** A handled message shows the name of the action that took it (absent from entries logged before actions were named). */
+  private renderOutcomeBadge(entry: DecisionDto, outcome: { label: string; title: string }): m.Children {
+    if (entry.outcome === Outcome.HANDLED && entry.blockingActionName) {
+      const kind = entry.blockingSpam ? "Spam filtering" : "Filing";
+      return m("span.logs-outcome.outcome-handled" + (entry.blockingSpam ? ".spam" : ""),
+        { title: kind + ", by " + entry.blockingRule }, entry.blockingActionName);
+    }
+    return m("span.logs-outcome.outcome-" + entry.outcome.toLowerCase(), { title: outcome.title }, outcome.label);
   }
 
   private renderDetails(entry: DecisionDto): m.Children {
@@ -264,6 +274,8 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
           blocking ? m("span.logs-tag", { title: "Evaluation stopped at this rule" }, "stopped here") : null,
           rule.keepProcessing ? m("span.logs-tag", { title: "keepProcessing: evaluation carried on to the next rule" }, "continued") : null,
         ]),
+        rule.actionName ? m(".logs-rule-action" + (rule.spam ? ".spam" : ""),
+          { title: rule.spam ? "Action: spam filtering" : "Action: filing" }, rule.actionName) : null,
         rule.matchDetail ? m(".logs-rule-detail", rule.matchDetail) : null,
         rule.exception ? m(".logs-rule-exception", rule.exception) : null,
       ]),

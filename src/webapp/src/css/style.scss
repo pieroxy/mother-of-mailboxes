@@ -321,6 +321,20 @@ body {
               .tree-node-detail {
                   color: $text-muted;
               }
+
+              .tree-node-name {
+                  margin-left: 8px;
+                  color: $accent-color;
+              }
+
+              .tree-node-spam {
+                  margin-left: 8px;
+                  font-size: 11px;
+                  color: $status-warning;
+                  border: 1px solid $status-warning;
+                  border-radius: 4px;
+                  padding: 0 4px;
+              }
           }
 
           // A removable-pill list + "add" input (TokenListEditor) — excluded folders, matcher
@@ -1085,7 +1099,7 @@ body {
 
                   .logs-entry-summary {
                       display: grid;
-                      grid-template-columns: 150px 90px 18px minmax(120px, 1fr) minmax(160px, 2fr);
+                      grid-template-columns: 150px 140px 18px minmax(120px, 1fr) minmax(160px, 2fr);
                       align-items: center;
                       gap: 12px;
                       padding: 8px 12px;
@@ -1130,8 +1144,15 @@ body {
                       font-size: 12px;
                       background-color: $bg-color-d1;
 
-                      &.outcome-blocked {
+                      max-width: 100%;
+                      box-sizing: border-box;
+
+                      &.outcome-handled {
                           color: $accent-color;
+
+                          &.spam {
+                              color: $status-warning;
+                          }
                       }
 
                       &.outcome-learned {
@@ -1220,6 +1241,15 @@ body {
                           background-color: $bg-color-d1;
                           border-radius: 4px;
                           padding: 0 6px;
+                      }
+
+                      .logs-rule-action {
+                          font-size: 12px;
+                          color: $accent-color;
+
+                          &.spam {
+                              color: $status-warning;
+                          }
                       }
 
                       .logs-rule-detail {
@@ -1490,6 +1520,23 @@ body {
                   display: flex;
                   flex-direction: column;
                   gap: 2px;
+
+                  &.learned-action-label {
+                      flex-direction: row;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      gap: 8px;
+
+                      .rule-section-label {
+                          flex-basis: 100%;
+                      }
+
+                      input[type="text"] {
+                          flex: 1 1 200px;
+                          font-size: 13px;
+                          padding: 4px 8px;
+                      }
+                  }
 
                   .rule-section-label {
                       font-size: 11px;

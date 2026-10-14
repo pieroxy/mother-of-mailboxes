@@ -55,9 +55,9 @@ public class DecisionLogTest {
   public void recordsOneLinePerMessageWithEveryRuleReached() throws IOException {
     File dir = new File(tmp.getRoot(), "logs");
     List<DecisionLog.RuleOutcome> rules = List.of(
-        new DecisionLog.RuleOutcome("Rule(FROM_DOMAIN_EQUALS(spam.com),MOVE_TO(Spam))", false, false, null, null, null),
+        new DecisionLog.RuleOutcome("Rule(FROM_DOMAIN_EQUALS(spam.com),MOVE_TO(Spam))", false, false, null, null, null, null, null),
         new DecisionLog.RuleOutcome("Rule(FROM_ADDRESS_EQUALS(alice@example.com),READ())", false, true,
-            "FromAddressMatcher(alice@example.com)", false, null)
+            "FromAddressMatcher(alice@example.com)", "Mark read", false, false, null)
     );
 
     DecisionLog.recordRuleEvaluation(dir, 10, DecisionLog.Trigger.INBOX, "<abc@example.com>", "Hello", "alice@example.com", 42, rules);
@@ -82,7 +82,7 @@ public class DecisionLogTest {
   public void omitsMatchedButKeepsTheExceptionWhenARuleThrew() throws IOException {
     File dir = new File(tmp.getRoot(), "logs");
     List<DecisionLog.RuleOutcome> rules = List.of(
-        new DecisionLog.RuleOutcome("Rule(...)", false, null, null, null, "java.lang.RuntimeException: boom")
+        new DecisionLog.RuleOutcome("Rule(...)", false, null, null, null, null, null, "java.lang.RuntimeException: boom")
     );
 
     DecisionLog.recordRuleEvaluation(dir, 10, DecisionLog.Trigger.INBOX, null, "Subject", "bob@example.com", 0, rules);

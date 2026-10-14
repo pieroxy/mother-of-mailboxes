@@ -1,5 +1,6 @@
 package net.pieroxy.mom.rules;
 
+import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.utils.logging.StatsLog;
 import net.pieroxy.mom.rules.actions.Action;
@@ -43,6 +44,10 @@ public class Rule implements RuleInterface {
   public String describe() {
     String base = "Rule(" + matcher.describe() + "," + action.describe() + ")";
     return config.isKeepProcessing() ? base + " [keepProcessing]" : base;
+  }
+
+  public MailFilterRuleActionConfiguration getActionConfig() {
+    return config.getAction();
   }
 
   /**

@@ -18,6 +18,16 @@ public class MailFilterRuleActionConfiguration {
    * Log level for this node (DEBUG/INFO/WARNING/ERROR), optional. Default: WARNING.
    */
   private String logLevel;
+  /**
+   * Shown in the decision log; absent, a name is generated from type and key (see
+   * {@code ActionNames}). Only read on a rule's top-level action.
+   */
+  private String name;
+  /**
+   * Whether this action does spam filtering rather than filing (display only). A {@code Boolean}
+   * so that an unset flag isn't written out to config.json. Only read on a rule's top-level action.
+   */
+  private Boolean spam;
 
   public ActionType getType() {
     return type;
@@ -49,5 +59,21 @@ public class MailFilterRuleActionConfiguration {
 
   public void setLogLevel(String logLevel) {
     this.logLevel = logLevel;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public boolean isSpam() {
+    return Boolean.TRUE.equals(spam);
+  }
+
+  public void setSpam(boolean spam) {
+    this.spam = spam ? Boolean.TRUE : null;
   }
 }

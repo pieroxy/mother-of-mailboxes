@@ -45,15 +45,15 @@ public class DecisionReaderTest {
   }
 
   private static DecisionLog.RuleOutcome blocked() {
-    return new DecisionLog.RuleOutcome(SPAM_RULE, false, true, "FromDomainMatcher(spam.com)", false, null);
+    return new DecisionLog.RuleOutcome(SPAM_RULE, false, true, "FromDomainMatcher(spam.com)", "→ Spam", true, false, null);
   }
 
   private static DecisionLog.RuleOutcome noMatch() {
-    return new DecisionLog.RuleOutcome(SPAM_RULE, false, false, null, null, null);
+    return new DecisionLog.RuleOutcome(SPAM_RULE, false, false, null, null, null, null, null);
   }
 
   private static DecisionLog.RuleOutcome crashed() {
-    return new DecisionLog.RuleOutcome("Rule(...)", false, null, null, null, "java.lang.RuntimeException: boom");
+    return new DecisionLog.RuleOutcome("Rule(...)", false, null, null, null, null, null, "java.lang.RuntimeException: boom");
   }
 
   private File dir() {
@@ -143,11 +143,11 @@ public class DecisionReaderTest {
 
   @Test
   public void derivesOutcomes() {
-    assertEquals(DecisionReader.Outcome.BLOCKED, DecisionReader.outcomeOf(inbox("x", noMatch(), blocked())));
+    assertEquals(DecisionReader.Outcome.HANDLED, DecisionReader.outcomeOf(inbox("x", noMatch(), blocked())));
     assertEquals(SPAM_RULE, DecisionReader.blockingRuleOf(inbox("x", noMatch(), blocked())).rule());
-    assertEquals(DecisionReader.Outcome.PASSED, DecisionReader.outcomeOf(inbox("x", noMatch())));
-    DecisionLog.RuleOutcome kept = new DecisionLog.RuleOutcome(SPAM_RULE, false, true, "d", true, null);
-    assertEquals("a keepProcessing match doesn't block", DecisionReader.Outcome.PASSED, DecisionReader.outcomeOf(inbox("x", kept)));
+    assertEquals(DecisionReader.Outcome.NOT_HANDLED, DecisionReader.outcomeOf(inbox("x", noMatch())));
+    DecisionLog.RuleOutcome kept = new DecisionLog.RuleOutcome(SPAM_RULE, false, true, "d", "→ Spam", true, true, null);
+    assertEquals("a keepProcessing match doesn't block", DecisionReader.Outcome.NOT_HANDLED, DecisionReader.outcomeOf(inbox("x", kept)));
     assertEquals(DecisionReader.Outcome.LEARNED, DecisionReader.outcomeOf(learning("x", "FROM_EQUALS(a) -> NOOP()")));
     assertEquals(DecisionReader.Outcome.NOT_LEARNED, DecisionReader.outcomeOf(learning("x", null)));
   }
@@ -158,7 +158,7 @@ public class DecisionReaderTest {
         learning("learned", "FROM_EQUALS(a) -> NOOP()"));
 
     assertEquals(List.of("learned"), subjects(read(new DecisionReader.Filter(Set.of(DecisionLog.Trigger.LEARNING), null, false, null, null, null))));
-    assertEquals(List.of("crashed", "passed"), subjects(read(new DecisionReader.Filter(null, Set.of(DecisionReader.Outcome.PASSED), false, null, null, null))));
+    assertEquals(List.of("crashed", "passed"), subjects(read(new DecisionReader.Filter(null, Set.of(DecisionReader.Outcome.NOT_HANDLED), false, null, null, null))));
     assertEquals(List.of("crashed"), subjects(read(new DecisionReader.Filter(null, null, true, null, null, null))));
     assertEquals("only where the rule matched, not merely reached",
         List.of("blocked"), subjects(read(new DecisionReader.Filter(null, null, false, SPAM_RULE, null, null))));
@@ -167,7 +167,7 @@ public class DecisionReaderTest {
   @Test
   public void filtersByMatcherTheWayTheStatsPageKeysIt() throws IOException {
     DecisionLog.RuleOutcome scored = new DecisionLog.RuleOutcome("Rule(IP_REPUTATION_EQUALS(>0.5),MOVE_TO(Spam))", false, true,
-        "IpReputationMatcher[spamhaus-drop](score=0.87)", true, null);
+        "IpReputationMatcher[spamhaus-drop](score=0.87)", "→ Spam", true, true, null);
     writeDay(DAY2, false, inbox("kept", scored, noMatch()), inbox("blocked", blocked()));
 
     assertEquals(List.of("kept"), subjects(read(matcher("IpReputationMatcher[spamhaus-drop](score)", false, false))));

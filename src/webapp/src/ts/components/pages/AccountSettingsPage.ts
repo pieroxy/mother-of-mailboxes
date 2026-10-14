@@ -1,6 +1,6 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { AccountBasicConfigDto, MailFilterRuleMatcherConfiguration, RuleType, SmtpSecurity, SmtpSettingsDto } from "../../auto/pieroxy-mom";
+import { AccountBasicConfigDto, MailFilterRuleActionConfiguration, MailFilterRuleMatcherConfiguration, RuleType, SmtpSecurity, SmtpSettingsDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
@@ -9,6 +9,7 @@ import { ArrowCircleUpIcon } from "../atoms/icons/ArrowCircleUpIcon";
 import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
+import { defaultActionName } from "../../utils/actionNames";
 import { TokenListEditor } from "../TokenListEditor";
 import { TestImapConnectionButton } from "../TestImapConnectionButton";
 import { TestSmtpConnectionButton } from "../TestSmtpConnectionButton";
@@ -278,6 +279,21 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         }),
       ]),
       m(".rule-section", [m(".rule-section-label", "Action"), m("ul.tree-root", renderActionNode(rule.action))]),
+      m(".rule-section.learned-action-label", [
+        m(".rule-section-label", "Name"),
+        m("input", {
+          type: "text", value: rule.action.name || "", placeholder: defaultActionName(rule.action), disabled: isDeleted,
+          title: "Shown in the decision log; leave empty for the generated name",
+          oninput: (e: Event) => this.updateLearnedRuleAction(pending, (e.target as HTMLInputElement).value, rule.action.spam === true),
+        }),
+        m("label.checkbox-field", { title: "Display only: highlights this action in the decision log" }, [
+          m("input", {
+            type: "checkbox", checked: rule.action.spam === true, disabled: isDeleted,
+            onchange: (e: Event) => this.updateLearnedRuleAction(pending, rule.action.name || "", (e.target as HTMLInputElement).checked),
+          }),
+          "Spam",
+        ]),
+      ]),
     ];
     return m(".rule-card" + (isDeleted ? ".rule-deleted" : ""), { key: index }, [header, ...body]);
   }
@@ -288,6 +304,16 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
 
   private toggleDeleteLearnedRule(pending: PendingLearnedRule) {
     pending.deleted = !pending.deleted;
+  }
+
+  private updateLearnedRuleAction(pending: PendingLearnedRule, name: string, spam: boolean) {
+    const action = { ...pending.rule.action } as Partial<MailFilterRuleActionConfiguration>;
+    delete action.name;
+    delete action.spam;
+    if (name.trim()) action.name = name;
+    if (spam) action.spam = true;
+    pending.rule = { ...pending.rule, action: action as MailFilterRuleActionConfiguration };
+    pending.edited = true;
   }
 
   private updateLearnedRuleKeys(pending: PendingLearnedRule, keys: string[]) {
