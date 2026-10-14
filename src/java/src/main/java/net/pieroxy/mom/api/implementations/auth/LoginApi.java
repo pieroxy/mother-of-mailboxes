@@ -5,13 +5,17 @@ import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiContext;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.Endpoint;
+import net.pieroxy.mom.api.metadata.TooManyRequestsException;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.utils.RateLimiter;
 
+import java.util.logging.Logger;
+
 @Endpoint(method = ApiMethod.POST)
 public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput> {
+  private final static Logger LOGGER = Logger.getLogger(LoginApi.class.getName());
   private final IServiceProvider serviceProvider;
   private final RateLimiter limiter;
 
@@ -22,7 +26,15 @@ public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput>
 
   @Override
   public LoginApiOutput process(LoginApiInput input, ApiContext context) {
-    limiter.applyHit(input.getLogin());
+    // Can't match any credential: refused like a wrong password.
+    if (input.getLogin() == null) return new LoginApiOutput(false, false);
+    try {
+      limiter.applyHit(input.getLogin());
+    } catch (RateLimiter.RateExceededException e) {
+      long retryAfterSeconds = Math.max(1, (e.getRetryAfterMillis() + 999) / 1000);
+      LOGGER.warning("Login refused for \"" + input.getLogin() + "\": too many attempts, retry in " + retryAfterSeconds + " s");
+      throw new TooManyRequestsException("Too many login attempts, retry in " + retryAfterSeconds + " s.", retryAfterSeconds);
+    }
     Credential expected = serviceProvider.getSettingsService().getWebServerCredential();
     boolean ok = expected != null
         && expected.getUsername().equals(input.getLogin())

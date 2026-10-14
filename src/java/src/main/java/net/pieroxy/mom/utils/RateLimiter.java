@@ -39,7 +39,7 @@ public class RateLimiter {
     }
     Deque<Long> hits = data.computeIfAbsent(key, k -> new ArrayDeque<>());
     trim(hits, expired);
-    if (hits.size() >= maxHits) throw new RateExceededException();
+    if (hits.size() >= maxHits) throw new RateExceededException(hits.peekFirst() + milliseconds - now);
     hits.addLast(now);
   }
 
@@ -65,5 +65,16 @@ public class RateLimiter {
   }
 
   public static class RateExceededException extends RuntimeException {
+    private final long retryAfterMillis;
+
+    public RateExceededException(long retryAfterMillis) {
+      super("Rate exceeded, retry in " + retryAfterMillis + " ms");
+      this.retryAfterMillis = retryAfterMillis;
+    }
+
+    /** Until the oldest hit in the window expires, freeing one slot. */
+    public long getRetryAfterMillis() {
+      return retryAfterMillis;
+    }
   }
 }

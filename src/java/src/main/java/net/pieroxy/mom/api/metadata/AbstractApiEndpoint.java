@@ -44,6 +44,10 @@ public abstract class AbstractApiEndpoint<I, O> implements ApiEndpoint {
     } catch (PasswordChangeRequiredException e) {
       res.setStatus(HttpServletResponse.SC_FORBIDDEN);
       response = ApiResponse.buildErrResult(e.getMessage());
+    } catch (TooManyRequestsException e) {
+      res.setStatus(429);
+      res.setHeader("Retry-After", String.valueOf(e.getRetryAfterSeconds()));
+      response = ApiResponse.buildErrResult(e.getMessage());
     } catch (Exception e) {
       logger.log(Level.SEVERE, "Endpoint " + getClass().getSimpleName() + " failed", e);
       response = ApiResponse.buildErrResult(e.getMessage());
