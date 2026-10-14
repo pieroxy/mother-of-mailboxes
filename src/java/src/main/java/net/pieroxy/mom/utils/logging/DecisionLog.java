@@ -2,6 +2,8 @@ package net.pieroxy.mom.utils.logging;
 
 import com.google.gson.Gson;
 import net.jpountz.lz4.LZ4FrameOutputStream;
+import net.pieroxy.mom.api.metadata.TypeScriptNonConstEnum;
+import net.pieroxy.mom.api.metadata.TypeScriptType;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -44,10 +46,12 @@ public final class DecisionLog {
   private final static Gson GSON = new Gson();
   private final static DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private final static DateTimeFormatter EVENT_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private final static String FILE_PREFIX = "decisions-";
+  final static String FILE_PREFIX = "decisions-";
   private final static Pattern DAY_FILE = Pattern.compile(Pattern.quote(FILE_PREFIX) + "(\\d{4}-\\d{2}-\\d{2})\\.json");
 
   /** Which code path produced a decision — see {@code RuleHelper#processRules}/{@code RuleLearner}. */
+  @TypeScriptType
+  @TypeScriptNonConstEnum
   public enum Trigger { INBOX, LEARNING, MANUAL_REPROCESSING }
 
   /**
@@ -126,7 +130,7 @@ public final class DecisionLog {
       if (!file.isFile()) {
         rotate(decisionsDir, today, retentionDays);
       }
-      DecisionEntry entry = new DecisionEntry(EVENT_DATE_FORMAT.format(nowUtc) + "Z", trigger, messageId, subject, from, processedMs, rules,
+      Entry entry = new Entry(EVENT_DATE_FORMAT.format(nowUtc) + "Z", trigger, messageId, subject, from, processedMs, rules,
           learnedRule, reasonForMoveToDone);
       String line = GSON.toJson(entry);
       try (Writer writer = new FileWriter(file, true)) {
@@ -182,29 +186,10 @@ public final class DecisionLog {
     }
   }
 
-  /** Null fields are omitted from the JSON output (default Gson behavior) — never emitted as "field":null. */
-  private static final class DecisionEntry {
-    private final String date;
-    private final String trigger;
-    private final String messageId;
-    private final String subject;
-    private final String from;
-    private final Long processedMs;
-    private final List<RuleOutcome> rules;
-    private final String learnedRule;
-    private final String reasonForMoveToDone;
-
-    private DecisionEntry(String date, String trigger, String messageId, String subject, String from, Long processedMs,
-                           List<RuleOutcome> rules, String learnedRule, String reasonForMoveToDone) {
-      this.date = date;
-      this.trigger = trigger;
-      this.messageId = messageId;
-      this.subject = subject;
-      this.from = from;
-      this.processedMs = processedMs;
-      this.rules = rules;
-      this.learnedRule = learnedRule;
-      this.reasonForMoveToDone = reasonForMoveToDone;
-    }
-  }
+  /**
+   * One line of a decisions file, as written here and read back by {@link DecisionReader}. Null
+   * fields are omitted from the JSON output (default Gson behavior), never emitted as "field":null.
+   */
+  public record Entry(String date, String trigger, String messageId, String subject, String from, Long processedMs,
+                      List<RuleOutcome> rules, String learnedRule, String reasonForMoveToDone) {}
 }
