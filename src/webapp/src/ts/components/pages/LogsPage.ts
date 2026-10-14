@@ -44,6 +44,12 @@ const TRIGGER_LABELS: Record<Trigger, string> = {
   [Trigger.MANUAL_REPROCESSING]: "Reprocessing",
 };
 
+const TRIGGER_TITLES: Record<Trigger, string> = {
+  [Trigger.INBOX]: "Messages processed as they arrived in the inbox",
+  [Trigger.LEARNING]: "Examples dropped in mom-rules/ to learn a rule from",
+  [Trigger.MANUAL_REPROCESSING]: "Messages dropped in mom-rules/ToProcess",
+};
+
 const PAGE_SIZE = 50;
 const QUERY_DEBOUNCE_MS = 300;
 
@@ -75,6 +81,7 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
   private retentionDays: number | null = null;
   private expanded = new Set<DecisionDto>();
   private loading = false;
+  private hasLoadedOnce = false;
   private error: string | undefined;
   /** Incremented on every new search, so a slower stale response can't overwrite a newer one. */
   private requestId = 0;
@@ -146,16 +153,19 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
           type: "search", value: this.query, placeholder: "Search subject, sender or Message-ID",
           oninput: (e: Event) => this.setQuery((e.target as HTMLInputElement).value),
         }),
-        m(".logs-chips", [
-          Object.values(Outcome).map((outcome) => this.chip(OUTCOME_LABELS[outcome].label, OUTCOME_LABELS[outcome].title,
-            this.outcomes.has(outcome), () => this.toggle(this.outcomes, outcome))),
-          this.chip("Errors", "Only messages where a rule failed", this.errorsOnly, () => {
+      ]),
+      m(".logs-chip-groups", [
+        this.chipGroup("Outcome", Object.values(Outcome).map((outcome) => this.chip(OUTCOME_LABELS[outcome].label, OUTCOME_LABELS[outcome].title,
+          this.outcomes.has(outcome), () => this.toggle(this.outcomes, outcome)))),
+        this.chipGroup("Source", Object.values(Trigger).map((trigger) => this.chip(TRIGGER_LABELS[trigger], TRIGGER_TITLES[trigger],
+          this.triggers.has(trigger), () => this.toggle(this.triggers, trigger)))),
+        m(".logs-chip-group", [
+          m(".logs-chip-group-label", "Errors"),
+          m(".logs-chips", this.chip("Rule failed", "Only messages where a rule failed", this.errorsOnly, () => {
             this.errorsOnly = !this.errorsOnly;
             this.search();
-          }),
+          })),
         ]),
-        m(".logs-chips", Object.values(Trigger).map((trigger) => this.chip(TRIGGER_LABELS[trigger], "Only " + TRIGGER_LABELS[trigger].toLowerCase() + " decisions",
-          this.triggers.has(trigger), () => this.toggle(this.triggers, trigger)))),
       ]),
       this.rule || this.matcher ? m(".logs-active-filters", [
         this.rule ? this.removableFilter("Rule matched: " + this.rule, () => (this.rule = null)) : null,
@@ -164,8 +174,16 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
     ]);
   }
 
+  /** Chips within a group combine with OR, groups with AND; a group with nothing selected doesn't filter. */
+  private chipGroup(label: string, chips: m.Children[]): m.Children {
+    return m(".logs-chip-group", [
+      m(".logs-chip-group-label", { title: "Any of the selected; none selected shows all" }, label),
+      m(".logs-chips", chips),
+    ]);
+  }
+
   private chip(label: string, title: string, active: boolean, onclick: () => void): m.Children {
-    return m("button.matcher-mode-option" + (active ? ".active" : ""), { title, onclick }, label);
+    return m("button.logs-chip" + (active ? ".active" : ""), { title, onclick }, label);
   }
 
   private removableFilter(label: string, clear: () => void): m.Children {
@@ -176,8 +194,9 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
   }
 
   private renderEntries(): m.Children {
-    if (this.entries.length === 0 && this.loading) return m(".page-loading", "Loading…");
-    return m(".logs-content" + (this.loading ? ".stats-content-loading" : ""), [
+    if (!this.hasLoadedOnce) return this.loading ? m(".page-loading", "Loading…") : null;
+    // Refetch keeps the previous list (faded) rather than flashing to the loading placeholder.
+    return m(".logs-content" + (this.loading ? ".logs-content-loading" : ""), [
       this.entries.length === 0
         ? m(".logs-empty", this.nextCursor
             ? "Nothing found yet — searched back to " + cursorDay(this.nextCursor) + "."
@@ -278,11 +297,8 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
     this.search();
   }
 
-  /** Restarts from the newest entry with the current filters. */
+  /** Restarts from the newest entry with the current filters; the current list stays until the results arrive. */
   private search() {
-    this.entries = [];
-    this.nextCursor = null;
-    this.expanded.clear();
     this.fetch(null);
   }
 
@@ -290,6 +306,7 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
     this.fetch(this.nextCursor);
   }
 
+  /** cursor null: a new search, whose results replace the list instead of extending it. */
   private fetch(cursor: string | null) {
     const requestId = ++this.requestId;
     this.loading = true;
@@ -311,7 +328,13 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
     })
       .then((output) => {
         if (requestId !== this.requestId) return;
-        this.entries = this.entries.concat(output.entries);
+        if (cursor === null) {
+          this.entries = output.entries;
+          this.expanded.clear();
+        } else {
+          this.entries = this.entries.concat(output.entries);
+        }
+        this.hasLoadedOnce = true;
         this.nextCursor = output.nextCursor ?? null;
         this.retentionDays = output.retentionDays;
         this.loading = false;

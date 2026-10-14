@@ -30,6 +30,24 @@ $white-faint: #fff7;
 $shadow-light: rgba(255, 255, 255, .1);
 $shadow-dark: rgba(0, 0, 0, .1);
 
+// A toggle button that's either on (accent) or off — the stats page's mode switches, the logs page's filter chips.
+@mixin toggle-chip {
+  background-color: $bg-color-d1;
+  color: $text-muted;
+  box-shadow: none;
+  font-size: 12px;
+  padding: 4px 12px;
+
+  &.active {
+      background-color: $accent-color;
+      color: $text-on-accent;
+  }
+
+  &:hover:not(.active) {
+      background-color: $bg-color-l2;
+  }
+}
+
 @mixin media-max($_max-width) {
   @media screen and (max-width: $_max-width) {
       &{ @content; }
@@ -870,20 +888,7 @@ body {
                   margin-bottom: 12px;
 
                   .matcher-mode-option {
-                      background-color: $bg-color-d1;
-                      color: $text-muted;
-                      box-shadow: none;
-                      font-size: 12px;
-                      padding: 4px 12px;
-
-                      &.active {
-                          background-color: $accent-color;
-                          color: $text-on-accent;
-                      }
-
-                      &:hover:not(.active) {
-                          background-color: $bg-color-l2;
-                      }
+                      @include toggle-chip;
                   }
               }
 
@@ -970,14 +975,33 @@ body {
 
               .logs-filter-row {
                   display: flex;
-                  flex-wrap: wrap;
-                  align-items: center;
-                  gap: 12px;
+                  margin-bottom: 12px;
 
                   .logs-search {
-                      flex: 1 1 260px;
+                      flex: 1 1 auto;
                       font-size: 13px;
                       padding: 6px 10px;
+                  }
+              }
+
+              // Same small-caps label style as the date range's From/To.
+              .logs-chip-groups {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 12px 24px;
+
+                  .logs-chip-group {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                  }
+
+                  .logs-chip-group-label {
+                      font-size: 11px;
+                      color: $text-faint;
+                      text-transform: uppercase;
+                      letter-spacing: 0.03em;
+                      cursor: default;
                   }
 
                   .logs-chips {
@@ -986,8 +1010,16 @@ body {
                       gap: 6px;
                   }
 
-                  .matcher-mode-switch, .logs-chips {
-                      margin-bottom: 0;
+                  .logs-chip {
+                      @include toggle-chip;
+                  }
+              }
+
+              .logs-content {
+                  transition: opacity 0.15s linear;
+
+                  &.logs-content-loading {
+                      opacity: 0.5;
                   }
               }
 
