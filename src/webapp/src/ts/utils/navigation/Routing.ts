@@ -1,6 +1,15 @@
 import m from "mithril";
 import { Endpoints } from "./Endpoints";
 
+export interface LogsFilters {
+  from?: string;
+  to?: string;
+  /** A StatsApi top-matchers key. */
+  matcher?: string;
+  matcherByType?: boolean;
+  matcherBlockingOnly?: boolean;
+}
+
 export class Routing {
   static goToScreen(target: Endpoints, replace: boolean = false) {
     m.route.set(target, null, { replace });
@@ -8,6 +17,11 @@ export class Routing {
 
   static goToStats(accountName: string) {
     m.route.set(Endpoints.STATS, { accountName });
+  }
+
+  /** filters: initial LogsPage filters, passed as query parameters (see LogsPageAttrs). */
+  static goToLogs(accountName: string, filters: LogsFilters = {}) {
+    m.route.set(Endpoints.LOGS, { accountName, ...filters });
   }
 
   static goToAccountSettings(accountName: string) {

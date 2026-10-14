@@ -10,6 +10,8 @@ interface TopMatchersChartAttrs {
   allMatchersByType: MatcherCountDto[];
   /** Same population as {@code blockingMatchers}, merged by matcher type. */
   blockingMatchersByType: MatcherCountDto[];
+  /** Opens the decision log filtered on that matcher, keyed as currently displayed. */
+  onSelect: (matcher: string, byType: boolean, blockingOnly: boolean) => void;
 }
 
 type Mode = "all" | "blocking";
@@ -53,7 +55,10 @@ export class TopMatchersChart implements m.ClassComponent<TopMatchersChartAttrs>
             ? "No matcher fired in this range."
             : "No matcher ended processing in this range.")
         : m(".top-matchers", byMode.map((entry) => m(".matcher-row", { key: entry.matcher }, [
-            m(".matcher-label", { title: entry.matcher }, entry.matcher),
+            m("a.matcher-label", {
+              title: "Show messages matched by " + entry.matcher + " in the decision log",
+              onclick: () => attrs.onSelect(entry.matcher, this.grouping === "byType", this.mode === "blocking"),
+            }, entry.matcher),
             m(".matcher-bar-track", m(".matcher-bar-fill", { style: { width: (entry.count / maxCount) * 100 + "%" } })),
             m(".matcher-count", entry.count),
           ]))),

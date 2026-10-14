@@ -39,6 +39,7 @@ public final class StatsReader {
   // it: "BodyClassifierMatcher(score=1.0)" and "...(score=0.999)" are the same matcher having
   // fired twice, not two different matchers each firing once.
   private final static Pattern SCORE_VALUE = Pattern.compile("score=-?\\d+(\\.\\d+)?");
+  private final static Pattern DETAIL_SEGMENT = Pattern.compile("\\([^()]*\\)");
 
   private StatsReader() {}
 
@@ -108,7 +109,18 @@ public final class StatsReader {
   }
 
   /** Drops a "score=<value>" reading from a matcher description — see {@link #SCORE_VALUE}. */
-  private static String normalizeMatcherKey(String matcher) {
+  public static String normalizeMatcherKey(String matcher) {
     return SCORE_VALUE.matcher(matcher).replaceAll("score");
+  }
+
+  /**
+   * Strips every "(...)" detail segment a matcher description carries — e.g.
+   * "FromAddressMatcher(user@spam.example.com)" becomes "FromAddressMatcher", and
+   * "IpReputationMatcher[blocklist](score=0.87)" becomes "IpReputationMatcher[blocklist]" (the
+   * "[tag]" survives: it names *which* list, a genuinely different matcher, not a per-message
+   * value like an address or a score).
+   */
+  public static String matcherTypeKey(String matcher) {
+    return DETAIL_SEGMENT.matcher(matcher).replaceAll("");
   }
 }

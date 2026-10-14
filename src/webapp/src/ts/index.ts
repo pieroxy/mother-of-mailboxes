@@ -6,6 +6,7 @@ import { AuthenticatedPageResolver } from "./utils/AuthenticatedPageResolver";
 import { Endpoints } from "./utils/navigation/Endpoints";
 import { ProfilePage } from "./components/pages/ProfilePage";
 import { StatsPage } from "./components/pages/StatsPage";
+import { LogsPage } from "./components/pages/LogsPage";
 import { AccountSettingsPage } from "./components/pages/AccountSettingsPage";
 import { AccountGeneralEditPage } from "./components/pages/AccountGeneralEditPage";
 import { AccountImapSettingsEditPage } from "./components/pages/AccountImapSettingsEditPage";
@@ -26,6 +27,7 @@ const routes: m.RouteDefs = {
   [Endpoints.GENERAL_SETTINGS]: new AuthenticatedPageResolver(GeneralSettingsPage),
   [Endpoints.ACCOUNT_CREATE]: new AuthenticatedPageResolver(AccountCreatePage),
   [Endpoints.STATS]: new AuthenticatedPageResolver(StatsPage),
+  [Endpoints.LOGS]: new AuthenticatedPageResolver(LogsPage),
   [Endpoints.ACCOUNT_SETTINGS]: new AuthenticatedPageResolver(AccountSettingsPage),
   [Endpoints.ACCOUNT_GENERAL_EDIT]: new AuthenticatedPageResolver(AccountGeneralEditPage),
   [Endpoints.ACCOUNT_IMAP_SETTINGS_EDIT]: new AuthenticatedPageResolver(AccountImapSettingsEditPage),

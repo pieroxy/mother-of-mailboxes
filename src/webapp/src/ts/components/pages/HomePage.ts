@@ -11,6 +11,7 @@ import { CycleProgressBar } from "../CycleProgressBar";
 import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
 import { StatsIcon } from "../atoms/icons/StatsIcon";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
+import { LogsIcon } from "../atoms/icons/LogsIcon";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { formatBytes, formatCount } from "../../utils/format";
@@ -91,6 +92,7 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
         m(".account-left-actions", [
           m("span.settings-link", { title: "Account settings", onclick: () => Routing.goToAccountSettings(account.name) }, m(SettingsIcon)),
           m("span.stats-link", { title: "View stats", onclick: () => Routing.goToStats(account.name) }, m(StatsIcon)),
+          m("span.logs-link", { title: "View decision log", onclick: () => Routing.goToLogs(account.name) }, m(LogsIcon)),
         ]),
       ]),
       m(".account-details",

@@ -47,7 +47,10 @@ public class DecisionsApi extends AbstractAuthenticatedEndpoint<DecisionsApiInpu
     int limit = input.getLimit() <= 0 ? DEFAULT_LIMIT : Math.min(input.getLimit(), MAX_LIMIT);
 
     DecisionReader.Filter filter = new DecisionReader.Filter(toSet(input.getTriggers()),
-        toSet(input.getOutcomes()), input.isErrorsOnly(), input.getRule(), input.getQuery());
+        toSet(input.getOutcomes()), input.isErrorsOnly(), input.getRule(),
+        input.getMatcher() == null || input.getMatcher().isBlank() ? null
+            : new DecisionReader.MatcherFilter(input.getMatcher(), input.isMatcherByType(), input.isMatcherBlockingOnly()),
+        input.getQuery());
     DecisionReader.Page page = DecisionReader.read(account.getStatsDir(), from, to, filter, input.getCursor(), limit, SCAN_BUDGET);
 
     int retentionDays = account.getConfig().getDecisionLogRetentionDays();
@@ -84,6 +87,12 @@ class DecisionsApiInput extends AuthenticatedApiInput {
   private boolean errorsOnly;
   /** Only entries where a rule with exactly this description matched. */
   private String rule;
+  /** A key from StatsApi's top matchers: only entries where that matcher matched. */
+  private String matcher;
+  /** {@code matcher} is a "by matcher type" key. */
+  private boolean matcherByType;
+  /** Only when {@code matcher} is the one that stopped evaluation. */
+  private boolean matcherBlockingOnly;
   /** Case- and accent-insensitive substring of the subject, From or Message-ID. */
   private String query;
   /** A previous page's {@code nextCursor}; null for the first page. */
@@ -145,6 +154,30 @@ class DecisionsApiInput extends AuthenticatedApiInput {
 
   public void setRule(String rule) {
     this.rule = rule;
+  }
+
+  public String getMatcher() {
+    return matcher;
+  }
+
+  public void setMatcher(String matcher) {
+    this.matcher = matcher;
+  }
+
+  public boolean isMatcherByType() {
+    return matcherByType;
+  }
+
+  public void setMatcherByType(boolean matcherByType) {
+    this.matcherByType = matcherByType;
+  }
+
+  public boolean isMatcherBlockingOnly() {
+    return matcherBlockingOnly;
+  }
+
+  public void setMatcherBlockingOnly(boolean matcherBlockingOnly) {
+    this.matcherBlockingOnly = matcherBlockingOnly;
   }
 
   public String getQuery() {

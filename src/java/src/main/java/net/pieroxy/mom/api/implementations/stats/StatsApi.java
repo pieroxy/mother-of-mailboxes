@@ -14,7 +14,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** One account's daily processing stats over a date range — powers its dedicated stats page. */
@@ -24,12 +23,6 @@ public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, Stats
   // scanning thousands of day files.
   private final static int MAX_RANGE_DAYS = 400;
   private final static int TOP_MATCHERS_LIMIT = 8;
-  // Strips every "(...)" detail segment a leaf matcher's debug string carries (see
-  // Matcher#matched) — e.g. "FromAddressMatcher(user@spam.example.com)" becomes
-  // "FromAddressMatcher", and "IpReputationMatcher[blocklist](score=0.87)" becomes
-  // "IpReputationMatcher[blocklist]" (the "[tag]" survives: it names *which* list, a genuinely
-  // different matcher, not a per-message value like an address or a score).
-  private final static Pattern DETAIL_SEGMENT = Pattern.compile("\\([^()]*\\)");
 
   public StatsApi(IServiceProvider serviceProvider) {
     super(serviceProvider);
@@ -84,7 +77,7 @@ public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, Stats
   static Map<String, Long> byType(Map<String, Long> counts) {
     Map<String, Long> merged = new LinkedHashMap<>();
     for (Map.Entry<String, Long> e : counts.entrySet()) {
-      merged.merge(DETAIL_SEGMENT.matcher(e.getKey()).replaceAll(""), e.getValue(), Long::sum);
+      merged.merge(StatsReader.matcherTypeKey(e.getKey()), e.getValue(), Long::sum);
     }
     return merged;
   }

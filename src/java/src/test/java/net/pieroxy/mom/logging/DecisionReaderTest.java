@@ -131,7 +131,7 @@ public class DecisionReaderTest {
   @Test
   public void scanBudgetStopsEarlyWithACursor() throws IOException {
     writeDay(DAY3, false, inbox("a"), inbox("b"), inbox("c"), inbox("d"));
-    DecisionReader.Filter onlyA = new DecisionReader.Filter(null, null, false, null, "<a@");
+    DecisionReader.Filter onlyA = new DecisionReader.Filter(null, null, false, null, null, "<a@");
 
     DecisionReader.Page page = DecisionReader.read(dir(), DAY1, DAY3, onlyA, null, 100, 2);
     assertTrue("budget spent on d and c, both filtered out", page.entries().isEmpty());
@@ -157,20 +157,38 @@ public class DecisionReaderTest {
     writeDay(DAY2, false, inbox("blocked", blocked()), inbox("passed", noMatch()), inbox("crashed", crashed(), noMatch()),
         learning("learned", "FROM_EQUALS(a) -> NOOP()"));
 
-    assertEquals(List.of("learned"), subjects(read(new DecisionReader.Filter(Set.of(DecisionLog.Trigger.LEARNING), null, false, null, null))));
-    assertEquals(List.of("crashed", "passed"), subjects(read(new DecisionReader.Filter(null, Set.of(DecisionReader.Outcome.PASSED), false, null, null))));
-    assertEquals(List.of("crashed"), subjects(read(new DecisionReader.Filter(null, null, true, null, null))));
+    assertEquals(List.of("learned"), subjects(read(new DecisionReader.Filter(Set.of(DecisionLog.Trigger.LEARNING), null, false, null, null, null))));
+    assertEquals(List.of("crashed", "passed"), subjects(read(new DecisionReader.Filter(null, Set.of(DecisionReader.Outcome.PASSED), false, null, null, null))));
+    assertEquals(List.of("crashed"), subjects(read(new DecisionReader.Filter(null, null, true, null, null, null))));
     assertEquals("only where the rule matched, not merely reached",
-        List.of("blocked"), subjects(read(new DecisionReader.Filter(null, null, false, SPAM_RULE, null))));
+        List.of("blocked"), subjects(read(new DecisionReader.Filter(null, null, false, SPAM_RULE, null, null))));
+  }
+
+  @Test
+  public void filtersByMatcherTheWayTheStatsPageKeysIt() throws IOException {
+    DecisionLog.RuleOutcome scored = new DecisionLog.RuleOutcome("Rule(IP_REPUTATION_EQUALS(>0.5),MOVE_TO(Spam))", false, true,
+        "IpReputationMatcher[spamhaus-drop](score=0.87)", true, null);
+    writeDay(DAY2, false, inbox("kept", scored, noMatch()), inbox("blocked", blocked()));
+
+    assertEquals(List.of("kept"), subjects(read(matcher("IpReputationMatcher[spamhaus-drop](score)", false, false))));
+    assertEquals(List.of("kept"), subjects(read(matcher("IpReputationMatcher[spamhaus-drop]", true, false))));
+    assertEquals("a keepProcessing match never ended processing",
+        List.of(), subjects(read(matcher("IpReputationMatcher[spamhaus-drop]", true, true))));
+    assertEquals(List.of("blocked"), subjects(read(matcher("FromDomainMatcher(spam.com)", false, true))));
+    assertEquals(List.of("blocked"), subjects(read(matcher("FromDomainMatcher", true, false))));
+  }
+
+  private static DecisionReader.Filter matcher(String key, boolean byType, boolean blockingOnly) {
+    return new DecisionReader.Filter(null, null, false, null, new DecisionReader.MatcherFilter(key, byType, blockingOnly), null);
   }
 
   @Test
   public void queryIsCaseAndAccentInsensitiveOverSubjectFromAndMessageId() throws IOException {
     writeDay(DAY2, false, inbox("Réunion de Lundi"), inbox("other"));
 
-    assertEquals(List.of("Réunion de Lundi"), subjects(read(new DecisionReader.Filter(null, null, false, null, "REUNION"))));
-    assertEquals(List.of("other"), subjects(read(new DecisionReader.Filter(null, null, false, null, "<other@"))));
-    assertEquals(2, read(new DecisionReader.Filter(null, null, false, null, "ALICE@")).entries().size());
+    assertEquals(List.of("Réunion de Lundi"), subjects(read(new DecisionReader.Filter(null, null, false, null, null, "REUNION"))));
+    assertEquals(List.of("other"), subjects(read(new DecisionReader.Filter(null, null, false, null, null, "<other@"))));
+    assertEquals(2, read(new DecisionReader.Filter(null, null, false, null, null, "ALICE@")).entries().size());
   }
 
   @Test

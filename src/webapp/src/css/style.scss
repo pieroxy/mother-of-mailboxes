@@ -506,7 +506,7 @@ body {
                       gap: 8px;
                   }
 
-                  .stats-link, .settings-link {
+                  .stats-link, .settings-link, .logs-link {
                       cursor: pointer;
                       opacity: 0.6;
                       transition: opacity 0.15s linear;
@@ -690,7 +690,8 @@ body {
               }
           }
 
-          &.statspage {
+          // Logs reuses the stats page's range picker, chips (matcher-mode-option) and loading fade.
+          &.statspage, &.logspage {
               display: block;
               color: $text-muted;
 
@@ -904,6 +905,14 @@ body {
                       font-size: 13px;
 
                       .matcher-label {
+                          cursor: pointer;
+                          color: inherit;
+
+                          &:hover {
+                              color: $accent-color;
+                              text-decoration: underline;
+                          }
+
                           overflow: hidden;
                           text-overflow: ellipsis;
                           white-space: nowrap;
@@ -927,6 +936,286 @@ body {
                           text-align: right;
                           min-width: 32px;
                       }
+                  }
+              }
+          }
+
+          &.logspage {
+              .logs-disabled {
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 16px;
+                  background-color: $bg-color-l3;
+                  border: 1px solid $status-warning;
+                  border-radius: 8px;
+                  padding: 10px 16px;
+                  margin-bottom: 16px;
+                  font-size: 13px;
+
+                  button {
+                      font-size: 12px;
+                      padding: 4px 14px;
+                      flex-shrink: 0;
+                  }
+              }
+
+              .logs-filters {
+                  margin-bottom: 24px;
+
+                  .stats-filters {
+                      margin-bottom: 12px;
+                  }
+              }
+
+              .logs-filter-row {
+                  display: flex;
+                  flex-wrap: wrap;
+                  align-items: center;
+                  gap: 12px;
+
+                  .logs-search {
+                      flex: 1 1 260px;
+                      font-size: 13px;
+                      padding: 6px 10px;
+                  }
+
+                  .logs-chips {
+                      display: flex;
+                      flex-wrap: wrap;
+                      gap: 6px;
+                  }
+
+                  .matcher-mode-switch, .logs-chips {
+                      margin-bottom: 0;
+                  }
+              }
+
+              .logs-active-filters {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 8px;
+                  margin-top: 12px;
+
+                  .logs-active-filter {
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      max-width: 100%;
+                      background-color: $accent-color;
+                      color: $text-on-accent;
+                      border-radius: 6px;
+                      padding: 2px 4px 2px 10px;
+                      font-size: 12px;
+
+                      > span:first-child {
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          white-space: nowrap;
+                      }
+
+                      .logs-filter-remove {
+                          display: flex;
+                          cursor: pointer;
+
+                          svg.icon {
+                              width: 16px;
+                              height: 16px;
+
+                              > * {
+                                  fill: $text-on-accent;
+                              }
+                          }
+                      }
+                  }
+              }
+
+              .logs-empty {
+                  color: $text-faint;
+                  font-style: italic;
+                  font-size: 13px;
+              }
+
+              .logs-list {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 4px;
+              }
+
+              .logs-entry {
+                  background-color: $bg-color-l3;
+                  border-radius: 8px;
+                  font-size: 13px;
+
+                  &.expanded {
+                      background-color: $bg-color-l2;
+                  }
+
+                  .logs-entry-summary {
+                      display: grid;
+                      grid-template-columns: 150px 90px 18px minmax(120px, 1fr) minmax(160px, 2fr);
+                      align-items: center;
+                      gap: 12px;
+                      padding: 8px 12px;
+                      cursor: pointer;
+
+                      @include media-max(700px) {
+                          grid-template-columns: auto auto 18px;
+
+                          .logs-from, .logs-subject {
+                              grid-column: 1 / -1;
+                          }
+                      }
+
+                      > span {
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          white-space: nowrap;
+                      }
+
+                      .logs-date {
+                          color: $text-faint;
+                      }
+
+                      .logs-subject {
+                          color: $text-color;
+                      }
+
+                      .logs-error-flag {
+                          display: flex;
+
+                          svg.icon {
+                              width: 18px;
+                              height: 18px;
+                          }
+                      }
+                  }
+
+                  .logs-outcome {
+                      justify-self: start;
+                      border-radius: 4px;
+                      padding: 1px 8px;
+                      font-size: 12px;
+                      background-color: $bg-color-d1;
+
+                      &.outcome-blocked {
+                          color: $accent-color;
+                      }
+
+                      &.outcome-learned {
+                          color: $status-ok;
+                      }
+
+                      &.outcome-not_learned {
+                          color: $status-warning;
+                      }
+                  }
+
+                  .logs-entry-details {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 12px;
+                      padding: 4px 12px 12px 12px;
+                      border-top: 1px solid $bg-color-d1;
+
+                      .config-grid {
+                          margin-top: 8px;
+                      }
+
+                      .config-row-value {
+                          overflow-wrap: anywhere;
+                      }
+                  }
+
+                  .logs-rules {
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                  }
+
+                  .logs-rule {
+                      display: flex;
+                      gap: 8px;
+                      color: $text-faint;
+
+                      &.matched {
+                          color: $text-color;
+                      }
+
+                      .logs-rule-status {
+                          flex: 0 0 18px;
+                          display: flex;
+                          justify-content: center;
+
+                          svg.icon {
+                              width: 18px;
+                              height: 18px;
+                          }
+
+                          .logs-rule-nomatch {
+                              cursor: default;
+                          }
+                      }
+
+                      .logs-rule-body {
+                          min-width: 0;
+                      }
+
+                      .logs-rule-header {
+                          display: flex;
+                          flex-wrap: wrap;
+                          align-items: center;
+                          gap: 6px;
+                      }
+
+                      .logs-rule-name {
+                          overflow-wrap: anywhere;
+                      }
+
+                      a.logs-rule-name {
+                          cursor: pointer;
+                          color: inherit;
+
+                          &:hover {
+                              color: $accent-color;
+                              text-decoration: underline;
+                          }
+                      }
+
+                      .logs-tag {
+                          font-size: 11px;
+                          color: $text-muted;
+                          background-color: $bg-color-d1;
+                          border-radius: 4px;
+                          padding: 0 6px;
+                      }
+
+                      .logs-rule-detail {
+                          font-family: monospace;
+                          font-size: 12px;
+                          color: $text-muted;
+                          overflow-wrap: anywhere;
+                      }
+
+                      .logs-rule-exception {
+                          font-family: monospace;
+                          font-size: 12px;
+                          color: $error-color;
+                          overflow-wrap: anywhere;
+                      }
+                  }
+              }
+
+              .logs-more {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 12px;
+                  margin-top: 16px;
+
+                  .logs-more-hint {
+                      font-size: 12px;
+                      color: $text-faint;
                   }
               }
           }

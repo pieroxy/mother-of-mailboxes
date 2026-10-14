@@ -55,19 +55,44 @@ public final class DecisionReader {
   }
 
   /**
+   * Only entries where a matcher reported this description, keyed the way the stats page keys
+   * it (see {@link StatsReader#normalizeMatcherKey}), so its top matchers can link here.
+   *
+   * @param byType       compare by matcher type only (see {@link StatsReader#matcherTypeKey}).
+   * @param blockingOnly only the rule that stopped evaluation counts.
+   */
+  public record MatcherFilter(String key, boolean byType, boolean blockingOnly) {
+    boolean accepts(DecisionLog.Entry entry) {
+      if (entry.rules() == null) return false;
+      List<DecisionLog.RuleOutcome> candidates = blockingOnly
+          ? (blockingRuleOf(entry) != null ? List.of(blockingRuleOf(entry)) : List.of())
+          : entry.rules().stream().filter(r -> Boolean.TRUE.equals(r.matched())).toList();
+      return candidates.stream().anyMatch(r -> r.matchDetail() != null && key.equals(keyOf(r.matchDetail())));
+    }
+
+    private String keyOf(String matchDetail) {
+      String detailed = StatsReader.normalizeMatcherKey(matchDetail);
+      return byType ? StatsReader.matcherTypeKey(detailed) : detailed;
+    }
+  }
+
+  /**
    * Null or empty sets, and null or blank strings, don't filter.
    *
-   * @param rule  only entries where a rule with exactly this description matched.
-   * @param query case- and accent-insensitive substring of the subject, From or Message-ID.
+   * @param rule    only entries where a rule with exactly this description matched.
+   * @param matcher null: no matcher filtering.
+   * @param query   case- and accent-insensitive substring of the subject, From or Message-ID.
    */
-  public record Filter(Set<DecisionLog.Trigger> triggers, Set<Outcome> outcomes, boolean errorsOnly, String rule, String query) {
-    public static final Filter NONE = new Filter(null, null, false, null, null);
+  public record Filter(Set<DecisionLog.Trigger> triggers, Set<Outcome> outcomes, boolean errorsOnly, String rule,
+                       MatcherFilter matcher, String query) {
+    public static final Filter NONE = new Filter(null, null, false, null, null, null);
 
     boolean accepts(DecisionLog.Entry entry) {
       if (triggers != null && !triggers.isEmpty() && triggers.stream().noneMatch(t -> t.name().equals(entry.trigger()))) return false;
       if (outcomes != null && !outcomes.isEmpty() && !outcomes.contains(outcomeOf(entry))) return false;
       if (errorsOnly && !hasError(entry)) return false;
       if (rule != null && !rule.isBlank() && !ruleMatched(entry, rule)) return false;
+      if (matcher != null && !matcher.accepts(entry)) return false;
       if (query != null && !query.isBlank()) {
         String needle = fold(query.trim());
         return fold(entry.subject()).contains(needle) || fold(entry.from()).contains(needle) || fold(entry.messageId()).contains(needle);

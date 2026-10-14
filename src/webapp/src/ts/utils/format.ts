@@ -40,3 +40,12 @@ export function formatDuration(totalSeconds: number): string {
   if (minutes > 0) return minutes + "m" + secs + "s";
   return secs + "s";
 }
+
+/** yyyy-MM-dd in UTC, the day boundary StatsLog and DecisionLog bucket their files by. */
+export function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+export function todayIsoDate(): string {
+  return toIsoDate(new Date());
+}

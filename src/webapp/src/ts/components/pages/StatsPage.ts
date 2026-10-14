@@ -6,6 +6,7 @@ import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { DailyStatsChart } from "../DailyStatsChart";
 import { TopMatchersChart } from "../TopMatchersChart";
+import { toIsoDate, todayIsoDate } from "../../utils/format";
 
 interface StatsPageAttrs {
   accountName: string;
@@ -69,7 +70,7 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
             onchange: (e: Event) => this.setFrom((e.target as HTMLInputElement).value),
           })]),
           m("label", ["To", m("input", {
-            type: "date", value: this.to, min: this.from, max: todayIso(),
+            type: "date", value: this.to, min: this.from, max: todayIsoDate(),
             onchange: (e: Event) => this.setTo((e.target as HTMLInputElement).value),
           })]),
         ]),
@@ -106,6 +107,8 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
         m(TopMatchersChart, {
           allMatchers: this.topMatchers, blockingMatchers: this.topBlockingMatchers,
           allMatchersByType: this.topMatchersByType, blockingMatchersByType: this.topBlockingMatchersByType,
+          onSelect: (matcher, matcherByType, matcherBlockingOnly) => Routing.goToLogs(this.accountName,
+            { from: this.from, to: this.to, matcher, matcherByType, matcherBlockingOnly }),
         }),
       ]),
     ]);
@@ -130,8 +133,8 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
     const to = new Date();
     const from = new Date();
     from.setUTCDate(from.getUTCDate() - (presetDays - 1));
-    this.from = toIso(from);
-    this.to = toIso(to);
+    this.from = toIsoDate(from);
+    this.to = toIsoDate(to);
     this.load();
   }
 
@@ -176,12 +179,4 @@ class StatTile implements m.ClassComponent<{ label: string; value: string }> {
       m(".stat-tile-label", attrs.label),
     ]);
   }
-}
-
-function toIso(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function todayIso(): string {
-  return toIso(new Date());
 }
