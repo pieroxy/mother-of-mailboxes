@@ -13,6 +13,7 @@ import {
   SpfResult,
 } from "../auto/pieroxy-mom";
 import { TokenListEditor } from "./TokenListEditor";
+import { LogLevelSelect } from "./LogLevelSelect";
 
 type MatcherFieldKind = "keys" | "threshold" | "reputation";
 
@@ -82,6 +83,13 @@ export function defaultMatcherNode(): MailFilterRuleMatcherConfiguration {
  *    there's no field to carry a subtree's or a differently-shaped leaf's value into.
  */
 export function convertMatcherNode(previous: MailFilterRuleMatcherConfiguration, newType: MatcherType): MailFilterRuleMatcherConfiguration {
+  const converted = convertMatcherNodeType(previous, newType);
+  // The log level belongs to the node, whatever its type — unless the node was wrapped as a child, which keeps its own.
+  const wrapped = (converted.children || []).includes(previous);
+  return previous.logLevel && !wrapped ? withLogLevel(converted, previous.logLevel) : converted;
+}
+
+function convertMatcherNodeType(previous: MailFilterRuleMatcherConfiguration, newType: MatcherType): MailFilterRuleMatcherConfiguration {
   if (newType === previous.type) return previous;
 
   if (newType === MatcherType.AND || newType === MatcherType.OR) {
@@ -147,10 +155,17 @@ export function validateMatcherNode(node: MailFilterRuleMatcherConfiguration): s
 /**
  * Recursively normalizes a matcher tree right before it's saved: collapses a single-element
  * "keys" array down to "key" (the shape a scalar match is stored as) and trims threshold text.
+ * Drops any field the node's type doesn't use, except logLevel.
  * Editing itself always works with the array form / untrimmed text — only the final saved shape
  * cares about this distinction, so there's no need to juggle it on every keystroke.
  */
 export function finalizeMatcherNode(node: MailFilterRuleMatcherConfiguration): MailFilterRuleMatcherConfiguration {
+  const finalized = finalizeMatcherNodeFields(node);
+  if (node.logLevel) finalized.logLevel = node.logLevel;
+  return finalized;
+}
+
+function finalizeMatcherNodeFields(node: MailFilterRuleMatcherConfiguration): MailFilterRuleMatcherConfiguration {
   if (isComposite(node.type)) {
     return { type: node.type, children: (node.children || []).map(finalizeMatcherNode) } as MailFilterRuleMatcherConfiguration;
   }
@@ -198,6 +213,10 @@ export class MatcherNodeEditor implements m.ClassComponent<MatcherNodeEditorAttr
             m("option", { value: MatcherType.NOT }, "Not (NOT)"),
           ]),
         ]),
+        m(LogLevelSelect, {
+          value: node.logLevel,
+          onChange: (logLevel) => onChange(withLogLevel(node, logLevel)),
+        }),
         onRemove ? m("span.matcher-node-remove", { title: "Remove this condition", onclick: onRemove }, "×") : null,
       ]),
       isComposite(node.type) ? this.renderChildren(node, onChange, reputationLists) : this.renderLeafFields(node, onChange, reputationLists),
@@ -249,6 +268,13 @@ export class MatcherNodeEditor implements m.ClassComponent<MatcherNodeEditorAttr
       })) : null,
     ]);
   }
+}
+
+function withLogLevel(node: MailFilterRuleMatcherConfiguration, logLevel: string | undefined): MailFilterRuleMatcherConfiguration {
+  const updated = { ...node } as Partial<MailFilterRuleMatcherConfiguration>;
+  delete updated.logLevel;
+  if (logLevel) updated.logLevel = logLevel;
+  return updated as MailFilterRuleMatcherConfiguration;
 }
 
 function field(label: string, control: m.Children): m.Children {

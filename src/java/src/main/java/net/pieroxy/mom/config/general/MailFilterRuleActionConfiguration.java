@@ -15,7 +15,7 @@ public class MailFilterRuleActionConfiguration {
    */
   private List<MailFilterRuleActionConfiguration> children;
   /**
-   * Log level for this node (DEBUG/INFO/WARNING/ERROR), optional. Default: WARNING.
+   * Log level for this node (DEBUG/INFO/WARNING/ERROR), optional. Default: INFO.
    */
   private String logLevel;
   /**

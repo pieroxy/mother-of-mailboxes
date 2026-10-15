@@ -12,6 +12,7 @@ import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
 import { renderActionNode } from "../RuleTree";
 import { defaultActionName } from "../../utils/actionNames";
+import { LogLevelSelect } from "../LogLevelSelect";
 import { AccountEditSession, PendingRule, accountEditSessions } from "../../utils/AccountEditSession";
 import { MatcherNodeEditor, defaultMatcherNode, finalizeMatcherNode, validateMatcherNode } from "../MatcherNodeEditor";
 
@@ -84,6 +85,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private actionIsComposite = false;
   private actionName = "";
   private actionSpam = false;
+  private actionLogLevel: string | undefined;
   private originalAction: MailFilterRuleActionConfiguration | undefined;
   private accountFolders: string[] = [];
 
@@ -187,7 +189,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     ];
   }
 
-  /** How the decision log shows this action — see MailFilterRuleActionConfiguration#name/spam. */
+  /** How the decision log shows this action (see MailFilterRuleActionConfiguration#name/spam), and its own log level. */
   private renderActionLabelFields(): m.Children {
     return [
       this.field("Name", m("input", {
@@ -202,6 +204,10 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
         }),
         "This action filters spam (display only: highlights it in the decision log)",
       ])),
+      this.field("Log level", m(LogLevelSelect, {
+        value: this.actionLogLevel,
+        onChange: (logLevel) => (this.actionLogLevel = logLevel),
+      })),
     ];
   }
 
@@ -277,6 +283,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     this.originalAction = action;
     this.actionName = action.name || "";
     this.actionSpam = action.spam === true;
+    this.actionLogLevel = action.logLevel || undefined;
     this.actionIsComposite = COMPOSITE_ACTION_TYPES.has(action.type);
     if (!this.actionIsComposite) {
       this.actionType = action.type;
@@ -289,8 +296,10 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     // Unset rather than empty/false, so config.json stays free of default values.
     delete (action as Partial<MailFilterRuleActionConfiguration>).name;
     delete (action as Partial<MailFilterRuleActionConfiguration>).spam;
+    delete (action as Partial<MailFilterRuleActionConfiguration>).logLevel;
     if (this.actionName.trim()) action.name = this.actionName.trim();
     if (this.actionSpam) action.spam = true;
+    if (this.actionLogLevel) action.logLevel = this.actionLogLevel;
     return action;
   }
 
