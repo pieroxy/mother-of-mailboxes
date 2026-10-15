@@ -1422,6 +1422,11 @@ body {
                   letter-spacing: 0.03em;
               }
 
+              .rule-name {
+                  font-size: 14px;
+                  color: $text-color;
+              }
+
               .rule-tags {
                   display: flex;
                   gap: 6px;

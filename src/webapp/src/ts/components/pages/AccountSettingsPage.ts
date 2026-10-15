@@ -159,6 +159,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       m(".rule-card-header-left", [
         m(".rule-index", rule.type === RuleType.LEARNED_RULES ? "#" + (index + 1)
           : "#" + (index + 1) + (rule.keepProcessing ? " · keeps processing" : "")),
+        rule.name ? m(".rule-name", rule.name) : null,
         this.renderRuleTags(session, pendingRule),
       ]),
       this.renderRuleControls(session, pendingRule, index),

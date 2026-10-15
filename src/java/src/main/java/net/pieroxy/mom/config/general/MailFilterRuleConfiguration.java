@@ -11,6 +11,8 @@ public class MailFilterRuleConfiguration {
    * this field existed keeps working unchanged. See RuleType and RuleCatalog#build.
    */
   private RuleType type;
+  /** Optional label shown in the web UI and the decision log. */
+  private String name;
   private MailFilterRuleMatcherConfiguration matcher;
   private MailFilterRuleActionConfiguration action;
   /**
@@ -28,6 +30,14 @@ public class MailFilterRuleConfiguration {
 
   public void setType(RuleType type) {
     this.type = type;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
   }
 
   public MailFilterRuleMatcherConfiguration getMatcher() {

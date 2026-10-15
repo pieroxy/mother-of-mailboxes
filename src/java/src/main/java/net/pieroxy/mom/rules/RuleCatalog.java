@@ -83,7 +83,9 @@ public class RuleCatalog {
     StringBuilder sb = new StringBuilder();
     sb.append("Rules for account ").append(accountLabel).append(':').append(System.lineSeparator());
     for (RuleInterface rule : current) {
-      sb.append("  ").append(rule.describe()).append(System.lineSeparator());
+      sb.append("  ");
+      if (rule instanceof Rule r && r.getName() != null) sb.append('"').append(r.getName()).append("\" ");
+      sb.append(rule.describe()).append(System.lineSeparator());
     }
     if (!current.contains(learnedRulesFallback)) {
       sb.append("  ").append(learnedRulesFallback.describe()).append(" [implicit, runs after the rules above]").append(System.lineSeparator());

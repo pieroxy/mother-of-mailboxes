@@ -281,6 +281,9 @@ for each message the rule handles:
 | `name` | Label shown in the decision log. Absent: generated from type and key, e.g. `"→ Backups"`, `"→ Spam (read)"`, `"Mark read"`. |
 | `spam` | `true` if the action does spam filtering rather than filing; highlights it in the decision log. Default `false`. |
 
+A rule likewise accepts an optional `name` (alongside `matcher`/`action`), shown in the web UI,
+the startup log and the decision log.
+
 ## Rule evaluation order
 
 For each new message, MOM walks the rules in `config.json`, in the order they appear, and applies

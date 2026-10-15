@@ -67,6 +67,7 @@ public final class DecisionLog {
    * @param rule           {@code RuleInterface#describe()} — identifies the rule; no separate
    *                       name field exists yet, so this is always the auto-generated
    *                       {@code Rule(matcher,action)} form today.
+   * @param ruleName       the rule's name at the time (see {@code Rule#getName}), null if unnamed.
    * @param learnedRule    true if this entry is one of the account's learned rules rather than a
    *                       manually-configured one — the two otherwise look identical (same
    *                       {@code describe()} format), so this is the only way to tell them apart.
@@ -85,7 +86,7 @@ public final class DecisionLog {
    *                       throw; matched stays true, and this explains what went wrong applying
    *                       the consequence).
    */
-  public record RuleOutcome(String rule, boolean learnedRule, Boolean matched, String matchDetail, String actionName, Boolean spam,
+  public record RuleOutcome(String rule, String ruleName, boolean learnedRule, Boolean matched, String matchDetail, String actionName, Boolean spam,
                             Boolean keepProcessing, String exception) {}
 
   private DecisionLog() {}

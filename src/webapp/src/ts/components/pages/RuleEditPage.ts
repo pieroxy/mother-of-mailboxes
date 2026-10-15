@@ -76,6 +76,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private isLearnedRulesMarker = false;
 
   private keepProcessing = false;
+  private ruleName = "";
 
   private matcherRoot: MailFilterRuleMatcherConfiguration = defaultMatcherNode();
   private reputationLists: ReputationListDto[] = [];
@@ -125,6 +126,11 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     }
     return m(".page-card.edit-form", [
       this.renderRuleKindField(),
+      this.field("Rule name", m("input", {
+        type: "text", value: this.ruleName, placeholder: "Optional, e.g. Backups",
+        title: "Shown in the rule list and the decision log",
+        oninput: (e: Event) => (this.ruleName = (e.target as HTMLInputElement).value),
+      })),
       this.field("Keep processing after this", this.renderKeepProcessingCheckbox()),
       m("h2", "When"),
       m(MatcherNodeEditor, {
@@ -192,7 +198,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   /** How the decision log shows this action (see MailFilterRuleActionConfiguration#name/spam), and its own log level. */
   private renderActionLabelFields(): m.Children {
     return [
-      this.field("Name", m("input", {
+      this.field("Action name", m("input", {
         type: "text", value: this.actionName, placeholder: defaultActionName(this.buildActionWithoutLabel()),
         title: "Shown in the decision log; leave empty for the generated name",
         oninput: (e: Event) => (this.actionName = (e.target as HTMLInputElement).value),
@@ -275,6 +281,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private applyRule(rule: MailFilterRuleConfiguration) {
     this.isLearnedRulesMarker = rule.type === RuleType.LEARNED_RULES;
     this.keepProcessing = rule.keepProcessing;
+    this.ruleName = rule.name || "";
     if (this.isLearnedRulesMarker) return;
 
     this.matcherRoot = rule.matcher;
@@ -346,7 +353,8 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
 
     const rule: MailFilterRuleConfiguration = this.isLearnedRulesMarker
       ? ({ type: RuleType.LEARNED_RULES, keepProcessing: this.keepProcessing } as MailFilterRuleConfiguration)
-      : { type: RuleType.MATCHER_ACTION_RULE, keepProcessing: this.keepProcessing, matcher: finalizeMatcherNode(this.matcherRoot), action: this.buildAction() };
+      : { type: RuleType.MATCHER_ACTION_RULE, keepProcessing: this.keepProcessing, matcher: finalizeMatcherNode(this.matcherRoot), action: this.buildAction() } as MailFilterRuleConfiguration;
+    if (!this.isLearnedRulesMarker && this.ruleName.trim()) rule.name = this.ruleName.trim();
 
     const session = this.session!;
     if (this.ruleIndex === null) {

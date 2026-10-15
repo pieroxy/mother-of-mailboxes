@@ -74,6 +74,8 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
   private errorsOnly = false;
   private query = "";
   private rule: string | null = null;
+  /** The rule's name when it has one, for the active-filter pill. */
+  private ruleLabel: string | null = null;
   private matcher: MatcherFilter | null = null;
 
   private entries: DecisionDto[] = [];
@@ -168,7 +170,7 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
         ]),
       ]),
       this.rule || this.matcher ? m(".logs-active-filters", [
-        this.rule ? this.removableFilter("Rule matched: " + this.rule, () => (this.rule = null)) : null,
+        this.rule ? this.removableFilter("Rule matched: " + (this.ruleLabel ?? this.rule), () => (this.rule = null)) : null,
         this.matcher ? this.removableFilter(matcherFilterLabel(this.matcher), () => (this.matcher = null)) : null,
       ]) : null,
     ]);
@@ -234,7 +236,7 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
     if (entry.outcome === Outcome.HANDLED && entry.blockingActionName) {
       const kind = entry.blockingSpam ? "Spam filtering" : "Filing";
       return m("span.logs-outcome.outcome-handled" + (entry.blockingSpam ? ".spam" : ""),
-        { title: kind + ", by " + entry.blockingRule }, entry.blockingActionName);
+        { title: kind + ", by " + (entry.blockingRuleName ?? entry.blockingRule) }, entry.blockingActionName);
     }
     return m("span.logs-outcome.outcome-" + entry.outcome.toLowerCase(), { title: outcome.title }, outcome.label);
   }
@@ -266,10 +268,10 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
         m(".logs-rule-header", [
           rule.matched
             ? m("a.logs-rule-name", {
-                title: "Show only messages matched by this rule",
-                onclick: () => { this.rule = rule.rule; this.search(); },
-              }, rule.rule)
-            : m("span.logs-rule-name", rule.rule),
+                title: "Show only messages matched by this rule\n" + rule.rule,
+                onclick: () => { this.rule = rule.rule; this.ruleLabel = rule.ruleName ?? null; this.search(); },
+              }, rule.ruleName ?? rule.rule)
+            : m("span.logs-rule-name", { title: rule.rule }, rule.ruleName ?? rule.rule),
           rule.learnedRule ? m("span.logs-tag", { title: "Learned from an example, not configured by hand" }, "learned") : null,
           blocking ? m("span.logs-tag", { title: "Evaluation stopped at this rule" }, "stopped here") : null,
           rule.keepProcessing ? m("span.logs-tag", { title: "keepProcessing: evaluation carried on to the next rule" }, "continued") : null,

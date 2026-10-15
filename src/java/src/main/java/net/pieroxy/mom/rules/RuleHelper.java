@@ -66,7 +66,7 @@ public class RuleHelper {
           }
         }
       } catch (Exception e) {
-        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), learnedRule, null, null, null, null, null, e.toString()));
+        if (outcomesOut != null) outcomesOut.add(new DecisionLog.RuleOutcome(rule.describe(), nameOf(rule), learnedRule, null, null, null, null, null, e.toString()));
         logger.log(Level.WARNING, "Rule failed on " + logContext + " for message from " + MailTools.describeFromSafely(message), e);
       }
     }
@@ -86,7 +86,12 @@ public class RuleHelper {
     String actionName = action != null ? ActionNames.nameOf(action) : null;
     Boolean spam = action != null ? action.isSpam() : null;
     Boolean keepProcessing = result.ruleApplied() ? result.keepProcessing() : null;
-    return new DecisionLog.RuleOutcome(rule.describe(), learnedRule, matched, matchDetail, actionName, spam, keepProcessing, result.exception());
+    return new DecisionLog.RuleOutcome(rule.describe(), nameOf(rule), learnedRule, matched, matchDetail, actionName, spam, keepProcessing,
+        result.exception());
+  }
+
+  private static String nameOf(RuleInterface rule) {
+    return rule instanceof Rule r ? r.getName() : null;
   }
 
   /**

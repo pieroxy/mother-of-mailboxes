@@ -46,6 +46,12 @@ public class Rule implements RuleInterface {
     return config.isKeepProcessing() ? base + " [keepProcessing]" : base;
   }
 
+  /** The configured name, trimmed; null when unset or blank. */
+  public String getName() {
+    String name = config.getName();
+    return name == null || name.isBlank() ? null : name.trim();
+  }
+
   public MailFilterRuleActionConfiguration getActionConfig() {
     return config.getAction();
   }

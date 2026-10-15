@@ -50,12 +50,17 @@ public class RuleHelperTest {
   }
 
   private static Rule blockingRule(String fromKey) {
+    return blockingRule(fromKey, null);
+  }
+
+  private static Rule blockingRule(String fromKey, String name) {
     MailFilterRuleMatcherConfiguration matcher = new MailFilterRuleMatcherConfiguration();
     matcher.setType(MatcherType.FROM_ADDRESS_EQUALS);
     matcher.setKey(fromKey);
     MailFilterRuleActionConfiguration action = new MailFilterRuleActionConfiguration();
     action.setType(ActionType.READ);
     MailFilterRuleConfiguration config = new MailFilterRuleConfiguration();
+    config.setName(name);
     config.setMatcher(matcher);
     config.setAction(action);
     return new Rule(config);
@@ -201,6 +206,18 @@ public class RuleHelperTest {
     assertEquals("FromAddressMatcher(alice@example.com)", rule.get("matchDetail").getAsString());
     assertEquals("Mark read", rule.get("actionName").getAsString());
     assertFalse(rule.get("spam").getAsBoolean());
+  }
+
+  @Test
+  public void decisionLogEntryNamesEveryRuleReachedThatHasAName() throws Exception {
+    File statsDir = new File(tmp.getRoot(), "logs");
+
+    RuleHelper.processRules(List.of(blockingRule("nobody@example.com", " Nobody "), blockingRule("alice@example.com")), new SpyRule(true),
+        messageFrom("alice@example.com"), logger, "test", new RuleContext(null, null, null, statsDir, 10), DecisionLog.Trigger.INBOX);
+
+    JsonObject entry = onlyDecisionEntry(statsDir);
+    assertEquals("named even though it didn't match", "Nobody", entry.getAsJsonArray("rules").get(0).getAsJsonObject().get("ruleName").getAsString());
+    assertFalse("no name: omitted", entry.getAsJsonArray("rules").get(1).getAsJsonObject().has("ruleName"));
   }
 
   @Test
