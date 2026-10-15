@@ -27,8 +27,7 @@ import java.util.logging.Logger;
  */
 public class LearnedRulesStore {
   private final static Logger LOGGER = Logger.getLogger(LearnedRulesStore.class.getName());
-  // Hand-edited when corrections are needed (no UI for now): pretty-printed to stay
-  // readable/editable without having to reformat it yourself first.
+  // Pretty-printed so it stays readable and hand-editable.
   private final static Gson GSON = new GsonBuilder().setPrettyPrinting().create();
   private final static Type LIST_TYPE = new TypeToken<List<MailFilterRuleConfiguration>>() {}.getType();
 

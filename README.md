@@ -26,18 +26,18 @@ Brings to your IMAP account:
 
 Additionally:
 
-* Logs show exactly which rule acted on each message
+* A web UI to manage accounts and rules, browse per-account stats, and a decision log showing, for each message, every rule it went through and why it matched
 * No third-party service ever sees your mail — the only outbound traffic is DNS lookups for SPF/DKIM/DMARC/FCrDNS checks, which reveal sender domains/IPs but never message content.
 
 ## Concepts
 
 A few things worth understanding before you dive in:
 
-* **No UI, no manual rule editing** — the primary way to teach MOM a rule is to drop an example email into the right `mom-rules/` subfolder. See [Learning rules by example](docs/README.md#learning-rules-by-example).
+* **Learn by example, or edit in the web UI** — the quickest way to teach MOM a rule is to drop an example email into the right `mom-rules/` subfolder (see [Learning rules by example](docs/README.md#learning-rules-by-example)); the web UI lets you write rules directly, and review or correct learned ones.
 * **First match wins** — rules are evaluated in the order they appear in `config.json` (learned rules included, wherever you place them — after everything else by default); the first one that matches runs its action and evaluation stops there. See [Rule evaluation order](docs/README.md#rule-evaluation-order).
 * **Everything is HAM except Spam** — for [classifier corpus collection](docs/README.md#classifier-corpus-collection), every folder is treated as legitimate mail (HAM) except the configured Spam folder. `INBOX`, `mom-rules/`, and any [excluded folders](docs/README.md#excluding-a-folder-from-the-corpus) (e.g. `SpamML`) are skipped entirely rather than counted as either.
 * **INBOX doesn't count** — INBOX is never scanned for the corpus, so mail you leave sitting there teaches the classifier nothing. Filing/archiving read mail into folders (an "inbox zero" habit) is what actually feeds it examples of legitimate mail.
-* **Unread in Spam means "review me"** — by convention (see the [starter config](config.example.json)), strong verdicts (SPF/DKIM/DMARC `fail`) are moved to Spam pre-marked read, while weaker, corroborating-only signals are left unread — a manual-review flag, since MOM has no UI to show confidence.
+* **Unread in Spam means "review me"** — by convention (see the [starter config](config.example.json)), strong verdicts (SPF/DKIM/DMARC `fail`) are moved to Spam pre-marked read, while weaker, corroborating-only signals are left unread — a manual-review flag.
 * **Always verified live** — SPF/DKIM/DMARC/FCrDNS are recomputed from scratch via DNS on every check; any `Authentication-Results`/`Received-SPF` header already on the message is never trusted, since anyone could have forged it before delivery.
 * **Reputation lists are the opposite: never live** — [`IP_REPUTATION_EQUALS`](docs/matchers/ip-reputation-equals.md)/[`FROM_DOMAIN_REPUTATION_EQUALS`](docs/matchers/from-domain-reputation-equals.md) check IPs/domains against lists downloaded in bulk ahead of time, for the whole process — never a query per message. Each source is called again once `refreshHours` has elapsed. See [Reputation lists](docs/README.md#reputation-lists).
 * **Manual reprocessing** — drop any message into `mom-rules/ToProcess` to run the current rule set against it (handy for reclassifying an old message after adding or fixing a rule); it ends up in `mom-rules/Done` once handled, whether or not a rule actually matched. See [Manually reprocessing a message](docs/README.md#manually-reprocessing-a-message).
@@ -45,7 +45,6 @@ A few things worth understanding before you dive in:
 ## Roadmap
 
 * Feed the classifier more than just the subject — sender, recipient, IP.
-* Simple web UI to edit more complex rules.
 * More matchers:
     * Recipient-based: TO_EQUALS/CC_EQUALS/recipient-domain matching
     * Subject: CONTAINS, MATCHES (regex)

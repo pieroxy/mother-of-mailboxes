@@ -83,6 +83,7 @@ Each entry in `configurations` is one IMAP account:
 | `learningShortcuts` | no | Named flat `mom-rules/<name>` folders bound to a fixed (matcher type, action) pair, as an alternative to the full discovery tree. See [Learning shortcuts](#learning-shortcuts). |
 | `discoveryTreeDisabled` | no | Skips creating/maintaining the `<MATCHER_TYPE>/<ACTION_TYPE>` discovery tree under `mom-rules/` entirely. `mom-rules/Done` and any `learningShortcuts` folders are unaffected. Default `false`. Useful with a mail client that shows every IMAP folder unconditionally regardless of subscription state (e.g. Apple Mail), once shortcuts cover what's actually used. See [Learning shortcuts](#learning-shortcuts). |
 | `smtp` | no | How this account sends mail (see [SMTP settings](#smtp-settings)). Absent means the account can't send mail. |
+| `decisionLogRetentionDays` | no | Days of [decision log](#decision-log) to keep for this account. `0` or absent disables it: it records each message's Subject and From, so it's opt-in. |
 
 Connections are always made over IMAPS (implicit TLS) — there is no plain-IMAP option.
 
@@ -433,7 +434,7 @@ evaluated, alignment computed) without touching any global logging configuration
 ### Stats log
 
 Besides the human-readable log above, MOM appends one JSON line per event to
-`<dataFolder>/logs/stats-YYYY-MM-DD.json` (UTC day). Two event types, told apart by `type`:
+`<dataFolder>/logs/<displayName>/stats-YYYY-MM-DD.json` (UTC day). Two event types, told apart by `type`:
 
 ```json
 {"type":"MATCH","matcher":"IpReputationMatcher[spamhaus-drop](score=0.87)","date":"2026-09-18 10:35:12Z"}
@@ -463,6 +464,31 @@ plain append, never a rewrite of the whole day's file — safe with several acco
 concurrently. This file has no rotation or pruning of its own — clean up old `stats-*.json`
 files yourself if needed.
 
+### Decision log
+
+Opt-in per account via `decisionLogRetentionDays`: one JSON line per message processed, in
+`<dataFolder>/logs/<displayName>/decisions-YYYY-MM-DD.json` (UTC day), explaining where it ended
+up and why. Browse it from the web UI (the document icon on an account card, or a matcher on the
+stats page).
+
+```json
+{"date":"2026-10-13 10:00:00Z","trigger":"INBOX","messageId":"<abc@example.com>","subject":"Hello","from":"Alice <alice@example.com>","processedMs":42,
+ "rules":[{"rule":"Rule(...)","learnedRule":false,"matched":false},
+          {"rule":"Rule(...)","ruleName":"Spamhaus","learnedRule":false,"matched":true,"matchDetail":"IpReputationMatcher[spamhaus-drop](score=0.87)","actionName":"→ Spam","spam":true,"keepProcessing":false}]}
+```
+
+- `trigger`: `INBOX`, `MANUAL_REPROCESSING` (see [Manually reprocessing a message](#manually-reprocessing-a-message)),
+  or `LEARNING` (an example dropped in `mom-rules/`: `learnedRule` names the rule learned,
+  `reasonForMoveToDone` why it was filed to `mom-rules/Done`, and there's no `rules` array).
+- `rules`: every rule reached, in evaluation order; rules after the one that stopped evaluation
+  never ran and aren't listed. `matched` is absent if the rule threw before deciding (see
+  `exception`). `ruleName`, `actionName` and `spam` are the rule's and action's `name`/`spam` at
+  the time (see [Matchers and actions](#matchers-and-actions)); renaming them later doesn't
+  rewrite past entries.
+
+Unlike the stats log, it carries mail metadata (Subject, From, Message-ID), so it's rotated:
+past days are lz4-compressed, and days older than `decisionLogRetentionDays` deleted.
+
 ## Data files
 
 Everything MOM persists lives under `dataFolder`, one file/folder per account (keyed by
@@ -471,7 +497,8 @@ Everything MOM persists lives under `dataFolder`, one file/folder per account (k
 | Path | Contents |
 |---|---|
 | `logs/log.txt` | Current log file (see [Logging](#logging)); rotated into `logs/log.txt.N.lz4` archives. |
-| `logs/stats-YYYY-MM-DD.json` | One JSON-lines file per UTC day of successful rule matches (see [Stats log](#stats-log)). Not rotated/pruned by MOM. |
+| `logs/<displayName>/stats-YYYY-MM-DD.json` | One JSON-lines file per UTC day of successful rule matches (see [Stats log](#stats-log)). Not rotated/pruned by MOM. |
+| `logs/<displayName>/decisions-YYYY-MM-DD.json[.lz4]` | One JSON-lines file per UTC day of decisions (see [Decision log](#decision-log)), if enabled. Compressed after the day ends, deleted after `decisionLogRetentionDays`. |
 | `<displayName>.json` | INBOX UID cursor (which messages have already been processed). |
 | `<displayName>-learned-rules.json` | Rules learned via `mom-rules/` (see above). Hand-editable. |
 | `classifier-corpus/<displayName>-scan-state.json` | Per-folder UID cursor for corpus scanning. |
