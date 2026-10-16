@@ -10,6 +10,9 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 
 public class MailTools {
     /**
@@ -134,5 +137,26 @@ public class MailTools {
         }
 
         return "";
+    }
+
+    /**
+     * javax.mail decodes raw header bytes as ISO-8859-1 (unless mail.mime.allowutf8 is set), so a
+     * UTF-8 header (RFC 6532) arrives as mojibake. Returns the UTF-8 reading when the bytes are
+     * valid UTF-8, the header unchanged otherwise.
+     */
+    public static String redecodeUtf8(String header) {
+        boolean hasHighByte = false;
+        for (int i = 0; i < header.length(); i++) {
+            char c = header.charAt(i);
+            if (c > 0xFF) return header;
+            if (c > 0x7F) hasHighByte = true;
+        }
+        if (!hasHighByte) return header;
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                .decode(ByteBuffer.wrap(header.getBytes(StandardCharsets.ISO_8859_1))).toString();
+        } catch (CharacterCodingException e) {
+            return header;
+        }
     }
 }

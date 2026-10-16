@@ -78,6 +78,9 @@ as `config.json` and fill in `host`; copy
 * **Missing, duplicated or unparseable `From:`**
   ([`FROM_VALIDITY_EQUALS`](docs/matchers/from-validity-equals.md)) → Spam, left unread: RFC 5322
   violations that DMARC can't evaluate, but which home-made senders (scripts, NAS) sometimes produce.
+* **Look-alike characters in the subject or sender name**
+  ([`LOOKALIKE_TEXT_EQUALS`](docs/matchers/lookalike-text-equals.md)): `Pаypal` with a Cyrillic
+  `а`, an all-Cyrillic `Рау` among English words, `𝐅𝐫𝐞𝐞` → Spam, left unread.
 * **SPF `softfail` + FCrDNS `fail`/`none`** (`AND`) → Spam, left unread for review.
   [`FCRDNS_RESULT_EQUALS`](docs/matchers/fcrdns-result-equals.md) is the weakest of the four, so
   it's never used standalone here, only as corroboration.

@@ -45,15 +45,15 @@ public class DefaultSpamRulesTest {
     String json = new Gson().toJson(DefaultSpamRules.build("Spam", "SpamML", Set.of()));
 
     assertFalse(json.contains("REPUTATION"));
-    assertEquals(7, DefaultSpamRules.build("Spam", "SpamML", Set.of()).size());
+    assertEquals(8, DefaultSpamRules.build("Spam", "SpamML", Set.of()).size());
   }
 
   @Test
   public void aPairWithOneListMissingKeepsOnlyASingleUnreadRuleForTheOther() {
     List<MailFilterRuleConfiguration> rules = DefaultSpamRules.build("Spam", "SpamML", Set.of("spamhaus-drop"));
 
-    assertEquals(8, rules.size());
-    MailFilterRuleConfiguration last = rules.get(7);
+    assertEquals(9, rules.size());
+    MailFilterRuleConfiguration last = rules.get(8);
     assertEquals(Set.of("spamhaus-drop"), last.getMatcher().getListIds());
     assertEquals("MOVE_TO", last.getAction().getType().name());
   }

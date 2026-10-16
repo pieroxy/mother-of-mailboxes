@@ -245,6 +245,7 @@ A rule is a `matcher` + an `action`. When a matcher matches a message, its actio
 | [`FCRDNS_RESULT_EQUALS`](matchers/fcrdns-result-equals.md) | Match a live-evaluated reverse DNS (FCrDNS) result on the connecting IP. |
 | [`FROM_VALIDITY_EQUALS`](matchers/from-validity-equals.md) | Match a missing, duplicated or unparseable `From:` header. |
 | [`DISPLAY_NAME_ADDRESS_EQUALS`](matchers/display-name-address-equals.md) | Match an email address in the `From:` display name that differs from the actual one. |
+| [`LOOKALIKE_TEXT_EQUALS`](matchers/lookalike-text-equals.md) | Match look-alike characters in the subject or sender name (`Pаypal` with a Cyrillic `а`, `𝐅𝐫𝐞𝐞`). |
 | [`SUBJECT_CLASSIFIER_EQUALS`](matchers/subject-classifier-equals.md) | Match when a locally-trained model scores the subject above/below a threshold. |
 | [`HEADER_CLASSIFIER_EQUALS`](matchers/header-classifier-equals.md) | Match when a locally-trained model scores a message's headers above/below a threshold. |
 | [`BODY_CLASSIFIER_EQUALS`](matchers/body-classifier-equals.md) | Match when a locally-trained model scores a message's body text above/below a threshold. |
@@ -717,3 +718,11 @@ serves a stale UI. Responses above 1KB are gzip-compressed automatically.
 [starter spam rules](../README.md#starter-configuration) — using the account's own spam folder,
 a separate classifier folder excluded from the corpus, and only the reputation rules whose lists
 are configured in `reputationLists`.
+
+## Third-party data
+
+- `src/java/src/main/resources/unicode/confusables.txt`, from Unicode's
+  [security data](https://www.unicode.org/Public/security/latest/) (UTS #39), © Unicode, Inc.,
+  under the [Unicode License v3](https://www.unicode.org/license.txt) (copy alongside it). Used by
+  [`LOOKALIKE_TEXT_EQUALS`](matchers/lookalike-text-equals.md). Refresh it with
+  `src/java/updateUnicodeData.sh` before a release.

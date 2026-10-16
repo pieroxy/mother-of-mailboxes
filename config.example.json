@@ -94,6 +94,10 @@
           "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
         },
         {
+          "matcher": { "type": "LOOKALIKE_TEXT_EQUALS", "keys": ["mixed_script", "whole_script", "fancy_letters"] },
+          "action": { "type": "MOVE_TO", "key": "Spam", "spam": true }
+        },
+        {
           "matcher": {
             "type": "AND",
             "children": [

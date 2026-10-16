@@ -15,6 +15,7 @@ import net.pieroxy.mom.rules.matchers.implementations.FromExactMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.FromValidityMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.HeaderClassifierMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.IpReputationMatcher;
+import net.pieroxy.mom.rules.matchers.implementations.LookalikeTextMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.NotMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.OrMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.RegexpFromAddressMatcher;
@@ -47,6 +48,7 @@ public enum MatcherType {
   // Not learnable, same reasoning as the authentication matchers above: a fixed set of keys.
   FROM_VALIDITY_EQUALS(FromValidityMatcher::new, false),
   DISPLAY_NAME_ADDRESS_EQUALS(FakeDisplayNameAddressMatcher::new, false),
+  LOOKALIKE_TEXT_EQUALS(LookalikeTextMatcher::new, false),
   // Not learnable either, but for a different reason than the authentication matchers above:
   // learning here doesn't come from an example dropped in mom-rules/, but from the corpus
   // collected by ClassifierCorpusScanner and retrained by SubjectClassifierTrainer.

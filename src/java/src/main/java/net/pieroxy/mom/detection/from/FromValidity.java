@@ -2,6 +2,7 @@ package net.pieroxy.mom.detection.from;
 
 import net.pieroxy.mom.api.metadata.TypeScriptNonConstEnum;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
+import net.pieroxy.mom.utils.MailTools;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -9,9 +10,6 @@ import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeUtility;
 import java.net.IDN;
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,9 +62,9 @@ public enum FromValidity {
   }
 
   /** The mailboxes of a raw {@code From} header value, group members included. */
-  static List<InternetAddress> mailboxes(String header) throws AddressException {
+  public static List<InternetAddress> mailboxes(String header) throws AddressException {
     List<InternetAddress> mailboxes = new ArrayList<>();
-    for (InternetAddress address : InternetAddress.parseHeader(redecodeUtf8(MimeUtility.unfold(header)), false)) {
+    for (InternetAddress address : InternetAddress.parseHeader(MailTools.redecodeUtf8(MimeUtility.unfold(header)), false)) {
       if (address.isGroup()) {
         InternetAddress[] members = address.getGroup(false);
         if (members != null) mailboxes.addAll(List.of(members));
@@ -75,27 +73,6 @@ public enum FromValidity {
       }
     }
     return mailboxes;
-  }
-
-  /**
-   * javax.mail decodes raw header bytes as ISO-8859-1 (unless mail.mime.allowutf8 is set), so a
-   * UTF-8 address (RFC 6532) arrives as mojibake. Returns the UTF-8 reading when the bytes are
-   * valid UTF-8, the header unchanged otherwise.
-   */
-  private static String redecodeUtf8(String header) {
-    boolean hasHighByte = false;
-    for (int i = 0; i < header.length(); i++) {
-      char c = header.charAt(i);
-      if (c > 0xFF) return header;
-      if (c > 0x7F) hasHighByte = true;
-    }
-    if (!hasHighByte) return header;
-    try {
-      return StandardCharsets.UTF_8.newDecoder()
-          .decode(ByteBuffer.wrap(header.getBytes(StandardCharsets.ISO_8859_1))).toString();
-    } catch (CharacterCodingException e) {
-      return header;
-    }
   }
 
   /**

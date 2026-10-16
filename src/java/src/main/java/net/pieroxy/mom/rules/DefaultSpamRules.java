@@ -37,6 +37,7 @@ public final class DefaultSpamRules {
         leaf(MatcherType.DMARC_RESULT_EQUALS, "fail"),
         leafKeys(MatcherType.DMARC_POLICY_EQUALS, "quarantine", "none")), ActionType.MOVE_TO, spamFolder));
     rules.add(rule(leafKeys(MatcherType.FROM_VALIDITY_EQUALS, "missing", "multiple", "invalid"), ActionType.MOVE_TO, spamFolder));
+    rules.add(rule(leafKeys(MatcherType.LOOKALIKE_TEXT_EQUALS, "mixed_script", "whole_script", "fancy_letters"), ActionType.MOVE_TO, spamFolder));
     rules.add(rule(composite(MatcherType.AND,
         leaf(MatcherType.SPF_RESULT_EQUALS, "softfail"),
         leafKeys(MatcherType.FCRDNS_RESULT_EQUALS, "fail", "none")), ActionType.MOVE_TO, spamFolder));

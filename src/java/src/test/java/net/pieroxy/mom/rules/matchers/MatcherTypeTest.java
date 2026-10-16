@@ -46,6 +46,7 @@ public class MatcherTypeTest {
     assertFalse(MatcherType.learnableValues().contains(MatcherType.FCRDNS_RESULT_EQUALS));
     assertFalse(MatcherType.learnableValues().contains(MatcherType.FROM_VALIDITY_EQUALS));
     assertFalse(MatcherType.learnableValues().contains(MatcherType.DISPLAY_NAME_ADDRESS_EQUALS));
+    assertFalse(MatcherType.learnableValues().contains(MatcherType.LOOKALIKE_TEXT_EQUALS));
   }
 
   /**
