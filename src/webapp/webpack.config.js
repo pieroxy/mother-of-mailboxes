@@ -78,7 +78,8 @@ module.exports = (env, argv) => {
       }),
       // Referenced by absolute URLs from index.html, so webpack wouldn't emit them on its own.
       new CopyPlugin({
-        patterns: [{ from: 'src/icons', to: 'icons' }],
+        // Ignores macOS's .DS_Store, which would otherwise be served and packaged.
+        patterns: [{ from: 'src/icons', to: 'icons', globOptions: { ignore: ['**/.DS_Store'] } }],
       }),
     ],
   };
