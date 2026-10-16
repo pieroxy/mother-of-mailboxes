@@ -14,4 +14,5 @@ public interface IServiceProvider {
   SessionService getSessionService();
 
   WebServerService getWebServerService();
+  ClientGuardService getClientGuardService();
 }

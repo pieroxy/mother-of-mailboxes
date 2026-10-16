@@ -703,6 +703,12 @@ block:
 | `credentials` | yes if `enabled` | Key into `credentials.json`'s `credentials` map (see [Credentials file](#credentials-file)). |
 | `secureCookie` | no | Marks the session cookie `Secure`, so browsers only send it over HTTPS. Set it when the UI is served over HTTPS (e.g. behind a TLS reverse proxy): with it, logging in over plain HTTP no longer works. Default `false`. |
 
+Failed logins are counted per client address (the real one behind a [trusted proxy](#top-level-fields)):
+after 5 failures within 5 minutes, that address is refused (HTTP 429, with `Retry-After`) until the
+oldest failure is 5 minutes old, even with the right password. A successful login clears its count,
+and other addresses are never affected. Each failed or refused login is logged at `WARNING` with the
+address.
+
 The UI itself is a static single-page app, built from `src/webapp` and embedded into the release
 jar — it's extracted fresh to `<dataFolder>/webapp-ui` on every startup, so an upgraded jar never
 serves a stale UI. Responses above 1KB are gzip-compressed automatically.

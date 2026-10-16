@@ -71,7 +71,7 @@ public class WebServerServiceLiveChangesTest {
     configFile = new File(tmp.getRoot(), "config.json");
     SettingsService settingsService = new SettingsService(config, configFile, credentialsFile, new File(tmp.getRoot(), "credentials.json"), dataFolder);
     serviceProvider = new ServiceProvider(settingsService, new AccountService(settingsService, new CopyOnWriteArrayList<>()),
-        new SessionService(), new WebServerService(webServer, dataFolder));
+        new SessionService(), new WebServerService(webServer, dataFolder), new ClientGuardService());
     serviceProvider.init();
   }
 

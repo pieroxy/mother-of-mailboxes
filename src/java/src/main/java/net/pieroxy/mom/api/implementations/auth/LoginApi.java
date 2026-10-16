@@ -1,5 +1,6 @@
 package net.pieroxy.mom.api.implementations.auth;
 
+import net.pieroxy.mom.services.ClientGuardService;
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.api.metadata.AbstractApiEndpoint;
 import net.pieroxy.mom.api.metadata.ApiContext;
@@ -17,33 +18,53 @@ import java.util.logging.Logger;
 public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput> {
   private final static Logger LOGGER = Logger.getLogger(LoginApi.class.getName());
   private final IServiceProvider serviceProvider;
-  private final RateLimiter limiter;
 
   public LoginApi(IServiceProvider serviceProvider) {
     this.serviceProvider = serviceProvider;
-    this.limiter = new RateLimiter(10000, 2);
   }
 
+  /**
+   * Refused outright, before the password is even checked, once the client's address failed too
+   * many times (see {@link ClientGuardService}). A missing login fails like a wrong password.
+   */
   @Override
   public LoginApiOutput process(LoginApiInput input, ApiContext context) {
-    // Can't match any credential: refused like a wrong password.
-    if (input.getLogin() == null) return new LoginApiOutput(false, false);
+    ClientGuardService guard = serviceProvider.getClientGuardService();
+    String client = context.getRemoteAddr();
     try {
-      limiter.applyHit(input.getLogin());
+      guard.checkLogin(client);
     } catch (RateLimiter.RateExceededException e) {
       long retryAfterSeconds = Math.max(1, (e.getRetryAfterMillis() + 999) / 1000);
-      LOGGER.warning("Login refused for \"" + input.getLogin() + "\": too many attempts, retry in " + retryAfterSeconds + " s");
-      throw new TooManyRequestsException("Too many login attempts, retry in " + retryAfterSeconds + " s.", retryAfterSeconds);
+      LOGGER.warning("Login refused for " + client + ": too many failed attempts, retry in " + retryAfterSeconds + " s");
+      throw new TooManyRequestsException("Too many failed logins, retry in " + retryAfterSeconds + " s.", retryAfterSeconds);
     }
+
     Credential expected = serviceProvider.getSettingsService().getWebServerCredential();
-    boolean ok = expected != null
+    boolean ok = input.getLogin() != null
+        && expected != null
         && expected.getUsername().equals(input.getLogin())
         && PasswordHasher.verify(input.getPassword(), expected.getPasswordHash());
-    if (!ok) return new LoginApiOutput(false, false);
+    if (!ok) {
+      guard.loginFailed(client);
+      LOGGER.warning("Failed login for \"" + printable(input.getLogin()) + "\" from " + client);
+      return new LoginApiOutput(false, false);
+    }
+    guard.loginSucceeded(client);
     context.setSessionCookie(serviceProvider.getSessionService().create(), serviceProvider.getSettingsService().isSessionCookieSecure());
     LoginApiOutput output = new LoginApiOutput(true, expected.isTemporary());
     output.setSetupInProgress(serviceProvider.getSettingsService().isSetupInProgress());
     return output;
+  }
+
+  /** The submitted login, safe to log: control characters escaped, so it can't forge a log line. */
+  private static String printable(String login) {
+    if (login == null) return "";
+    StringBuilder sb = new StringBuilder();
+    for (char c : login.toCharArray()) {
+      if (c < 0x20 || c == 0x7f) sb.append(String.format("\\x%02x", (int) c));
+      else sb.append(c);
+    }
+    return sb.toString();
   }
 }
 

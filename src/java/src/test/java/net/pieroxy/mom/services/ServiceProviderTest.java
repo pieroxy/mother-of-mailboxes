@@ -46,7 +46,7 @@ public class ServiceProviderTest {
     AccountService accountService = new AccountService(settingsService, new CopyOnWriteArrayList<>());
     SessionService sessionService = new SessionService();
     WebServerService webServerService = new WebServerService(null, tmp.getRoot().getAbsolutePath());
-    return new ServiceProvider(settingsService, accountService, sessionService, webServerService);
+    return new ServiceProvider(settingsService, accountService, sessionService, webServerService, new ClientGuardService());
   }
 
   @Test

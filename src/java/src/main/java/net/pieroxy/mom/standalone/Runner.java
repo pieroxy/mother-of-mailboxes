@@ -2,6 +2,7 @@ package net.pieroxy.mom.standalone;
 
 import com.google.gson.Gson;
 import net.pieroxy.mom.services.AccountService;
+import net.pieroxy.mom.services.ClientGuardService;
 import net.pieroxy.mom.services.ServiceProvider;
 import net.pieroxy.mom.services.SessionService;
 import net.pieroxy.mom.services.SettingsService;
@@ -70,7 +71,7 @@ public class Runner {
     AccountService accountService = new AccountService(settingsService);
     SessionService sessionService = new SessionService();
     WebServerService webServerService = new WebServerService(config.getWebServer(), dataFolder);
-    serviceProvider = new ServiceProvider(settingsService, accountService, sessionService, webServerService);
+    serviceProvider = new ServiceProvider(settingsService, accountService, sessionService, webServerService, new ClientGuardService());
     serviceProvider.init();
 
     Runtime.getRuntime().addShutdownHook(new Thread(Runner::shutdown, "shutdown-hook"));

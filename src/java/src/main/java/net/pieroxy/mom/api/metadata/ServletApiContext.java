@@ -21,6 +21,11 @@ public class ServletApiContext implements ApiContext {
   }
 
   @Override
+  public String getRemoteAddr() {
+    return req.getRemoteAddr();
+  }
+
+  @Override
   public String getSessionId() {
     Cookie[] cookies = req.getCookies();
     if (cookies == null) return null;

@@ -25,22 +25,46 @@ public class RateLimiter {
   }
 
   /**
-   * Applies key.trim().toLowerCase(Locale.ROOT) before processing
-   * @param key
-   * @throws RateExceededException
+   * Keys are compared trimmed and case-insensitively.
+   *
+   * @throws RateExceededException if {@code key} already has {@code maxHits} hits in the window. Adds no hit.
    */
-  public synchronized void applyHit(String key) throws RateExceededException {
-    key = key.trim().toLowerCase(Locale.ROOT);
+  public synchronized void check(String key) throws RateExceededException {
     long now = System.currentTimeMillis();
+    Deque<Long> hits = hitsOf(normalize(key), now);
+    if (hits != null && hits.size() >= maxHits) throw new RateExceededException(hits.peekFirst() + milliseconds - now);
+  }
+
+  public synchronized void hit(String key) {
+    long now = System.currentTimeMillis();
+    String normalized = normalize(key);
+    if (hitsOf(normalized, now) == null) data.put(normalized, new ArrayDeque<>());
+    data.get(normalized).addLast(now);
+  }
+
+  public synchronized void reset(String key) {
+    data.remove(normalize(key));
+  }
+
+  /** {@code key}'s hits still in the window, null if none; also sweeps every key at most once per window. */
+  private Deque<Long> hitsOf(String key, long now) {
     long expired = now - milliseconds;
     if (now - lastSweep >= milliseconds) {
       gc(expired);
       lastSweep = now;
     }
-    Deque<Long> hits = data.computeIfAbsent(key, k -> new ArrayDeque<>());
+    Deque<Long> hits = data.get(key);
+    if (hits == null) return null;
     trim(hits, expired);
-    if (hits.size() >= maxHits) throw new RateExceededException(hits.peekFirst() + milliseconds - now);
-    hits.addLast(now);
+    if (hits.isEmpty()) {
+      data.remove(key);
+      return null;
+    }
+    return hits;
+  }
+
+  private static String normalize(String key) {
+    return key == null ? "" : key.trim().toLowerCase(Locale.ROOT);
   }
 
   public synchronized int getNbKeys() {

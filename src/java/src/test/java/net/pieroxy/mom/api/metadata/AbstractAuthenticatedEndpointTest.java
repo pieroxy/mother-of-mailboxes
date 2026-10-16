@@ -6,6 +6,7 @@ import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.WebServerConfiguration;
 import net.pieroxy.mom.services.AccountService;
+import net.pieroxy.mom.services.ClientGuardService;
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.services.SessionService;
 import net.pieroxy.mom.services.SettingsService;
@@ -63,6 +64,7 @@ public class AbstractAuthenticatedEndpointTest {
 
   private static ApiContext contextWith(String sessionId) {
     return new ApiContext() {
+      @Override public String getRemoteAddr() { return "127.0.0.1"; }
       @Override public String getSessionId() { return sessionId; }
       @Override public void setSessionCookie(String id, boolean secure) { throw new UnsupportedOperationException(); }
       @Override public void clearSessionCookie(boolean secure) { throw new UnsupportedOperationException(); }
@@ -101,6 +103,7 @@ public class AbstractAuthenticatedEndpointTest {
       @Override public AccountService getAccountService() { throw new UnsupportedOperationException(); }
       @Override public SessionService getSessionService() { return sessionService; }
       @Override public WebServerService getWebServerService() { throw new UnsupportedOperationException(); }
+      @Override public ClientGuardService getClientGuardService() { throw new UnsupportedOperationException(); }
     };
   }
 

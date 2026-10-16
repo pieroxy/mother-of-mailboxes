@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Hosts the running {@link SettingsService}, {@link AccountService}, {@link SessionService} and
- * {@link WebServerService}, and manages their startup/shutdown lifecycle.
+ * Hosts the running {@link SettingsService}, {@link AccountService}, {@link SessionService},
+ * {@link WebServerService} and {@link ClientGuardService}, and manages their startup/shutdown lifecycle.
  * <p>
  * {@link #init()} topologically sorts them by declared {@link Service#getDependencies()}, then for
  * each in turn calls {@link Service#init(IServiceProvider)} (scoped to what it declared — see
@@ -19,16 +19,18 @@ public class ServiceProvider implements IServiceProvider {
   private final AccountService accountService;
   private final SessionService sessionService;
   private final WebServerService webServerService;
+  private final ClientGuardService clientGuardService;
   private final List<Service> services;
   private final List<Service> startedInOrder = new ArrayList<>();
 
   public ServiceProvider(SettingsService settingsService, AccountService accountService,
-                          SessionService sessionService, WebServerService webServerService) {
+                          SessionService sessionService, WebServerService webServerService, ClientGuardService clientGuardService) {
     this.settingsService = settingsService;
     this.accountService = accountService;
     this.sessionService = sessionService;
     this.webServerService = webServerService;
-    this.services = List.of(settingsService, accountService, sessionService, webServerService);
+    this.clientGuardService = clientGuardService;
+    this.services = List.of(settingsService, accountService, sessionService, webServerService, clientGuardService);
   }
 
   @Override
@@ -49,6 +51,11 @@ public class ServiceProvider implements IServiceProvider {
   @Override
   public WebServerService getWebServerService() {
     return webServerService;
+  }
+
+  @Override
+  public ClientGuardService getClientGuardService() {
+    return clientGuardService;
   }
 
   public void init() {
