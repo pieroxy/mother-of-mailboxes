@@ -222,6 +222,29 @@ body {
                   font-size: 24px;
                   color: $text-color;
               }
+
+              .page-header-links {
+                  display: flex;
+                  align-self: center;
+                  gap: 12px;
+                  margin-left: auto;
+
+                  .page-header-link {
+                      display: flex;
+                      cursor: pointer;
+                      opacity: 0.6;
+                      transition: opacity 0.15s linear;
+
+                      &:hover {
+                          opacity: 1;
+                      }
+
+                      svg.icon {
+                          width: 26px;
+                          height: 26px;
+                      }
+                  }
+              }
           }
 
           .page-subtitle {

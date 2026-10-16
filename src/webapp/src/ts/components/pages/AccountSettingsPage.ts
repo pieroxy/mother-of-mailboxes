@@ -2,6 +2,7 @@ import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { AccountBasicConfigDto, MailFilterRuleActionConfiguration, MailFilterRuleMatcherConfiguration, RuleType, SmtpSecurity, SmtpSettingsDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
+import { AccountPageHeader } from "../AccountPageHeader";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
@@ -66,10 +67,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
 
   render(): m.Children {
     return m("page.accountsettingspage", [
-      m(".page-header", [
-        m("a.page-back", { onclick: () => Routing.goToScreen(Endpoints.HOME) }, "‹ Back to accounts"),
-        m("h1.page-title", this.accountName),
-      ]),
+      m(AccountPageHeader, { accountName: this.accountName, current: "settings" }),
       this.error ? m(".settings-error.errorMessage", this.error) : null,
       this.loading || !this.session ? m(".page-loading", "Loading…") : this.renderContent(this.session),
     ]);

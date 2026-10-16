@@ -2,8 +2,8 @@ import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { DecisionDto, Outcome, RuleOutcomeDto, Trigger } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
+import { AccountPageHeader } from "../AccountPageHeader";
 import { Routing } from "../../utils/navigation/Routing";
-import { Endpoints } from "../../utils/navigation/Endpoints";
 import { toIsoDate, todayIsoDate } from "../../utils/format";
 import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
@@ -115,10 +115,7 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
 
   render(): m.Children {
     return m("page.logspage", [
-      m(".page-header", [
-        m("a.page-back", { onclick: () => Routing.goToScreen(Endpoints.HOME) }, "‹ Back to accounts"),
-        m("h1.page-title", this.accountName),
-      ]),
+      m(AccountPageHeader, { accountName: this.accountName, current: "logs" }),
       this.retentionDays === 0 ? this.renderDisabledNotice() : null,
       this.renderFilters(),
       this.error ? m(".stats-error.errorMessage", this.error) : null,

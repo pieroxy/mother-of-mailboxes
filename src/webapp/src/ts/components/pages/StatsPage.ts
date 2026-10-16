@@ -2,8 +2,8 @@ import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { DailyStatsDto, MatcherCountDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
+import { AccountPageHeader } from "../AccountPageHeader";
 import { Routing } from "../../utils/navigation/Routing";
-import { Endpoints } from "../../utils/navigation/Endpoints";
 import { DailyStatsChart } from "../DailyStatsChart";
 import { TopMatchersChart } from "../TopMatchersChart";
 import { toIsoDate, todayIsoDate } from "../../utils/format";
@@ -56,10 +56,7 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
 
   render(): m.Children {
     return m("page.statspage", [
-      m(".page-header", [
-        m("a.page-back", { onclick: () => Routing.goToScreen(Endpoints.HOME) }, "‹ Back to accounts"),
-        m("h1.page-title", this.accountName),
-      ]),
+      m(AccountPageHeader, { accountName: this.accountName, current: "stats" }),
       m(".stats-filters", [
         m(".stats-presets", PRESETS.map((preset) => m("button.stats-preset" + (this.activePresetDays === preset.days ? ".active" : ""), {
           onclick: () => this.selectPreset(preset.days),

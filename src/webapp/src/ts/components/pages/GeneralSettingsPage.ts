@@ -61,7 +61,7 @@ export class GeneralSettingsPage extends AbstractPage {
   render(): m.Children {
     return m("page.generalsettingspage", [
       m(".page-header", [
-        m("a.page-back", { onclick: () => Routing.goToScreen(Endpoints.HOME) }, "‹ Back to accounts"),
+        m("a.page-back", { onclick: () => Routing.goToScreen(Endpoints.HOME) }, "‹ Back home"),
         m("h1.page-title", "General settings"),
       ]),
       this.error ? m(".settings-error.errorMessage", this.error) : null,
