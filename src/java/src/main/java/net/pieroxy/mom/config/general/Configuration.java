@@ -9,6 +9,8 @@ public class Configuration {
   private String dataFolder;
   /** See {@code LogRetention}: unset keeps 30 days, 0 keeps everything, N keeps N days. */
   private Integer keepLogFiles;
+  /** Reverse proxies whose X-Forwarded-For header is believed: IP addresses or CIDR ranges — see {@code TrustedProxies}. Absent: none. */
+  private List<String> trustedProxies;
   /** IP/domain reputation sources (see {@link ReputationListConfig}) — absent = feature disabled. */
   private List<ReputationListConfig> reputationLists;
   private WebServerConfiguration webServer;
@@ -58,6 +60,14 @@ public class Configuration {
 
   public void setKeepLogFiles(Integer keepLogFiles) {
     this.keepLogFiles = keepLogFiles;
+  }
+
+  public List<String> getTrustedProxies() {
+    return trustedProxies;
+  }
+
+  public void setTrustedProxies(List<String> trustedProxies) {
+    this.trustedProxies = trustedProxies;
   }
 
   public List<ReputationListConfig> getReputationLists() {

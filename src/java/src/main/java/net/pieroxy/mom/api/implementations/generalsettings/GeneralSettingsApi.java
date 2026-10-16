@@ -49,6 +49,7 @@ public class GeneralSettingsApi extends AbstractAuthenticatedEndpoint<GeneralSet
         reputationLists);
     output.setWebServerAddressChangeError(serviceProvider.getWebServerService().getAddressChangeError());
     output.setWebServerSecureCookie(webServer != null && webServer.isSecureCookie());
+    output.setTrustedProxies(config.getTrustedProxies() != null ? config.getTrustedProxies() : List.of());
     return output;
   }
 }
@@ -61,6 +62,8 @@ class GeneralSettingsApiInput extends AuthenticatedApiInput {
 class GeneralSettingsApiOutput {
   private String dataFolder;
   /** Null: unset, i.e. the default retention (see LogRetention). */
+  /** Never null: empty when none. */
+  private List<String> trustedProxies;
   private Integer keepLogFiles;
   private boolean webServerEnabled;
   private int webServerHttpPort;
@@ -102,6 +105,14 @@ class GeneralSettingsApiOutput {
 
   public void setDataFolder(String dataFolder) {
     this.dataFolder = dataFolder;
+  }
+
+  public List<String> getTrustedProxies() {
+    return trustedProxies;
+  }
+
+  public void setTrustedProxies(List<String> trustedProxies) {
+    this.trustedProxies = trustedProxies;
   }
 
   public Integer getKeepLogFiles() {

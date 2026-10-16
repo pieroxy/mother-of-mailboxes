@@ -59,6 +59,7 @@ same directory — see [Credentials file](#credentials-file).
 | `configurations` | yes | List of accounts to monitor (see below). |
 | `dataFolder` | yes | Directory where MOM persists its own state: per-account UID cursors, learned rules, classifier corpus, and logs (`<dataFolder>/logs/log.txt`). Absolute, or relative to the directory holding `config.json` (e.g. `"data"`, so the whole setup can be moved as one folder). Created if missing. |
 | `keepLogFiles` | no | Days of application and access logs to keep: both rotate daily into lz4-compressed files. Absent: 30. `0`: never delete. |
+| `trustedProxies` | no | Reverse proxies in front of the [web server](#web-server), as IP addresses or CIDR ranges (e.g. `["127.0.0.1", "::1", "172.18.0.0/16"]`). Only from these is the `X-Forwarded-For` header believed, to know the client's real address. Absent or empty: the header is ignored. |
 | `reputationLists` | no | IP/domain reputation lists to download and refresh (see [Reputation lists](#reputation-lists)). Absent means the feature is off. |
 | `webServer` | no | Embedded web server serving the web UI (see [Web server](#web-server)). Absent, or `enabled: false`, means the feature is off entirely — no Tomcat startup. |
 
@@ -445,7 +446,9 @@ as is — followed by the time spent answering:
 ```
 
 - The user field is the web login when the request carried a valid session, `-` otherwise.
-- The client address is the one connecting to MOM: behind a reverse proxy, the proxy's.
+- The client address is the one connecting to MOM, unless that's one of the `trustedProxies`:
+  then it's read from `X-Forwarded-For`, walked from the right past every trusted proxy, so
+  whatever a client puts at the start of that header is never believed.
 - The query string is left out for `/api/` paths: it holds the endpoint's JSON input, which can
   carry mail metadata (e.g. a decision log search).
 

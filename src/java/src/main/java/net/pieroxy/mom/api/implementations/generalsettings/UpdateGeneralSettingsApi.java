@@ -61,7 +61,8 @@ public class UpdateGeneralSettingsApi extends AbstractAuthenticatedEndpoint<Upda
     }
 
     List<ReputationListConfig> reputationLists = dtos.stream().map(ReputationListDto::toConfig).collect(Collectors.toList());
-    serviceProvider.getSettingsService().updateGeneralSettings(input.getDataFolder(), input.getKeepLogFiles(), input.getWebServerUsername(),
+    serviceProvider.getSettingsService().updateGeneralSettings(input.getDataFolder(), input.getKeepLogFiles(), input.getTrustedProxies(),
+        input.getWebServerUsername(),
         input.getWebServerPassword(), reputationLists);
 
     return new UpdateGeneralSettingsApiOutput();
@@ -73,6 +74,8 @@ class UpdateGeneralSettingsApiInput extends AuthenticatedApiInput {
   private String dataFolder;
   /** Null: default retention (see LogRetention). */
   private Integer keepLogFiles;
+  /** IP addresses or CIDR ranges; null or empty: none. */
+  private List<String> trustedProxies;
   private String webServerUsername;
   /** Blank means "leave the current password unchanged" — same convention as an account's credentials. */
   private String webServerPassword;
@@ -84,6 +87,14 @@ class UpdateGeneralSettingsApiInput extends AuthenticatedApiInput {
 
   public void setDataFolder(String dataFolder) {
     this.dataFolder = dataFolder;
+  }
+
+  public List<String> getTrustedProxies() {
+    return trustedProxies;
+  }
+
+  public void setTrustedProxies(List<String> trustedProxies) {
+    this.trustedProxies = trustedProxies;
   }
 
   public Integer getKeepLogFiles() {

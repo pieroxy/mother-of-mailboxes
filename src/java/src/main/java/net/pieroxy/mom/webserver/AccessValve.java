@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.Enumeration;
 
 /**
  * The web server's front door, on the engine's pipeline: sees every request on every connector,
@@ -31,8 +33,19 @@ public class AccessValve extends ValveBase implements org.apache.catalina.Access
     this.serviceProvider = serviceProvider;
   }
 
+  /** Behind a trusted reverse proxy, swaps the proxy's address for the client's (see {@link TrustedProxies}), for everything downstream. */
   @Override
   public void invoke(Request request, Response response) throws IOException, ServletException {
+    TrustedProxies trustedProxies = serviceProvider.getSettingsService().getTrustedProxies();
+    if (!trustedProxies.isEmpty()) {
+      Enumeration<String> headers = request.getHeaders("X-Forwarded-For");
+      String forwardedFor = headers == null || !headers.hasMoreElements() ? null : String.join(",", Collections.list(headers));
+      String client = trustedProxies.clientAddress(request.getRemoteAddr(), forwardedFor);
+      if (!client.equals(request.getRemoteAddr())) {
+        request.setRemoteAddr(client);
+        request.setRemoteHost(client);
+      }
+    }
     getNext().invoke(request, response);
   }
 

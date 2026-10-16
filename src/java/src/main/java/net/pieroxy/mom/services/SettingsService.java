@@ -1,5 +1,6 @@
 package net.pieroxy.mom.services;
 
+import net.pieroxy.mom.webserver.TrustedProxies;
 import net.pieroxy.mom.utils.logging.LogRetention;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -50,6 +51,7 @@ public class SettingsService implements Service {
   private volatile String dataFolder;
 
   private Credential webServerCredential;
+  private volatile TrustedProxies trustedProxies = TrustedProxies.NONE;
 
   public SettingsService(Configuration config, File configFile, CredentialsFile credentialsFile,
                           File credentialsFilePath, String dataFolder) {
@@ -64,15 +66,22 @@ public class SettingsService implements Service {
    * Resolves the web server's login credential (if {@code webServer} is configured and enabled)
    * and migrates a plaintext password to a hashed one — see
    * {@link #migrateWebServerPasswordIfNeeded}. Then sweeps credentials.json for entries config.json
-   * no longer references — see {@link #cleanUpDanglingCredentials}.
+   * no longer references — see {@link #cleanUpDanglingCredentials}. Refuses to start on an invalid
+   * {@code trustedProxies} entry.
    */
   @Override
   public void start() {
+    trustedProxies = TrustedProxies.parse(config.getTrustedProxies());
+    if (!trustedProxies.isEmpty()) LOGGER.info("Trusted proxies (X-Forwarded-For believed from): " + String.join(", ", trustedProxies.entries()));
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
       webServerCredential = resolveCredential(config.getWebServer().getCredentials(), "webServer");
       migrateWebServerPasswordIfNeeded();
     }
     cleanUpDanglingCredentials();
+  }
+
+  public TrustedProxies getTrustedProxies() {
+    return trustedProxies;
   }
 
   public Configuration getConfiguration() {
@@ -319,13 +328,16 @@ public class SettingsService implements Service {
   /**
    * Applies the general settings page's staged fields. The web server's own login and the whole
    * {@code reputationLists} list take effect immediately (login on the next request; lists via a
-   * hot-swapped {@link ReputationRegistry}). {@code dataFolder} and {@code keepLogFiles} are
+   * hot-swapped {@link ReputationRegistry}), as do {@code trustedProxies}. {@code dataFolder} and {@code keepLogFiles} are
    * persisted to {@code config.json} but only take effect once the process is restarted by hand.
    */
-  public synchronized void updateGeneralSettings(String newDataFolder, Integer keepLogFiles,
+  public synchronized void updateGeneralSettings(String newDataFolder, Integer keepLogFiles, List<String> trustedProxies,
                                                   String webServerUsername, String webServerPassword,
                                                   List<ReputationListConfig> reputationLists) {
+    TrustedProxies parsedTrustedProxies = TrustedProxies.parse(trustedProxies);
     config.setDataFolder(newDataFolder);
+    config.setTrustedProxies(parsedTrustedProxies.isEmpty() ? null : parsedTrustedProxies.entries());
+    this.trustedProxies = parsedTrustedProxies;
     config.setKeepLogFiles(keepLogFiles);
 
     if (config.getWebServer() != null) {

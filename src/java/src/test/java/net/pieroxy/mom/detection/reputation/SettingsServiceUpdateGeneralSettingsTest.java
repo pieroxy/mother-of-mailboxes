@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * {@link SettingsService#updateGeneralSettings} covers the two things GeneralSettingsPage lets
@@ -78,7 +79,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
 
   @Test
   public void changesTheWebServerLoginInPlaceAndPersistsIt() throws Exception {
-    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14,
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, null,
         "new-admin", "new-password", List.of());
 
     assertEquals("new-admin", webServerCredential.getUsername());
@@ -99,7 +100,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
     // setUp()'s own start() call already migrated "old-password" to a hash (see
     // SettingsServiceTest) before this test ever runs — a blank password here must leave that
     // hash untouched, not the (long gone) plaintext.
-    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14,
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, null,
         "new-admin", "", List.of());
 
     assertEquals("new-admin", webServerCredential.getUsername());
@@ -112,13 +113,36 @@ public class SettingsServiceUpdateGeneralSettingsTest {
     File configFile = new File(tmp.getRoot(), "config.json");
     int portBefore = settingsService.getConfiguration().getWebServer().getHttpPort();
 
-    settingsService.updateGeneralSettings("/new/data/folder", 30, "admin", "", List.of());
+    settingsService.updateGeneralSettings("/new/data/folder", 30, null, "admin", "", List.of());
 
     Configuration reloaded = new Gson().fromJson(new FileReader(configFile), Configuration.class);
     assertEquals("/new/data/folder", reloaded.getDataFolder());
     assertEquals(Integer.valueOf(30), reloaded.getKeepLogFiles());
     assertTrue(reloaded.getWebServer().isEnabled());
     assertEquals(portBefore, reloaded.getWebServer().getHttpPort());
+  }
+
+  @Test
+  public void appliesTrustedProxiesRightAwayAndPersistsThem() throws Exception {
+    settingsService.updateGeneralSettings("/data", 30, List.of(" 127.0.0.1 ", "172.18.0.0/16"), "admin", "", List.of());
+
+    assertTrue(settingsService.getTrustedProxies().isTrusted("172.18.0.9"));
+    Configuration reloaded = new Gson().fromJson(new FileReader(new File(tmp.getRoot(), "config.json")), Configuration.class);
+    assertEquals(List.of("127.0.0.1", "172.18.0.0/16"), reloaded.getTrustedProxies());
+
+    settingsService.updateGeneralSettings("/data", 30, List.of(), "admin", "", List.of());
+    assertTrue(settingsService.getTrustedProxies().isEmpty());
+  }
+
+  @Test
+  public void anInvalidTrustedProxyChangesNothing() {
+    try {
+      settingsService.updateGeneralSettings("/elsewhere", 30, List.of("not-an-ip"), "admin", "", List.of());
+      fail("should have thrown");
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage(), expected.getMessage().contains("not-an-ip"));
+    }
+    assertFalse("rejected before anything was applied", "/elsewhere".equals(settingsService.getConfiguration().getDataFolder()));
   }
 
   @Test
@@ -136,7 +160,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
     assertFalse("nothing configured yet: the default empty registry must not match",
         ReputationRegistryHolder.get().ipScore("1.2.3.4", Set.of("blocklist")).isPresent());
 
-    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14,
+    settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, null,
         "admin", "", List.of(blocklist));
 
     Optional<ReputationMatch> match = ReputationRegistryHolder.get().ipScore("1.2.3.4", Set.of("blocklist"));

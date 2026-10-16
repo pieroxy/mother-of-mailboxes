@@ -2,6 +2,7 @@ import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { ReputationListDto, ReputationListType } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
+import { TokenListEditor } from "../TokenListEditor";
 import { KEEP_LOG_FILES_LABEL, KeepLogFilesInput, validateKeepLogFiles } from "../KeepLogFilesInput";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
@@ -38,6 +39,8 @@ export class GeneralSettingsPage extends AbstractPage {
   private workingDataFolder = "";
   private baselineKeepLogFiles: number | null = null;
   private workingKeepLogFiles: number | null = null;
+  private baselineTrustedProxies: string[] = [];
+  private workingTrustedProxies: string[] = [];
   private webServer = new WebServerControls(false, 0, "", false);
   private webServerCredentialsKey = "";
 
@@ -105,7 +108,16 @@ export class GeneralSettingsPage extends AbstractPage {
         value: this.workingKeepLogFiles,
         onChange: (value) => (this.workingKeepLogFiles = value),
       })),
-      m(".field-hint", "Saved to config.json, but only taken into account once MOM is restarted by hand."),
+      m(".field-hint", "Data folder and log retention: saved to config.json, but only taken into account once MOM is restarted by hand."),
+      this.field("Trusted proxies", [
+        m(TokenListEditor, {
+          tokens: this.workingTrustedProxies,
+          onChange: (tokens) => (this.workingTrustedProxies = tokens),
+          placeholder: "127.0.0.1, 172.18.0.0/16, ::1…",
+        }),
+        m("span.field-hint", "Reverse proxies whose X-Forwarded-For header MOM believes, to know the client's real address: "
+          + "IP addresses or CIDR ranges. Leave empty when nothing sits in front of MOM. Applies as soon as saved."),
+      ]),
     ]);
   }
 
@@ -199,6 +211,7 @@ export class GeneralSettingsPage extends AbstractPage {
   private isDirty(): boolean {
     return this.workingDataFolder !== this.baselineDataFolder
       || this.workingKeepLogFiles !== this.baselineKeepLogFiles
+      || JSON.stringify(this.workingTrustedProxies) !== JSON.stringify(this.baselineTrustedProxies)
       || this.workingUsername !== this.baselineUsername
       || this.workingPassword !== ""
       || this.reputationLists.some((r) => r.deleted || r.edited || r.originalIndex === null);
@@ -214,6 +227,8 @@ export class GeneralSettingsPage extends AbstractPage {
         this.workingDataFolder = output.dataFolder;
         this.baselineKeepLogFiles = output.keepLogFiles ?? null;
         this.workingKeepLogFiles = output.keepLogFiles ?? null;
+        this.baselineTrustedProxies = output.trustedProxies;
+        this.workingTrustedProxies = output.trustedProxies;
         this.webServer = new WebServerControls(output.webServerEnabled, output.webServerHttpPort, output.webServerAddress || "", output.webServerSecureCookie);
         this.webServerCredentialsKey = output.webServerCredentialsKey || "";
         this.baselineUsername = output.webServerUsername || "";
@@ -263,6 +278,7 @@ export class GeneralSettingsPage extends AbstractPage {
       dataFolder: this.workingDataFolder,
       // The generated type doesn't know null means "unset" (see UpdateGeneralSettingsApiInput).
       keepLogFiles: this.workingKeepLogFiles as number,
+      trustedProxies: this.workingTrustedProxies,
       webServerUsername: this.workingUsername,
       webServerPassword: this.workingPassword,
       reputationLists: this.reputationLists.filter((r) => !r.deleted).map((r) => r.list),
