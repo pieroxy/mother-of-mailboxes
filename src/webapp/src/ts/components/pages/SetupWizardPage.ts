@@ -1,5 +1,6 @@
 import m from "mithril";
 import { AbstractPage } from "./AbstractPage";
+import { KEEP_LOG_FILES_LABEL, KeepLogFilesInput, validateKeepLogFiles } from "../KeepLogFilesInput";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { RecommendedReputationListDto } from "../../auto/pieroxy-mom";
 import { Auth } from "../../utils/Auth";
@@ -22,7 +23,7 @@ export class SetupWizardPage extends AbstractPage {
 
   private webServer = new WebServerControls(true, 0, "", false);
   private dataFolder = "";
-  private keepLogFiles = 0;
+  private keepLogFiles: number | null = null;
   private recommendedLists: RecommendedReputationListDto[] = [];
   private selectedListIds = new Set<string>();
 
@@ -35,7 +36,7 @@ export class SetupWizardPage extends AbstractPage {
       .then(([settings, recommended]) => {
         this.webServer = new WebServerControls(settings.webServerEnabled, settings.webServerHttpPort, settings.webServerAddress || "", settings.webServerSecureCookie);
         this.dataFolder = settings.dataFolder;
-        this.keepLogFiles = settings.keepLogFiles;
+        this.keepLogFiles = settings.keepLogFiles ?? null;
         this.recommendedLists = recommended.lists;
         this.selectedListIds = new Set(recommended.lists.map((list) => list.id));
         this.loading = false;
@@ -73,9 +74,9 @@ export class SetupWizardPage extends AbstractPage {
             type: "text", value: this.dataFolder,
             oninput: (e: Event) => (this.dataFolder = (e.target as HTMLInputElement).value),
           }), "Where MOM keeps its state, models and logs. Absolute, or relative to the folder holding config.json."),
-          this.field("Keep log files (days, 0 = no rotation)", m("input", {
-            type: "number", value: this.keepLogFiles, min: 0,
-            oninput: (e: Event) => (this.keepLogFiles = Number((e.target as HTMLInputElement).value)),
+          this.field(KEEP_LOG_FILES_LABEL, m(KeepLogFilesInput, {
+            value: this.keepLogFiles,
+            onChange: (value) => (this.keepLogFiles = value),
           })),
         ];
       default:
@@ -127,11 +128,13 @@ export class SetupWizardPage extends AbstractPage {
         this.error = "The data folder must not be blank.";
         return;
       }
-      if (this.keepLogFiles < 0) {
-        this.error = "Keep log files must be zero (no rotation) or a positive number of days.";
+      const keepLogFilesError = validateKeepLogFiles(this.keepLogFiles);
+      if (keepLogFilesError) {
+        this.error = keepLogFilesError;
         return;
       }
-      this.save(ApiEndpoints.SaveSetupStorage.call({ dataFolder: this.dataFolder.trim(), keepLogFiles: this.keepLogFiles }), () => this.goTo(2));
+      // The generated type doesn't know null means "unset" (see SaveSetupStorageApiInput).
+      this.save(ApiEndpoints.SaveSetupStorage.call({ dataFolder: this.dataFolder.trim(), keepLogFiles: this.keepLogFiles as number }), () => this.goTo(2));
       return;
     }
     this.save(ApiEndpoints.CompleteSetup.call({ reputationListIds: Array.from(this.selectedListIds) }), () => {

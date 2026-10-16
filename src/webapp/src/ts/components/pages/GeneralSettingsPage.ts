@@ -2,6 +2,7 @@ import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { ReputationListDto, ReputationListType } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
+import { KEEP_LOG_FILES_LABEL, KeepLogFilesInput, validateKeepLogFiles } from "../KeepLogFilesInput";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
@@ -35,8 +36,8 @@ function defaultReputationList(): ReputationListDto {
 export class GeneralSettingsPage extends AbstractPage {
   private baselineDataFolder = "";
   private workingDataFolder = "";
-  private baselineKeepLogFiles = 0;
-  private workingKeepLogFiles = 0;
+  private baselineKeepLogFiles: number | null = null;
+  private workingKeepLogFiles: number | null = null;
   private webServer = new WebServerControls(false, 0, "", false);
   private webServerCredentialsKey = "";
 
@@ -100,9 +101,9 @@ export class GeneralSettingsPage extends AbstractPage {
         type: "text", value: this.workingDataFolder,
         oninput: (e: Event) => (this.workingDataFolder = (e.target as HTMLInputElement).value),
       })),
-      this.field("Keep log files (days, 0 = disabled)", m("input", {
-        type: "number", value: this.workingKeepLogFiles, min: 0,
-        oninput: (e: Event) => (this.workingKeepLogFiles = Number((e.target as HTMLInputElement).value)),
+      this.field(KEEP_LOG_FILES_LABEL, m(KeepLogFilesInput, {
+        value: this.workingKeepLogFiles,
+        onChange: (value) => (this.workingKeepLogFiles = value),
       })),
       m(".field-hint", "Saved to config.json, but only taken into account once MOM is restarted by hand."),
     ]);
@@ -211,8 +212,8 @@ export class GeneralSettingsPage extends AbstractPage {
       .then((output) => {
         this.baselineDataFolder = output.dataFolder;
         this.workingDataFolder = output.dataFolder;
-        this.baselineKeepLogFiles = output.keepLogFiles;
-        this.workingKeepLogFiles = output.keepLogFiles;
+        this.baselineKeepLogFiles = output.keepLogFiles ?? null;
+        this.workingKeepLogFiles = output.keepLogFiles ?? null;
         this.webServer = new WebServerControls(output.webServerEnabled, output.webServerHttpPort, output.webServerAddress || "", output.webServerSecureCookie);
         this.webServerCredentialsKey = output.webServerCredentialsKey || "";
         this.baselineUsername = output.webServerUsername || "";
@@ -231,7 +232,8 @@ export class GeneralSettingsPage extends AbstractPage {
 
   private validate(): string | undefined {
     if (!this.workingDataFolder.trim()) return "The data folder must not be blank.";
-    if (this.workingKeepLogFiles < 0) return "Keep log files must be zero (disabled) or a positive number of days.";
+    const keepLogFilesError = validateKeepLogFiles(this.workingKeepLogFiles);
+    if (keepLogFilesError) return keepLogFilesError;
     if (!this.workingUsername.trim()) return "The web login needs a username.";
 
     const seenIds = new Set<string>();
@@ -259,7 +261,8 @@ export class GeneralSettingsPage extends AbstractPage {
     this.error = undefined;
     ApiEndpoints.UpdateGeneralSettings.call({
       dataFolder: this.workingDataFolder,
-      keepLogFiles: this.workingKeepLogFiles,
+      // The generated type doesn't know null means "unset" (see UpdateGeneralSettingsApiInput).
+      keepLogFiles: this.workingKeepLogFiles as number,
       webServerUsername: this.workingUsername,
       webServerPassword: this.workingPassword,
       reputationLists: this.reputationLists.filter((r) => !r.deleted).map((r) => r.list),

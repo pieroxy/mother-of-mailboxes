@@ -7,7 +7,8 @@ public class Configuration {
   private List<MailAccountConfiguration> configurations;
   /** Absolute, or relative to the directory holding config.json — see {@link #resolveDataFolder}. */
   private String dataFolder;
-  private int keepLogFiles;
+  /** See {@code LogRetention}: unset keeps 30 days, 0 keeps everything, N keeps N days. */
+  private Integer keepLogFiles;
   /** IP/domain reputation sources (see {@link ReputationListConfig}) — absent = feature disabled. */
   private List<ReputationListConfig> reputationLists;
   private WebServerConfiguration webServer;
@@ -51,11 +52,11 @@ public class Configuration {
     return folder.getAbsoluteFile().toPath().normalize().toString();
   }
 
-  public int getKeepLogFiles() {
+  public Integer getKeepLogFiles() {
     return keepLogFiles;
   }
 
-  public void setKeepLogFiles(int keepLogFiles) {
+  public void setKeepLogFiles(Integer keepLogFiles) {
     this.keepLogFiles = keepLogFiles;
   }
 

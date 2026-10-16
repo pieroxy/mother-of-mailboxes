@@ -3,6 +3,7 @@ package net.pieroxy.mom.services;
 import net.pieroxy.mom.api.ApiServlet;
 import net.pieroxy.mom.config.general.WebServerConfiguration;
 import net.pieroxy.mom.utils.logging.OneLineLogFormatter;
+import net.pieroxy.mom.webserver.AccessValve;
 import net.pieroxy.mom.webserver.WebappResourceExtractor;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -95,6 +96,7 @@ public class WebServerService implements Service {
 
       connector = newConnector(config.getHttpPort(), config.getAddress());
       tomcat.setConnector(connector);
+      tomcat.getEngine().getPipeline().addValve(new AccessValve(serviceProvider));
 
       StandardContext ctx = (StandardContext) tomcat.addContext("", webappDir.getAbsolutePath());
       ctx.addWelcomeFile("index.html");

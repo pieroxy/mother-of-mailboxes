@@ -58,14 +58,19 @@ public class LogRotatorTest {
   }
 
   @Test
-  public void doesNothingWhenKeepLogFilesIsZeroOrNegative() throws IOException {
+  public void keepsEveryArchiveWhenKeepLogFilesIsZero() throws IOException {
     File logFile = tmp.newFile("app.log");
     Files.writeString(logFile.toPath(), "current");
+    for (int i = 1; i <= 40; i++) {
+      Files.writeString(new File(logFile.getAbsolutePath() + "." + i + ".lz4").toPath(), "archive-" + i);
+    }
 
     LogRotator.rotate(logFile.getAbsolutePath(), 0);
 
-    assertTrue(logFile.isFile());
-    assertFalse(new File(logFile.getAbsolutePath() + ".1.lz4").isFile());
+    assertFalse(logFile.isFile());
+    assertEquals("current", decompress(new File(logFile.getAbsolutePath() + ".1.lz4")));
+    assertEquals("archive-1", Files.readString(new File(logFile.getAbsolutePath() + ".2.lz4").toPath()));
+    assertEquals("archive-40", Files.readString(new File(logFile.getAbsolutePath() + ".41.lz4").toPath()));
   }
 
   @Test

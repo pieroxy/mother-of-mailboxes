@@ -1,32 +1,18 @@
 package net.pieroxy.mom.utils.logging;
 
 import com.google.gson.Gson;
-import net.jpountz.lz4.LZ4FrameOutputStream;
 import net.pieroxy.mom.api.metadata.TypeScriptNonConstEnum;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * One JSON line per message processed, explaining *why* — every rule that was actually evaluated
@@ -44,10 +30,9 @@ import java.util.regex.Pattern;
 public final class DecisionLog {
   private final static Logger LOGGER = Logger.getLogger(DecisionLog.class.getName());
   private final static Gson GSON = new Gson();
-  private final static DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private final static DateTimeFormatter EVENT_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
   final static String FILE_PREFIX = "decisions-";
-  private final static Pattern DAY_FILE = Pattern.compile(Pattern.quote(FILE_PREFIX) + "(\\d{4}-\\d{2}-\\d{2})\\.json");
+  private final static DailyLogFiles DAILY_FILES = new DailyLogFiles(FILE_PREFIX, ".json");
 
   /** Which code path produced a decision — see {@code RuleHelper#processRules}/{@code RuleLearner}. */
   @TypeScriptType
@@ -125,69 +110,12 @@ public final class DecisionLog {
     if (decisionsDir == null || retentionDays <= 0) return;
 
     ZonedDateTime nowUtc = Instant.now().atZone(ZoneOffset.UTC);
-    String today = FILE_DATE_FORMAT.format(nowUtc);
-    File file = new File(decisionsDir, FILE_PREFIX + today + ".json");
-
+    Entry entry = new Entry(EVENT_DATE_FORMAT.format(nowUtc) + "Z", trigger, messageId, subject, from, processedMs, rules,
+        learnedRule, reasonForMoveToDone);
     try {
-      Files.createDirectories(decisionsDir.toPath());
-      // Lazy, like StatsLog's own file-per-day: no scheduler, just notice on the first write of a
-      // new day that today's file doesn't exist yet, and catch up whatever rotation is due then.
-      if (!file.isFile()) {
-        rotate(decisionsDir, today, retentionDays);
-      }
-      Entry entry = new Entry(EVENT_DATE_FORMAT.format(nowUtc) + "Z", trigger, messageId, subject, from, processedMs, rules,
-          learnedRule, reasonForMoveToDone);
-      String line = GSON.toJson(entry);
-      try (Writer writer = new FileWriter(file, true)) {
-        writer.write(line);
-        writer.write(System.lineSeparator());
-      }
+      DAILY_FILES.append(decisionsDir, nowUtc.toLocalDate(), GSON.toJson(entry), retentionDays);
     } catch (IOException e) {
-      LOGGER.log(Level.WARNING, "Could not write decision log entry to " + file, e);
-    }
-  }
-
-  /**
-   * Compresses every day file other than today's that isn't already a {@code .lz4} (there can be
-   * more than one if the account went quiet for a few days — each gets compressed in place, not
-   * just "yesterday"), then deletes anything — compressed or not — older than
-   * {@code retentionDays}.
-   */
-  private static void rotate(File decisionsDir, String today, int retentionDays) {
-    File[] files = decisionsDir.listFiles();
-    if (files == null) return;
-    LocalDate cutoff = LocalDate.now(ZoneOffset.UTC).minusDays(retentionDays);
-    for (File f : files) {
-      String name = f.getName();
-      boolean compressed = name.endsWith(".lz4");
-      String plainName = compressed ? name.substring(0, name.length() - ".lz4".length()) : name;
-      Matcher m = DAY_FILE.matcher(plainName);
-      if (!m.matches()) continue;
-
-      // "Every new day we delete the today-retention file": the file dated exactly
-      // retentionDays ago is itself the one to go, not the last one kept — so <=, not <.
-      LocalDate fileDate = LocalDate.parse(m.group(1));
-      if (!fileDate.isAfter(cutoff)) {
-        if (!f.delete()) LOGGER.warning("Could not delete expired decision log file " + f);
-      } else if (!compressed && !m.group(1).equals(today)) {
-        compress(f);
-      }
-    }
-  }
-
-  /** Compresses source into source.lz4, then deletes source — same temp-file-then-atomic-move approach as {@link LogRotator}. */
-  private static void compress(File source) {
-    File destination = new File(source.getParentFile(), source.getName() + ".lz4");
-    File tmp = new File(destination.getParentFile(), destination.getName() + ".tmp");
-    try {
-      try (InputStream in = new BufferedInputStream(new FileInputStream(source));
-          OutputStream out = new LZ4FrameOutputStream(new BufferedOutputStream(new FileOutputStream(tmp)))) {
-        in.transferTo(out);
-      }
-      Files.move(tmp.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-      Files.delete(source.toPath());
-    } catch (IOException e) {
-      LOGGER.log(Level.WARNING, "Could not compress decision log file " + source, e);
+      LOGGER.log(Level.WARNING, "Could not write decision log entry to " + decisionsDir, e);
     }
   }
 

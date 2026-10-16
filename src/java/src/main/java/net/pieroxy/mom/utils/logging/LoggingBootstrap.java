@@ -44,10 +44,10 @@ public final class LoggingBootstrap {
     setKeepLogFiles(keepLogFiles);
   }
 
-  /** 0 = no rotation. Takes effect at the next midnight rotation. */
+  /** Days to keep, {@link LogRetention#FOREVER} for all (see {@link LogRetention#days}). Takes effect at the next midnight rotation. */
   public static synchronized void setKeepLogFiles(int keepLogFiles) {
     LoggingBootstrap.keepLogFiles = keepLogFiles;
-    if (keepLogFiles > 0 && rotationScheduler == null) {
+    if (rotationScheduler == null) {
       rotationScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "log-rotation");
         t.setDaemon(true);
@@ -59,6 +59,11 @@ public final class LoggingBootstrap {
           TimeUnit.HOURS.toMillis(ROTATION_PERIOD_HOURS),
           TimeUnit.MILLISECONDS);
     }
+  }
+
+  /** Also governs the access log's retention (see AccessLog). */
+  public static synchronized int getKeepLogFiles() {
+    return keepLogFiles;
   }
 
   public static synchronized String getLogFile() {
@@ -105,7 +110,7 @@ public final class LoggingBootstrap {
   }
 
   private static synchronized void rotate() {
-    if (fileHandler == null || keepLogFiles <= 0) return;
+    if (fileHandler == null) return;
     Logger.getLogger("").removeHandler(fileHandler);
     fileHandler.close();
     try {

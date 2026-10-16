@@ -7,6 +7,7 @@ import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.services.SettingsService;
+import net.pieroxy.mom.utils.logging.LogRetention;
 import net.pieroxy.mom.utils.logging.LoggingBootstrap;
 
 import java.io.File;
@@ -25,8 +26,9 @@ public class SaveSetupStorageApi extends AbstractAuthenticatedEndpoint<SaveSetup
   public SaveSetupStorageApiOutput processAuthenticated(SaveSetupStorageApiInput input) {
     SettingsService settings = serviceProvider.getSettingsService();
     String previous = settings.saveSetupStorage(input.getDataFolder(), input.getKeepLogFiles());
-    LoggingBootstrap.setKeepLogFiles(input.getKeepLogFiles());
-    LOGGER.info("Setup: log retention set to " + (input.getKeepLogFiles() > 0 ? input.getKeepLogFiles() + " day(s)" : "none (no rotation)"));
+    int days = LogRetention.days(input.getKeepLogFiles());
+    LoggingBootstrap.setKeepLogFiles(days);
+    LOGGER.info("Setup: log retention set to " + (days == LogRetention.FOREVER ? "forever" : days + " day(s)"));
     if (previous != null) {
       String logFile = new File(settings.getDataFolder(), "logs/log.txt").getAbsolutePath();
       LOGGER.info("Setup: data folder moved from " + previous + " to " + settings.getDataFolder() + "; logging continues in " + logFile);
@@ -42,7 +44,8 @@ public class SaveSetupStorageApi extends AbstractAuthenticatedEndpoint<SaveSetup
 class SaveSetupStorageApiInput extends AuthenticatedApiInput {
   /** Absolute, or relative to the directory holding config.json. */
   private String dataFolder;
-  private int keepLogFiles;
+  /** Null: default retention (see LogRetention). */
+  private Integer keepLogFiles;
 
   public String getDataFolder() {
     return dataFolder;
@@ -52,11 +55,11 @@ class SaveSetupStorageApiInput extends AuthenticatedApiInput {
     this.dataFolder = dataFolder;
   }
 
-  public int getKeepLogFiles() {
+  public Integer getKeepLogFiles() {
     return keepLogFiles;
   }
 
-  public void setKeepLogFiles(int keepLogFiles) {
+  public void setKeepLogFiles(Integer keepLogFiles) {
     this.keepLogFiles = keepLogFiles;
   }
 }

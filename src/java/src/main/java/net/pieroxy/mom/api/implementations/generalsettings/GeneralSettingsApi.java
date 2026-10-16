@@ -60,7 +60,8 @@ class GeneralSettingsApiInput extends AuthenticatedApiInput {
 @TypeScriptType
 class GeneralSettingsApiOutput {
   private String dataFolder;
-  private int keepLogFiles;
+  /** Null: unset, i.e. the default retention (see LogRetention). */
+  private Integer keepLogFiles;
   private boolean webServerEnabled;
   private int webServerHttpPort;
   private String webServerAddress;
@@ -74,7 +75,7 @@ class GeneralSettingsApiOutput {
   public GeneralSettingsApiOutput() {
   }
 
-  public GeneralSettingsApiOutput(String dataFolder, int keepLogFiles, boolean webServerEnabled, int webServerHttpPort,
+  public GeneralSettingsApiOutput(String dataFolder, Integer keepLogFiles, boolean webServerEnabled, int webServerHttpPort,
                                    String webServerAddress, String webServerCredentialsKey, String webServerUsername,
                                    List<ReputationListDto> reputationLists) {
     this.dataFolder = dataFolder;
@@ -103,11 +104,11 @@ class GeneralSettingsApiOutput {
     this.dataFolder = dataFolder;
   }
 
-  public int getKeepLogFiles() {
+  public Integer getKeepLogFiles() {
     return keepLogFiles;
   }
 
-  public void setKeepLogFiles(int keepLogFiles) {
+  public void setKeepLogFiles(Integer keepLogFiles) {
     this.keepLogFiles = keepLogFiles;
   }
 

@@ -116,7 +116,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
 
     Configuration reloaded = new Gson().fromJson(new FileReader(configFile), Configuration.class);
     assertEquals("/new/data/folder", reloaded.getDataFolder());
-    assertEquals(30, reloaded.getKeepLogFiles());
+    assertEquals(Integer.valueOf(30), reloaded.getKeepLogFiles());
     assertTrue(reloaded.getWebServer().isEnabled());
     assertEquals(portBefore, reloaded.getWebServer().getHttpPort());
   }

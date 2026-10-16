@@ -15,7 +15,8 @@ import java.nio.file.StandardCopyOption;
 
 /**
  * Shifts the existing archives (name.N.lz4 -> name.(N+1).lz4), deletes the ones beyond
- * keepLogFiles, then compresses the current log file into name.1.lz4 and deletes it. Has no
+ * keepLogFiles (none when it's {@link LogRetention#FOREVER}), then compresses the current log file
+ * into name.1.lz4 and deletes it. Has no
  * dependency on java.util.logging, which makes it testable against plain files; LoggingBootstrap
  * takes care of closing/reopening the FileHandler around this call.
  */
@@ -23,17 +24,22 @@ public final class LogRotator {
   private LogRotator() {}
 
   public static void rotate(String logFile, int keepLogFiles) throws IOException {
-    if (keepLogFiles <= 0) return;
     File current = new File(logFile);
     if (!current.isFile()) return;
 
-    for (int i = keepLogFiles - 1; i >= 1; i--) {
+    boolean forever = keepLogFiles <= LogRetention.FOREVER;
+    int highestToShift = keepLogFiles - 1;
+    if (forever) {
+      highestToShift = 0;
+      while (archive(logFile, highestToShift + 1).isFile()) highestToShift++;
+    }
+    for (int i = highestToShift; i >= 1; i--) {
       File src = archive(logFile, i);
       if (src.isFile()) {
         Files.move(src.toPath(), archive(logFile, i + 1).toPath(), StandardCopyOption.REPLACE_EXISTING);
       }
     }
-    for (int i = keepLogFiles + 1; archive(logFile, i).isFile(); i++) {
+    for (int i = keepLogFiles + 1; !forever && archive(logFile, i).isFile(); i++) {
       Files.delete(archive(logFile, i).toPath());
     }
 

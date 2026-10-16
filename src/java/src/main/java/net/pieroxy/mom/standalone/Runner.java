@@ -8,6 +8,7 @@ import net.pieroxy.mom.services.SettingsService;
 import net.pieroxy.mom.services.WebServerService;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
+import net.pieroxy.mom.utils.logging.LogRetention;
 import net.pieroxy.mom.utils.logging.LoggingBootstrap;
 import net.pieroxy.mom.detection.reputation.ReputationRegistry;
 import net.pieroxy.mom.detection.reputation.ReputationRegistryHolder;
@@ -57,7 +58,7 @@ public class Runner {
     Runner.config = gson.fromJson(new FileReader(configFile), Configuration.class);
     CredentialsFile credentialsFile = gson.fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
     String dataFolder = config.resolveDataFolder(configDir);
-    LoggingBootstrap.configure(new File(dataFolder, "logs/log.txt").getAbsolutePath(), config.getKeepLogFiles());
+    LoggingBootstrap.configure(new File(dataFolder, "logs/log.txt").getAbsolutePath(), LogRetention.days(config.getKeepLogFiles()));
     LOGGER.info("Config: " + configFile.getAbsoluteFile().toPath().normalize() + ", data folder: " + dataFolder
         + (new File(config.getDataFolder()).isAbsolute() ? "" : " (\"" + config.getDataFolder() + "\", relative to the config directory)"));
 

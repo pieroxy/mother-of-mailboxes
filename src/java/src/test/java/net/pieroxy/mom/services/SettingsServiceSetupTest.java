@@ -57,7 +57,7 @@ public class SettingsServiceSetupTest {
     assertTrue(new File(tmp.getRoot(), "elsewhere").isDirectory());
     Configuration saved = reload();
     assertEquals("elsewhere", saved.getDataFolder());
-    assertEquals(30, saved.getKeepLogFiles());
+    assertEquals(Integer.valueOf(30), saved.getKeepLogFiles());
   }
 
   @Test

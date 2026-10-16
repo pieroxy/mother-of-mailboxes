@@ -1,5 +1,6 @@
 package net.pieroxy.mom.services;
 
+import net.pieroxy.mom.utils.logging.LogRetention;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.pieroxy.mom.config.credentials.Credential;
@@ -92,14 +93,12 @@ public class SettingsService implements Service {
    *
    * @return the previous resolved data folder if it changed, null otherwise.
    */
-  public synchronized String saveSetupStorage(String rawDataFolder, int keepLogFiles) {
+  public synchronized String saveSetupStorage(String rawDataFolder, Integer keepLogFiles) {
     requireSetupInProgress();
     if (rawDataFolder == null || rawDataFolder.isBlank()) {
       throw new IllegalArgumentException("The data folder must not be blank.");
     }
-    if (keepLogFiles < 0) {
-      throw new IllegalArgumentException("Keep log files must be zero (disabled) or a positive number of days.");
-    }
+    LogRetention.validate(keepLogFiles);
     String previousRaw = config.getDataFolder();
     config.setDataFolder(rawDataFolder.trim());
     String resolved;
@@ -323,7 +322,7 @@ public class SettingsService implements Service {
    * hot-swapped {@link ReputationRegistry}). {@code dataFolder} and {@code keepLogFiles} are
    * persisted to {@code config.json} but only take effect once the process is restarted by hand.
    */
-  public synchronized void updateGeneralSettings(String newDataFolder, int keepLogFiles,
+  public synchronized void updateGeneralSettings(String newDataFolder, Integer keepLogFiles,
                                                   String webServerUsername, String webServerPassword,
                                                   List<ReputationListConfig> reputationLists) {
     config.setDataFolder(newDataFolder);

@@ -1,5 +1,6 @@
 package net.pieroxy.mom.api.implementations.generalsettings;
 
+import net.pieroxy.mom.utils.logging.LogRetention;
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.services.SettingsService;
 import net.pieroxy.mom.api.implementations.reputation.ReputationListDto;
@@ -31,9 +32,7 @@ public class UpdateGeneralSettingsApi extends AbstractAuthenticatedEndpoint<Upda
     if (input.getDataFolder() == null || input.getDataFolder().isBlank()) {
       throw new IllegalArgumentException("The data folder must not be blank.");
     }
-    if (input.getKeepLogFiles() < 0) {
-      throw new IllegalArgumentException("Keep log files must be zero (disabled) or a positive number of days.");
-    }
+    LogRetention.validate(input.getKeepLogFiles());
     if (input.getWebServerUsername() == null || input.getWebServerUsername().isBlank()) {
       throw new IllegalArgumentException("Web server username must not be blank.");
     }
@@ -72,7 +71,8 @@ public class UpdateGeneralSettingsApi extends AbstractAuthenticatedEndpoint<Upda
 @TypeScriptType
 class UpdateGeneralSettingsApiInput extends AuthenticatedApiInput {
   private String dataFolder;
-  private int keepLogFiles;
+  /** Null: default retention (see LogRetention). */
+  private Integer keepLogFiles;
   private String webServerUsername;
   /** Blank means "leave the current password unchanged" — same convention as an account's credentials. */
   private String webServerPassword;
@@ -86,11 +86,11 @@ class UpdateGeneralSettingsApiInput extends AuthenticatedApiInput {
     this.dataFolder = dataFolder;
   }
 
-  public int getKeepLogFiles() {
+  public Integer getKeepLogFiles() {
     return keepLogFiles;
   }
 
-  public void setKeepLogFiles(int keepLogFiles) {
+  public void setKeepLogFiles(Integer keepLogFiles) {
     this.keepLogFiles = keepLogFiles;
   }
 

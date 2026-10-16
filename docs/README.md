@@ -58,7 +58,7 @@ same directory — see [Credentials file](#credentials-file).
 |---|---|---|
 | `configurations` | yes | List of accounts to monitor (see below). |
 | `dataFolder` | yes | Directory where MOM persists its own state: per-account UID cursors, learned rules, classifier corpus, and logs (`<dataFolder>/logs/log.txt`). Absolute, or relative to the directory holding `config.json` (e.g. `"data"`, so the whole setup can be moved as one folder). Created if missing. |
-| `keepLogFiles` | no | Number of rotated, lz4-compressed daily log files to keep. `0` or absent disables rotation (the log file just keeps growing). |
+| `keepLogFiles` | no | Days of application and access logs to keep: both rotate daily into lz4-compressed files. Absent: 30. `0`: never delete. |
 | `reputationLists` | no | IP/domain reputation lists to download and refresh (see [Reputation lists](#reputation-lists)). Absent means the feature is off. |
 | `webServer` | no | Embedded web server serving the web UI (see [Web server](#web-server)). Absent, or `enabled: false`, means the feature is off entirely — no Tomcat startup. |
 
@@ -421,9 +421,9 @@ used by the learning system above, marked unread the same way) for manual review
 
 ## Logging
 
-Console logging is always on. MOM also always writes to `<dataFolder>/logs/log.txt`, rotating
-daily into lz4-compressed archives (kept for `keepLogFiles` days) if `keepLogFiles > 0`. Browse
-both from the web UI: the document icon in the top bar.
+Console logging is always on. MOM also always writes to `<dataFolder>/logs/log.txt`, rotated at
+midnight into lz4-compressed archives (`log.txt.1.lz4` being the most recent), kept for
+`keepLogFiles` days. Browse them from the web UI: the document icon in the top bar.
 
 Each matcher/action node in a rule has its own logger, independently leveled via that node's
 `logLevel` config field (default `INFO`). Setting `"logLevel": "DEBUG"` on an
@@ -431,6 +431,26 @@ Each matcher/action node in a rule has its own logger, independently leveled via
 or [`DMARC_RESULT_EQUALS`](matchers/dmarc-result-equals.md) matcher is particularly useful: it
 surfaces that rule's full live verification trace (DNS records fetched, mechanisms/signatures
 evaluated, alignment computed) without touching any global logging configuration.
+
+### Access log
+
+When the [web server](#web-server) is on, every HTTP request it answers (API, static files, unknown
+paths, malformed requests) is appended to `<dataFolder>/logs/access-YYYY-MM-DD.log` (local day),
+in the Combined Log Format that Apache and nginx write — so tools like fail2ban or GoAccess read it
+as is — followed by the time spent answering:
+
+```
+203.0.113.7 - - [16/Oct/2026:11:48:06 +0200] "GET /api/v1/config HTTP/1.1" 404 - "-" "curl/8.4" 3ms
+127.0.0.1 - admin [16/Oct/2026:11:48:09 +0200] "GET /api/Session HTTP/1.1" 200 98 "-" "Mozilla/5.0 ..." 1ms
+```
+
+- The user field is the web login when the request carried a valid session, `-` otherwise.
+- The client address is the one connecting to MOM: behind a reverse proxy, the proxy's.
+- The query string is left out for `/api/` paths: it holds the endpoint's JSON input, which can
+  carry mail metadata (e.g. a decision log search).
+
+The first request of a day compresses the earlier days into `.lz4`; days older than
+`keepLogFiles` are deleted.
 
 ### Stats log
 
@@ -498,6 +518,7 @@ Everything MOM persists lives under `dataFolder`, one file/folder per account (k
 | Path | Contents |
 |---|---|
 | `logs/log.txt` | Current log file (see [Logging](#logging)); rotated into `logs/log.txt.N.lz4` archives. |
+| `logs/access-YYYY-MM-DD.log[.lz4]` | One file per local day of HTTP requests (see [Access log](#access-log)). Compressed after the day ends, deleted after `keepLogFiles` days. |
 | `logs/<displayName>/stats-YYYY-MM-DD.json` | One JSON-lines file per UTC day of successful rule matches (see [Stats log](#stats-log)). Not rotated/pruned by MOM. |
 | `logs/<displayName>/decisions-YYYY-MM-DD.json[.lz4]` | One JSON-lines file per UTC day of decisions (see [Decision log](#decision-log)), if enabled. Compressed after the day ends, deleted after `decisionLogRetentionDays`. |
 | `<displayName>.json` | INBOX UID cursor (which messages have already been processed). |
