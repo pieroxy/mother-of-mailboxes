@@ -524,6 +524,7 @@ body {
               display: flex;
               gap: 24px;
 
+              // The whole card links to the account's home page (AccountHomePage).
               .account {
                   background-color: $bg-color-l3;
                   color: $text-muted;
@@ -532,6 +533,13 @@ body {
                   border-radius: 10px;
                   display: flex;
                   gap: 16px;
+                  cursor: pointer;
+                  border: 1px solid transparent;
+                  transition: border-color 0.15s linear;
+
+                  &:hover {
+                      border-color: $accent-color;
+                  }
 
                   .account-left {
                       display: flex;
@@ -552,28 +560,6 @@ body {
                       text-transform: uppercase;
                       letter-spacing: 0.05em;
                       color: $text-faint;
-                  }
-
-                  .account-left-actions {
-                      display: flex;
-                      flex-direction: column;
-                      align-items: center;
-                      gap: 8px;
-                  }
-
-                  .stats-link, .settings-link, .logs-link {
-                      cursor: pointer;
-                      opacity: 0.6;
-                      transition: opacity 0.15s linear;
-
-                      &:hover {
-                          opacity: 1;
-                      }
-
-                      svg.icon {
-                          width: 26px;
-                          height: 26px;
-                      }
                   }
 
                   .account-details {
@@ -622,6 +608,148 @@ body {
                           }
                       }
                   }
+              }
+          }
+
+          // AccountHomePage: link tiles to the account's sub-pages, then its detailed information cards.
+          .account-home-links {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+              gap: 16px;
+              margin-bottom: 8px;
+
+              .account-home-link {
+                  display: flex;
+                  align-items: flex-start;
+                  gap: 14px;
+                  padding: 16px;
+                  border-radius: 10px;
+                  background-color: $bg-color-l3;
+                  border: 1px solid transparent;
+                  cursor: pointer;
+                  transition: border-color 0.15s linear;
+
+                  &:hover {
+                      border-color: $accent-color;
+                  }
+
+                  svg.icon {
+                      width: 32px;
+                      height: 32px;
+                      flex-shrink: 0;
+                  }
+
+                  .account-home-link-title {
+                      color: $text-color;
+                      font-weight: bold;
+                      margin-bottom: 4px;
+                  }
+
+                  .account-home-link-description {
+                      font-size: 13px;
+                      color: $text-muted;
+                  }
+              }
+          }
+
+          .account-home-info {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+              gap: 16px;
+
+              .page-card {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  color: $text-muted;
+
+                  .field-hint {
+                      margin: 0;
+                      font-size: 12px;
+                      color: $text-faint;
+                  }
+
+                  button {
+                      align-self: flex-start;
+                  }
+              }
+
+              .account-home-status-line {
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+
+                  svg.icon {
+                      width: 32px;
+                      height: 32px;
+                      flex-shrink: 0;
+                  }
+
+                  .account-home-status-label {
+                      color: $text-color;
+                      font-weight: bold;
+                  }
+              }
+
+              .account-home-info-rows {
+                  display: grid;
+                  grid-template-columns: max-content 1fr;
+                  gap: 6px 16px;
+                  margin: 0;
+                  font-size: 14px;
+
+                  dt {
+                      color: $text-faint;
+                  }
+
+                  dd {
+                      margin: 0;
+                      color: $text-color;
+                      overflow-wrap: anywhere;
+                  }
+              }
+
+              .account-home-classifiers {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 6px;
+                  font-size: 14px;
+
+                  .account-home-classifier {
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+
+                      svg.icon {
+                          width: 16px;
+                          height: 16px;
+                          flex-shrink: 0;
+                      }
+
+                      .account-home-classifier-label {
+                          color: $text-color;
+                          min-width: 60px;
+                      }
+
+                      .account-home-classifier-status {
+                          color: $text-faint;
+                      }
+
+                      &.trained .account-home-classifier-status {
+                          color: $status-ok;
+                      }
+                  }
+              }
+          }
+
+          .account-home-coming-soon {
+              border: 1px dashed $border-color;
+              background-color: transparent;
+              color: $text-muted;
+
+              p {
+                  margin: 8px 0 0 0;
+                  font-size: 14px;
               }
           }
 

@@ -15,6 +15,10 @@ export class Routing {
     m.route.set(target, null, { replace });
   }
 
+  static goToAccountHome(accountName: string) {
+    m.route.set(Endpoints.ACCOUNT_HOME, { accountName });
+  }
+
   static goToStats(accountName: string) {
     m.route.set(Endpoints.STATS, { accountName });
   }

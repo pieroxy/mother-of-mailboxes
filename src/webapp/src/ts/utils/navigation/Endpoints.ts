@@ -7,6 +7,7 @@ export enum Endpoints {
   GENERAL_SETTINGS = "/general-settings",
   APP_LOGS = "/app-logs",
   ACCOUNT_CREATE = "/new-account",
+  ACCOUNT_HOME = "/account/:accountName",
   STATS = "/stats/:accountName",
   LOGS = "/logs/:accountName",
   ACCOUNT_SETTINGS = "/settings/:accountName",

@@ -31,7 +31,8 @@ public class AccountsApi extends AbstractAuthenticatedEndpoint<AccountsApiInput,
     return new AccountsApiOutput(accounts);
   }
 
-  private static AccountStatusDto toDto(MailAccount account) {
+  /** Package-visible: also used by {@link AccountStatusApi} for a single account. */
+  static AccountStatusDto toDto(MailAccount account) {
     return new AccountStatusDto(account.getAccountLabel(), account.getStatus().name(), account.getConfig().isActive(),
         account.getMessagesProcessed(), account.getMessagesMatched(),
         account.getLastErrorMessage(), toIsoString(account.getLastErrorTimestamp()),

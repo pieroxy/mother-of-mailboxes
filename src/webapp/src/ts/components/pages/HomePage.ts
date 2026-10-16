@@ -2,16 +2,9 @@ import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { AccountStatusDto, ReputationListDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
-import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
-import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
-import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
-import { StatusWarningIcon } from "../atoms/icons/StatusWarningIcon";
-import { StatusPausedIcon } from "../atoms/icons/StatusPausedIcon";
 import { CycleProgressBar } from "../CycleProgressBar";
 import { ClassifierTrainingSummary } from "../ClassifierTrainingSummary";
-import { StatsIcon } from "../atoms/icons/StatsIcon";
-import { SettingsIcon } from "../atoms/icons/SettingsIcon";
-import { LogsIcon } from "../atoms/icons/LogsIcon";
+import { StatusIcon, accountDisplayStatus, statusDescription, statusLabel } from "../AccountStatus";
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { formatBytes, formatCount } from "../../utils/format";
@@ -80,19 +73,12 @@ interface AccountRowAttrs {
 class AccountRow implements m.ClassComponent<AccountRowAttrs> {
   view({ attrs }: m.Vnode<AccountRowAttrs>): m.Children {
     const account = attrs.account;
-    // A paused account's displayed status always wins over whatever it last did while running —
-    // there's no "last known status" worth showing once the user has turned it off on purpose.
-    const displayStatus = account.active ? account.status : "PAUSED";
-    return m(".account.status-" + displayStatus.toLowerCase(), [
+    const displayStatus = accountDisplayStatus(account);
+    return m("a.account.status-" + displayStatus.toLowerCase(), { onclick: () => Routing.goToAccountHome(account.name) }, [
       m(".account-left", [
         m(".account-status", { title: statusDescription(displayStatus) }, [
           m(StatusIcon, { status: displayStatus }),
           m(".account-status-label", statusLabel(displayStatus)),
-        ]),
-        m(".account-left-actions", [
-          m("span.settings-link", { title: "Account settings", onclick: () => Routing.goToAccountSettings(account.name) }, m(SettingsIcon)),
-          m("span.stats-link", { title: "View stats", onclick: () => Routing.goToStats(account.name) }, m(StatsIcon)),
-          m("span.logs-link", { title: "View decision log", onclick: () => Routing.goToLogs(account.name) }, m(LogsIcon)),
         ]),
       ]),
       m(".account-details",
@@ -108,59 +94,6 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
         account.active && account.status == 'KO' ? m(".account-error", account.lastErrorTimestamp + ": " + account.lastErrorMessage ) : null
       )
     ]);
-  }
-}
-
-interface StatusIconAttrs {
-  status: string;
-}
-
-class StatusIcon implements m.ClassComponent<StatusIconAttrs> {
-  view({ attrs }: m.Vnode<StatusIconAttrs>): m.Children {
-    switch (attrs.status) {
-      case "OK":
-        return m(StatusOkIcon);
-      case "WARNING":
-        return m(StatusWarningIcon);
-      case "KO":
-        return m(StatusErrorIcon);
-      case "PAUSED":
-        return m(StatusPausedIcon);
-      default:
-        return m(StatusInfoIcon);
-    }
-  }
-}
-
-/** Tooltip on an account's status icon. */
-function statusDescription(status: string): string {
-  switch (status) {
-    case "OK":
-      return "Waiting for new mail";
-    case "PROCESSING":
-      return "Processing mail right now";
-    case "KO":
-      return "The last cycle failed — see the error message";
-    case "PAUSED":
-      return "Paused: no mail is processed until the account is resumed";
-    default:
-      return status;
-  }
-}
-
-/** The word shown under an account's status icon — see {@link StatusIcon} for the matching icon. */
-function statusLabel(status: string): string {
-  switch (status) {
-    case "OK":
-      return "OK";
-    case "PROCESSING":
-      return "Processing";
-    case "KO":
-      return "Error";
-    case "PAUSED":
-      return "Paused";
-    default:
-      return status;
   }
 }
 

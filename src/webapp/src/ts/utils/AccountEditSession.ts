@@ -159,6 +159,12 @@ class AccountEditSessionStore {
   discard(accountName: string) {
     this.sessions.delete(accountName);
   }
+
+  /** Keeps an in-flight session's paused/running flag in sync when it's toggled from elsewhere (see AccountHomePage) — not a pending edit, it's already applied on the backend. */
+  setActive(accountName: string, active: boolean) {
+    const existing = this.sessions.get(accountName);
+    if (existing) existing.active = active;
+  }
 }
 
 export const accountEditSessions = new AccountEditSessionStore();
