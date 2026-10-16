@@ -28,18 +28,18 @@ string?
 
 So for now, dropping an example teaches the rule using the example's **entire subject,
 verbatim**, as the key. This is almost never what you want as a long-term rule — it'll only
-ever match that exact one subject again. After learning, you need to **hand-edit the learned
-rule** to shorten the key to the actual prefix you meant:
+ever match that exact one subject again. After learning, **edit the learned rule** to shorten
+the key to the actual prefix you meant:
 
 1. Drop your example message into `mom-rules/SUBJECT_STARTS_WITH/<ACTION_TYPE>/<key-folder-name>`.
-2. Let a cycle run — the rule is learned (with the full subject as its key) and persisted to
-   `<dataFolder>/<displayName>-learned-rules.json` (see [Data files](../README.md#data-files)).
-3. Open that file, find the rule (`"type": "SUBJECT_STARTS_WITH"`), and edit its `key` (or
-   `keys`) down to the prefix you actually want.
-4. **Restart MOM.** The in-memory rule list is only reloaded from disk when a *new* example
-   gets learned during a cycle — a manual edit to the file doesn't trigger that by itself, so
-   without a restart your edit sits on disk unused until the next time something else happens
-   to be learned.
+2. Let a cycle run — the rule is learned, with the full subject as its key.
+3. In the web UI, open the account's settings: under learned rules, replace that key with the
+   prefix you actually want, then "Save Changes". It applies right away.
+
+You can also edit `<dataFolder>/<displayName>-learned-rules.json` by hand (see
+[Data files](../README.md#data-files)), but then **restart MOM**: the in-memory rule list is only
+reloaded from disk when a *new* example gets learned, so without a restart your edit sits on disk
+unused.
 
 ## Example
 

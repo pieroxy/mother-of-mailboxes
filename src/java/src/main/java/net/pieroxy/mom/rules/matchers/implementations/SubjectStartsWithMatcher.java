@@ -13,9 +13,8 @@ import java.util.Optional;
  * Learnable, but naively: {@link #extractKeyFromExample} learns the **entire** subject of the
  * deposited example, not an intelligently-inferred prefix (there's no way to know which part of
  * the subject is the intended prefix vs. content specific to this particular example, e.g.
- * "Your invoice #12345" — should it learn "Your invoice" or the whole text?). For now, the
- * {@code <dataFolder>/<displayName>-learned-rules.json} file has to be hand-edited afterward to
- * shorten the learned key down to the actually-intended prefix.
+ * "Your invoice #12345" — should it learn "Your invoice" or the whole text?). The learned key has
+ * to be shortened afterward to the intended prefix, from the account's learned rules in the web UI.
  */
 public class SubjectStartsWithMatcher extends Matcher {
   @Override

@@ -70,9 +70,7 @@ INFO: HeaderClassifierMatcher inactive: no trained model yet for this account (n
 ```
 
 Once a model appears (or a newer one replaces it after a later training run), the matcher
-notices on its own — no restart needed, unlike hand-edited learned rules (see
-[`SUBJECT_STARTS_WITH`](subject-starts-with.md#learning-by-example--read-this-before-using-it)
-for a case where a restart *is* required).
+notices on its own — no restart needed.
 
 ## Example
 

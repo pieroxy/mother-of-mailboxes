@@ -100,8 +100,9 @@ Two places to look for logs: `/var/lib/mom/logs/log.txt` (MOM's own rotating log
 and `journalctl -u mom -f` for service-level output (startup, crashes, anything printed before
 the log file is set up).
 
-To pick up a config change, restart the service. The same applies if you hand-edit
-`learned-rules.json` — see [`SUBJECT_STARTS_WITH`](matchers/subject-starts-with.md) for why:
+Changes made from the web UI apply on their own (a few, like the data folder, say they need a
+restart). If you edit `config.json` or a `learned-rules.json` file by hand instead, restart the
+service:
 
 ```sh
 sudo systemctl restart mom

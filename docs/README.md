@@ -352,11 +352,11 @@ matcher/action combination each cycle — you only need to create the final `<ke
 yourself (its name becomes the action's key, e.g. the target folder for `MOVE_TO`).
 
 Only "learnable" matcher/action types support this (everything except the composite `AND`/`OR`/
-`NOT` types, which are reserved for manual config). Each cycle, for every example message found:
+`NOT` types, which are reserved for rules you write yourself). Each cycle, for every example message found:
 
 1. The matcher's key is extracted from the example (e.g. its sender's domain).
 2. The rule is persisted to `<dataFolder>/<displayName>-learned-rules.json` — a separate file
-   from `config.json`, which MOM never modifies. If a rule with the same matcher type and
+   from `config.json`, which learning never modifies. If a rule with the same matcher type and
    action already exists, the new key is merged into it (`keys`) rather than creating a
    duplicate rule.
 3. The action actually runs on the example message itself.
@@ -526,7 +526,7 @@ Everything MOM persists lives under `dataFolder`, one file/folder per account (k
 | `logs/<displayName>/stats-YYYY-MM-DD.json` | One JSON-lines file per UTC day of successful rule matches (see [Stats log](#stats-log)). Not rotated/pruned by MOM. |
 | `logs/<displayName>/decisions-YYYY-MM-DD.json[.lz4]` | One JSON-lines file per UTC day of decisions (see [Decision log](#decision-log)), if enabled. Compressed after the day ends, deleted after `decisionLogRetentionDays`. |
 | `<displayName>.json` | INBOX UID cursor (which messages have already been processed). |
-| `<displayName>-learned-rules.json` | Rules learned via `mom-rules/` (see above). Hand-editable. |
+| `<displayName>-learned-rules.json` | Rules learned via `mom-rules/` (see above). Editable from the account's settings in the web UI, or by hand (then restart MOM). |
 | `classifier-corpus/<displayName>-scan-state.json` | Per-folder UID cursor for corpus scanning. |
 | `classifier-corpus/<displayName>/classifier-YYYY-MM-DD.json.lz4` | One compressed file per day of collected corpus data. |
 | `classifier-corpus/<displayName>/subject-model.bin` | Trained subject classifier model (see below). Absent until enough data has been collected. |
