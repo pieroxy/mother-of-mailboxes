@@ -15,6 +15,11 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -36,6 +41,25 @@ public final class DailyLogFiles {
     this.prefix = prefix;
     this.extension = extension;
     this.dayFile = Pattern.compile(Pattern.quote(prefix) + "(\\d{4}-\\d{2}-\\d{2})" + Pattern.quote(extension));
+  }
+
+  /** A day's file: plain for today, {@code .lz4} once rotated. */
+  public record DayFile(LocalDate day, File file, boolean compressed) {}
+
+  /** Every day's file in {@code dir}, most recent first. The {@code .lz4} wins over a plain file being compressed. */
+  public List<DayFile> list(File dir) {
+    Map<LocalDate, DayFile> byDay = new TreeMap<>(Comparator.reverseOrder());
+    File[] files = dir == null ? null : dir.listFiles();
+    if (files == null) return List.of();
+    for (File f : files) {
+      String name = f.getName();
+      boolean compressed = name.endsWith(".lz4");
+      Matcher m = dayFile.matcher(compressed ? name.substring(0, name.length() - ".lz4".length()) : name);
+      if (!m.matches() || !f.isFile()) continue;
+      LocalDate day = LocalDate.parse(m.group(1));
+      if (compressed || !byDay.containsKey(day)) byDay.put(day, new DayFile(day, f, compressed));
+    }
+    return new ArrayList<>(byDay.values());
   }
 
   public File fileFor(File dir, LocalDate day) {

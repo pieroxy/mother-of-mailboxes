@@ -21,11 +21,16 @@ public final class AccessLog {
 
   private AccessLog() {}
 
+  /** Next to the application log; null when MOM doesn't log to a file. */
+  public static File directory() {
+    String logFile = LoggingBootstrap.getLogFile();
+    return logFile == null ? null : new File(logFile).getAbsoluteFile().getParentFile();
+  }
+
   /** Appends {@code line}, written at {@code time}, to that day's file. Does nothing when MOM doesn't log to a file. */
   public static synchronized void record(ZonedDateTime time, String line) {
-    String logFile = LoggingBootstrap.getLogFile();
-    if (logFile == null) return;
-    File dir = new File(logFile).getAbsoluteFile().getParentFile();
+    File dir = directory();
+    if (dir == null) return;
     try {
       DAILY_FILES.append(dir, time.toLocalDate(), line, LoggingBootstrap.getKeepLogFiles());
     } catch (IOException e) {

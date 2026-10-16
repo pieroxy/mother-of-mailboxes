@@ -1385,6 +1385,26 @@ body {
                   }
               }
 
+              .applogs-status {
+                  font-weight: bold;
+
+                  &.status-2xx {
+                      color: $text-muted;
+                  }
+
+                  &.status-3xx {
+                      color: $status-info;
+                  }
+
+                  &.status-4xx {
+                      color: $status-warning;
+                  }
+
+                  &.status-5xx {
+                      color: $status-error;
+                  }
+              }
+
               .applogs-level {
                   font-weight: bold;
 
@@ -1403,6 +1423,11 @@ body {
                   &.level-config, &.level-fine, &.level-finer, &.level-finest, &.level-none {
                       color: $text-faint;
                   }
+              }
+
+              .config-grid.applogs-details .config-row {
+                  grid-template-columns: 100px 1fr;
+                  font-size: 12px;
               }
 
               .applogs-details {

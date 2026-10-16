@@ -10,10 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
@@ -105,8 +102,7 @@ public final class AppLogReader {
 
   /** Newest matching entries before {@code cursor} (null: from the end of the file), newest first. */
   public static Page read(LogFile file, Filter filter, Long cursor, int limit) throws IOException {
-    Deque<Entry> kept = new ArrayDeque<>();
-    boolean olderMatches = false;
+    NewestFirst<Entry> page = new NewestFirst<>(limit, Entry::index);
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(open(file), StandardCharsets.UTF_8))) {
       EntryBuilder pending = null;
       long index = 0;
@@ -116,7 +112,8 @@ public final class AppLogReader {
         if (header.matches() || pending == null) {
           if (pending != null) {
             if (cursor != null && index >= cursor) break;
-            olderMatches |= keep(pending.build(index++), filter, kept, limit);
+            Entry entry = pending.build(index++);
+            if (filter.accepts(entry)) page.add(entry);
           }
           pending = header.matches() ? new EntryBuilder(header) : new EntryBuilder(line);
         } else {
@@ -124,22 +121,11 @@ public final class AppLogReader {
         }
       }
       if (pending != null && (cursor == null || index < cursor)) {
-        olderMatches |= keep(pending.build(index), filter, kept, limit);
+        Entry entry = pending.build(index);
+        if (filter.accepts(entry)) page.add(entry);
       }
     }
-    List<Entry> newestFirst = new ArrayList<>(kept);
-    Collections.reverse(newestFirst);
-    Long nextCursor = olderMatches && !kept.isEmpty() ? kept.peekFirst().index() : null;
-    return new Page(newestFirst, nextCursor);
-  }
-
-  /** @return true if a matching entry had to be dropped to stay within {@code limit}. */
-  private static boolean keep(Entry entry, Filter filter, Deque<Entry> kept, int limit) {
-    if (!filter.accepts(entry)) return false;
-    kept.addLast(entry);
-    if (kept.size() <= limit) return false;
-    kept.removeFirst();
-    return true;
+    return new Page(page.newestFirst(), page.nextCursor());
   }
 
   private static InputStream open(LogFile file) throws IOException {

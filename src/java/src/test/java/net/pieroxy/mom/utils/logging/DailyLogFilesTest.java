@@ -55,6 +55,21 @@ public class DailyLogFilesTest {
   }
 
   @Test
+  public void listsDaysMostRecentFirstPreferringTheCompressedFile() throws IOException {
+    File dir = tmp.getRoot();
+    dayFile(dir, TODAY);
+    dayFile(dir, TODAY.minusDays(2));
+    Files.writeString(new File(dir, "access-2026-10-15.log").toPath(), "being compressed");
+    Files.writeString(new File(dir, "access-2026-10-15.log.lz4").toPath(), "");
+    Files.writeString(new File(dir, "log.txt").toPath(), "unrelated");
+
+    List<DailyLogFiles.DayFile> days = files.list(dir);
+
+    assertEquals(List.of(TODAY, TODAY.minusDays(1), TODAY.minusDays(2)), days.stream().map(DailyLogFiles.DayFile::day).toList());
+    assertEquals(List.of(false, true, false), days.stream().map(DailyLogFiles.DayFile::compressed).toList());
+  }
+
+  @Test
   public void laterWritesOfTheSameDayJustAppend() throws IOException {
     File dir = tmp.getRoot();
     files.append(dir, TODAY, "one", 30);

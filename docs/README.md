@@ -450,7 +450,8 @@ as is — followed by the time spent answering:
   carry mail metadata (e.g. a decision log search).
 
 The first request of a day compresses the earlier days into `.lz4`; days older than
-`keepLogFiles` are deleted.
+`keepLogFiles` are deleted. Browse it from the web UI's Logs page (the document icon in the top bar), next to
+the application log.
 
 ### Stats log
 
