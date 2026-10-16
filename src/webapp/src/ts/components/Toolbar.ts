@@ -3,6 +3,7 @@ import { Logo } from './atoms/icons/Logo';
 import { RefreshIcon } from './atoms/icons/RefreshIcon';
 import { ProfileIcon } from './atoms/icons/ProfileIcon';
 import { SettingsIcon } from './atoms/icons/SettingsIcon';
+import { LogsIcon } from './atoms/icons/LogsIcon';
 import { Endpoints } from '../utils/navigation/Endpoints';
 import { Routing } from '../utils/navigation/Routing';
 
@@ -12,6 +13,7 @@ export class Toolbar implements m.ClassComponent<ToolbarAttrs> {
       m("a.logo", {title: "Home", onclick:()=>{Routing.goToScreen(Endpoints.HOME)}}, m(Logo)),
       attrs.refreshData ? m("span.refresh", { title: "Refresh", onclick: attrs.refreshData }, m(RefreshIcon)) : null,
       m("", {style:{flex:1}}),
+      m("a.app-logs-link", {title: "Application logs", onclick:()=>{Routing.goToScreen(Endpoints.APP_LOGS)}}, m(LogsIcon)),
       m("a.general-settings-link", {title: "General settings", onclick:()=>{Routing.goToScreen(Endpoints.GENERAL_SETTINGS)}}, m(SettingsIcon)),
       m("a", {title: "Profile", onclick:()=>{Routing.goToScreen(Endpoints.PROFILE)}}, m(ProfileIcon))
     ])

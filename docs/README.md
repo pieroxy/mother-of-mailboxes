@@ -422,7 +422,8 @@ used by the learning system above, marked unread the same way) for manual review
 ## Logging
 
 Console logging is always on. MOM also always writes to `<dataFolder>/logs/log.txt`, rotating
-daily into lz4-compressed archives (kept for `keepLogFiles` days) if `keepLogFiles > 0`.
+daily into lz4-compressed archives (kept for `keepLogFiles` days) if `keepLogFiles > 0`. Browse
+both from the web UI: the document icon in the top bar.
 
 Each matcher/action node in a rule has its own logger, independently leveled via that node's
 `logLevel` config field (default `INFO`). Setting `"logLevel": "DEBUG"` on an

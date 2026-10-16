@@ -14,6 +14,7 @@ import { AccountSmtpSettingsEditPage } from "./components/pages/AccountSmtpSetti
 import { RuleEditPage } from "./components/pages/RuleEditPage";
 import { ShortcutEditPage } from "./components/pages/ShortcutEditPage";
 import { GeneralSettingsPage } from "./components/pages/GeneralSettingsPage";
+import { AppLogsPage } from "./components/pages/AppLogsPage";
 import { ChangePasswordPage } from "./components/pages/ChangePasswordPage";
 import { AccountCreatePage } from "./components/pages/AccountCreatePage";
 import { SetupWizardPage } from "./components/pages/SetupWizardPage";
@@ -25,6 +26,7 @@ const routes: m.RouteDefs = {
   [Endpoints.HOME]: new AuthenticatedPageResolver(HomePage),
   [Endpoints.PROFILE]: new AuthenticatedPageResolver(ProfilePage),
   [Endpoints.GENERAL_SETTINGS]: new AuthenticatedPageResolver(GeneralSettingsPage),
+  [Endpoints.APP_LOGS]: new AuthenticatedPageResolver(AppLogsPage),
   [Endpoints.ACCOUNT_CREATE]: new AuthenticatedPageResolver(AccountCreatePage),
   [Endpoints.STATS]: new AuthenticatedPageResolver(StatsPage),
   [Endpoints.LOGS]: new AuthenticatedPageResolver(LogsPage),
