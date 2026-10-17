@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,6 +75,8 @@ public class SettingsService implements Service {
   public void start() {
     trustedProxies = TrustedProxies.parse(config.getTrustedProxies());
     if (!trustedProxies.isEmpty()) LOGGER.info("Trusted proxies (X-Forwarded-For believed from): " + String.join(", ", trustedProxies.entries()));
+    LOGGER.info(config.getMailDiagnosticsSinkUrl() == null ? "Mail diagnostics: no SMTP sink configured"
+        : "Mail diagnostics SMTP sink: " + config.getMailDiagnosticsSinkUrl());
     if (config.getWebServer() != null && config.getWebServer().isEnabled()) {
       webServerCredential = resolveCredential(config.getWebServer().getCredentials(), "webServer");
       migrateWebServerPasswordIfNeeded();
@@ -341,6 +344,10 @@ public class SettingsService implements Service {
     config.setTrustedProxies(parsedTrustedProxies.isEmpty() ? null : parsedTrustedProxies.entries());
     this.trustedProxies = parsedTrustedProxies;
     config.setKeepLogFiles(keepLogFiles);
+    if (!Objects.equals(config.getMailDiagnosticsSinkUrl(), mailDiagnosticsSinkUrl)) {
+      LOGGER.info(mailDiagnosticsSinkUrl == null ? "Mail diagnostics SMTP sink removed: diagnostics disabled"
+          : "Mail diagnostics SMTP sink set to " + mailDiagnosticsSinkUrl);
+    }
     if (mailDiagnosticsSinkUrl == null) {
       config.setMailDiagnostics(null);
     } else {

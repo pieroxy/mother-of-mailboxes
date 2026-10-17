@@ -81,6 +81,7 @@ public class SmtpServer {
   }
 
   private void refuse(Socket socket) {
+    LOGGER.info("[" + socket.getInetAddress().getHostAddress() + "] Refused: already " + config.getMaxConnections() + " connections");
     try (socket; OutputStream out = socket.getOutputStream()) {
       out.write(("421 4.3.2 " + config.getHostname() + " Too many connections, try again later\r\n").getBytes(StandardCharsets.US_ASCII));
     } catch (IOException ignored) {

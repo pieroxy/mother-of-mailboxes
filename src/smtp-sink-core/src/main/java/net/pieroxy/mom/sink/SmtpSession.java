@@ -60,6 +60,7 @@ class SmtpSession implements Runnable {
       out = socket.getOutputStream();
       clientIp = socket.getInetAddress().getHostAddress();
       if (config.isSmtpProxyProtocol() && !readProxyHeader()) return;
+      LOGGER.info("[" + clientIp + "] Connected");
 
       reply("220 " + config.getHostname() + " ESMTP MOM SMTP sink");
       LineReader.Line line;
@@ -70,8 +71,9 @@ class SmtpSession implements Runnable {
         }
         if (!handle(line.asString())) return;
       }
+      LOGGER.info("[" + clientIp + "] Disconnected without QUIT");
     } catch (IOException e) {
-      LOGGER.log(Level.FINE, "Connection from " + clientIp + " ended: " + e.getMessage());
+      LOGGER.info("[" + clientIp + "] Connection ended: " + e.getMessage());
     } catch (RuntimeException e) {
       LOGGER.log(Level.WARNING, "Unexpected error in the session with " + clientIp, e);
     } finally {
@@ -116,6 +118,7 @@ class SmtpSession implements Runnable {
         }
         helo = arg;
         esmtp = verb.equals("EHLO");
+        LOGGER.info("[" + clientIp + "] " + verb + " " + helo);
         resetTransaction();
         if (esmtp) {
           List<String> lines = new ArrayList<>();
@@ -151,6 +154,7 @@ class SmtpSession implements Runnable {
         reply("252 2.1.5 Cannot verify, but will accept");
         return true;
       case "QUIT":
+        LOGGER.info("[" + clientIp + "] QUIT");
         reply("221 2.0.0 Bye");
         return false;
       default:
@@ -170,6 +174,7 @@ class SmtpSession implements Runnable {
     }
     if (in.hasPendingInput()) {
       // Anything pipelined after STARTTLS would be read as if it had come through TLS (RFC 3207 §4.2).
+      LOGGER.info("[" + clientIp + "] Refused: commands pipelined after STARTTLS");
       reply("554 5.5.1 Commands pipelined after STARTTLS");
       return false;
     }
@@ -184,6 +189,7 @@ class SmtpSession implements Runnable {
     out = ssl.getOutputStream();
     tlsProtocol = ssl.getSession().getProtocol();
     tlsCipher = ssl.getSession().getCipherSuite();
+    LOGGER.info("[" + clientIp + "] STARTTLS done: " + tlsProtocol + " " + tlsCipher);
     // RFC 3207 §4.2: everything learned before TLS is forgotten, starting with the EHLO.
     helo = null;
     esmtp = false;
@@ -209,6 +215,7 @@ class SmtpSession implements Runnable {
       if (param.toUpperCase(Locale.ROOT).startsWith("SIZE=")) {
         try {
           if (Long.parseLong(param.substring(5)) > config.getMaxMessageSizeBytes()) {
+            LOGGER.info("[" + clientIp + "] Refused MAIL FROM:<" + path.address + ">: announced " + param);
             reply("552 5.3.4 Message size exceeds the " + config.getMaxMessageSizeBytes() + " bytes limit");
             return;
           }
@@ -219,6 +226,7 @@ class SmtpSession implements Runnable {
       }
     }
     mailFrom = path.address;
+    LOGGER.info("[" + clientIp + "] MAIL FROM:<" + mailFrom + ">");
     reply("250 2.1.0 OK");
   }
 
@@ -238,10 +246,12 @@ class SmtpSession implements Runnable {
     }
     String domain = path.address.substring(path.address.lastIndexOf('@') + 1).toLowerCase(Locale.ROOT);
     if (!config.getAcceptedDomains().isEmpty() && !config.getAcceptedDomains().contains(domain)) {
+      LOGGER.info("[" + clientIp + "] Refused RCPT TO:<" + path.address + ">: domain not accepted");
       reply("550 5.7.1 Relay access denied");
       return;
     }
     recipients.add(path.address);
+    LOGGER.info("[" + clientIp + "] RCPT TO:<" + path.address + ">");
     reply("250 2.1.5 OK");
   }
 
@@ -274,12 +284,14 @@ class SmtpSession implements Runnable {
 
     try {
       if (tooBig) {
+        LOGGER.info("[" + clientIp + "] Refused message: over " + max + " bytes");
         reply("552 5.3.4 Message size exceeds the " + max + " bytes limit");
         return;
       }
       byte[] content = message.toByteArray();
       String subject = MessageHeaders.subject(content);
       if (!MessageStore.isUuid(subject)) {
+        LOGGER.info("[" + clientIp + "] Refused message: Subject is not a UUID (" + abbreviate(subject) + ")");
         reply("550 5.7.1 Only test messages whose Subject is a UUID are accepted");
         return;
       }
@@ -287,7 +299,8 @@ class SmtpSession implements Runnable {
       stored.write(traceHeaders().getBytes(StandardCharsets.UTF_8));
       stored.write(content);
       store.save(subject, stored.toByteArray());
-      LOGGER.info("Stored " + subject.toLowerCase(Locale.ROOT) + " from [" + clientIp + "] helo=" + helo + " tls=" + (tlsProtocol == null ? "none" : tlsProtocol));
+      LOGGER.info("[" + clientIp + "] Stored " + subject.toLowerCase(Locale.ROOT) + " (" + content.length + " bytes) helo=" + helo
+          + " tls=" + (tlsProtocol == null ? "none" : tlsProtocol));
       reply("250 2.0.0 OK " + subject.toLowerCase(Locale.ROOT));
     } finally {
       resetTransaction();
@@ -310,6 +323,12 @@ class SmtpSession implements Runnable {
   /** RFC 5321 §4.1.3 address literal: [1.2.3.4] or [IPv6:2001:db8::1]. */
   private static String addressLiteral(String ip) {
     return ip.contains(":") ? "[IPv6:" + ip + "]" : "[" + ip + "]";
+  }
+
+  /** For logging a client-supplied value: bounded, so a huge Subject can't flood the log. */
+  private static String abbreviate(String s) {
+    if (s == null) return "none";
+    return s.length() <= 80 ? s : s.substring(0, 80) + "…";
   }
 
   private void resetTransaction() {

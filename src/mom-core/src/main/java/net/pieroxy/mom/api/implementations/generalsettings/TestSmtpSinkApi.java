@@ -9,6 +9,7 @@ import net.pieroxy.mom.diagnostics.SmtpSinkClient;
 import net.pieroxy.mom.services.IServiceProvider;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * Checks that the SMTP sink URL being edited on the General Settings page (saved or not) answers
@@ -17,15 +18,23 @@ import java.io.IOException;
  */
 @Endpoint(method = ApiMethod.POST)
 public class TestSmtpSinkApi extends AbstractAuthenticatedEndpoint<TestSmtpSinkApiInput, TestSmtpSinkApiOutput> {
+  private final static Logger LOGGER = Logger.getLogger(TestSmtpSinkApi.class.getName());
+
   public TestSmtpSinkApi(IServiceProvider serviceProvider) {
     super(serviceProvider);
   }
 
   @Override
   public TestSmtpSinkApiOutput processAuthenticated(TestSmtpSinkApiInput input) {
+    TestSmtpSinkApiOutput output = test(input.getSinkUrl());
+    LOGGER.info("SMTP sink test of \"" + input.getSinkUrl() + "\": " + (output.isConnected() ? "OK" : "failed") + " — " + output.getMessage());
+    return output;
+  }
+
+  private static TestSmtpSinkApiOutput test(String sinkUrl) {
     String url;
     try {
-      url = SmtpSinkClient.normalizeUrl(input.getSinkUrl());
+      url = SmtpSinkClient.normalizeUrl(sinkUrl);
     } catch (IllegalArgumentException e) {
       return new TestSmtpSinkApiOutput(false, e.getMessage());
     }

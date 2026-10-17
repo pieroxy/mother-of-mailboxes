@@ -69,12 +69,14 @@ public class HttpApi {
     try (exchange) {
       exchange.getResponseHeaders().set("Cache-Control", "no-store");
       if (!exchange.getRequestMethod().equals("GET")) {
+        LOGGER.info(client(exchange) + " " + exchange.getRequestMethod() + " " + exchange.getRequestURI().getPath() + " -> 405");
         exchange.getResponseHeaders().set("Allow", "GET");
         exchange.sendResponseHeaders(405, -1);
         return;
       }
       String path = exchange.getRequestURI().getPath();
       if (path.equals(INFO)) {
+        LOGGER.info(client(exchange) + " GET " + path + " -> 200");
         exchange.getResponseHeaders().set("Content-Type", "application/json");
         exchange.sendResponseHeaders(200, info.length);
         try (OutputStream body = exchange.getResponseBody()) {
@@ -84,9 +86,11 @@ public class HttpApi {
       }
       Optional<byte[]> message = path.startsWith(PREFIX) ? store.read(path.substring(PREFIX.length())) : Optional.empty();
       if (message.isEmpty()) {
+        LOGGER.info(client(exchange) + " GET " + path + " -> 404");
         exchange.sendResponseHeaders(404, -1);
         return;
       }
+      LOGGER.info(client(exchange) + " GET " + path + " -> 200 (" + message.get().length + " bytes)");
       exchange.getResponseHeaders().set("Content-Type", "message/rfc822");
       exchange.sendResponseHeaders(200, message.get().length);
       try (OutputStream body = exchange.getResponseBody()) {
@@ -96,5 +100,15 @@ public class HttpApi {
       LOGGER.log(Level.WARNING, "HTTP request failed: " + exchange.getRequestURI(), e);
       throw e;
     }
+  }
+
+  /**
+   * The connecting address, plus X-Forwarded-For when there is one: behind the reverse proxy, the
+   * former is always the proxy. Logged as is — the sink trusts no one with it, it's only for reading.
+   */
+  private static String client(HttpExchange exchange) {
+    String forwarded = exchange.getRequestHeaders().getFirst("X-Forwarded-For");
+    String remote = exchange.getRemoteAddress().getAddress().getHostAddress();
+    return "[" + remote + (forwarded == null ? "" : " for " + forwarded) + "]";
   }
 }

@@ -58,15 +58,17 @@ public class MessageStore {
   public void cleanup() {
     File[] files = dir.toFile().listFiles();
     if (files == null) return;
+    int deleted = 0;
     for (File f : files) {
       String name = f.getName();
       if (!name.endsWith(EXTENSION) && !name.endsWith(TMP_EXTENSION)) continue;
       try {
-        if (isExpired(f.toPath())) Files.deleteIfExists(f.toPath());
+        if (isExpired(f.toPath()) && Files.deleteIfExists(f.toPath())) deleted++;
       } catch (IOException e) {
         LOGGER.log(Level.WARNING, "Could not delete " + f, e);
       }
     }
+    if (deleted > 0) LOGGER.info("Deleted " + deleted + " expired message(s)");
   }
 
   private boolean isExpired(Path file) throws IOException {

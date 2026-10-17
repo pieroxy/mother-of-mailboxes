@@ -29,6 +29,7 @@ import java.util.logging.Logger;
  */
 public class SmtpSink {
   private final static int CLEANUP_INTERVAL_SECONDS = 30;
+  private final static DateTimeFormatter LOG_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
   private final SmtpServer smtp;
   private final HttpApi http;
@@ -51,6 +52,9 @@ public class SmtpSink {
   }
 
   public void stop() {
+    // Straight to stderr: java.util.logging's own shutdown hook may already have closed its
+    // handlers by the time this one runs (same reason as MOM's Runner#logDirectly).
+    System.err.println(LOG_TIMESTAMP.format(Instant.now()) + " INFO MOM SMTP sink stopping");
     smtp.stop();
     http.stop();
     cleaner.shutdownNow();
@@ -110,14 +114,13 @@ public class SmtpSink {
 
   /** One line per entry on stderr — meant to be collected by systemd/docker, no log files of its own. */
   private static void configureLogging() {
-    DateTimeFormatter timestamp = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
     Logger root = Logger.getLogger("");
     for (Handler h : root.getHandlers()) root.removeHandler(h);
     ConsoleHandler handler = new ConsoleHandler();
     handler.setFormatter(new Formatter() {
       @Override
       public String format(LogRecord record) {
-        String line = timestamp.format(Instant.ofEpochMilli(record.getMillis())) + " " + record.getLevel().getName()
+        String line = LOG_TIMESTAMP.format(Instant.ofEpochMilli(record.getMillis())) + " " + record.getLevel().getName()
             + " " + formatMessage(record) + "\n";
         if (record.getThrown() != null) {
           java.io.StringWriter sw = new java.io.StringWriter();
