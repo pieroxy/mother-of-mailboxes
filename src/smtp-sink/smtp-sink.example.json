@@ -1,0 +1,22 @@
+{
+  "hostname": "mail.mom.pieroxy.net",
+
+  "smtpBindAddress": "0.0.0.0",
+  "smtpPort": 25,
+  "smtpProxyProtocol": false,
+  "smtpTimeoutSeconds": 60,
+  "maxConnections": 50,
+  "acceptedDomains": ["mail.mom.pieroxy.net"],
+  "maxMessageSizeBytes": 102400,
+
+  "httpBindAddress": "127.0.0.1",
+  "httpPort": 8025,
+
+  "storageDir": "messages",
+  "retentionSeconds": 300,
+
+  "tls": {
+    "certFile": "/etc/letsencrypt/live/mail.mom.pieroxy.net/fullchain.pem",
+    "keyFile": "/etc/letsencrypt/live/mail.mom.pieroxy.net/privkey.pem"
+  }
+}
