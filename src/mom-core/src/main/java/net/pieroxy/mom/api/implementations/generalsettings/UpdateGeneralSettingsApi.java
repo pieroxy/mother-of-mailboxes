@@ -10,6 +10,7 @@ import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.ReputationListConfig;
+import net.pieroxy.mom.diagnostics.SmtpSinkClient;
 
 import java.util.HashSet;
 import java.util.List;
@@ -60,10 +61,12 @@ public class UpdateGeneralSettingsApi extends AbstractAuthenticatedEndpoint<Upda
       }
     }
 
+    String sinkUrl = SmtpSinkClient.normalizeUrl(input.getMailDiagnosticsSinkUrl());
+
     List<ReputationListConfig> reputationLists = dtos.stream().map(ReputationListDto::toConfig).collect(Collectors.toList());
     serviceProvider.getSettingsService().updateGeneralSettings(input.getDataFolder(), input.getKeepLogFiles(), input.getTrustedProxies(),
         input.getWebServerUsername(),
-        input.getWebServerPassword(), reputationLists);
+        input.getWebServerPassword(), reputationLists, sinkUrl);
 
     return new UpdateGeneralSettingsApiOutput();
   }
@@ -80,6 +83,16 @@ class UpdateGeneralSettingsApiInput extends AuthenticatedApiInput {
   /** Blank means "leave the current password unchanged" — same convention as an account's credentials. */
   private String webServerPassword;
   private List<ReputationListDto> reputationLists;
+  /** Blank: mail server diagnostics disabled. */
+  private String mailDiagnosticsSinkUrl;
+
+  public String getMailDiagnosticsSinkUrl() {
+    return mailDiagnosticsSinkUrl;
+  }
+
+  public void setMailDiagnosticsSinkUrl(String mailDiagnosticsSinkUrl) {
+    this.mailDiagnosticsSinkUrl = mailDiagnosticsSinkUrl;
+  }
 
   public String getDataFolder() {
     return dataFolder;

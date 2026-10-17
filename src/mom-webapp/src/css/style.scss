@@ -304,6 +304,19 @@ body {
               }
           }
 
+          // GeneralSettingsPage's Mail Diagnostics section: "Use the public instance" + the sink test.
+          .mail-diagnostics-actions {
+              display: flex;
+              flex-wrap: wrap;
+              align-items: center;
+              gap: 12px;
+
+              > button {
+                  font-size: 12px;
+                  padding: 4px 14px;
+              }
+          }
+
           .edit-actions {
               display: flex;
               gap: 12px;
@@ -746,6 +759,11 @@ body {
               border: 1px dashed $border-color;
               background-color: transparent;
               color: $text-muted;
+
+              a {
+                  color: $accent-color;
+                  cursor: pointer;
+              }
 
               p {
                   margin: 8px 0 0 0;

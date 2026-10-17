@@ -14,6 +14,8 @@ public class Configuration {
   /** IP/domain reputation sources (see {@link ReputationListConfig}) — absent = feature disabled. */
   private List<ReputationListConfig> reputationLists;
   private WebServerConfiguration webServer;
+  /** Absent: mail server diagnostics disabled. */
+  private MailDiagnosticsConfiguration mailDiagnostics;
   /** Set by the first start (see FirstStart) until the web UI's setup wizard completes. */
   private boolean setupInProgress;
 
@@ -84,5 +86,19 @@ public class Configuration {
 
   public void setWebServer(WebServerConfiguration webServer) {
     this.webServer = webServer;
+  }
+
+  public MailDiagnosticsConfiguration getMailDiagnostics() {
+    return mailDiagnostics;
+  }
+
+  public void setMailDiagnostics(MailDiagnosticsConfiguration mailDiagnostics) {
+    this.mailDiagnostics = mailDiagnostics;
+  }
+
+  /** The configured SMTP sink URL, or null if there's none (diagnostics disabled). */
+  public String getMailDiagnosticsSinkUrl() {
+    if (mailDiagnostics == null || mailDiagnostics.getSinkUrl() == null || mailDiagnostics.getSinkUrl().isBlank()) return null;
+    return mailDiagnostics.getSinkUrl();
   }
 }

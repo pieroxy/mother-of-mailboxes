@@ -219,6 +219,13 @@ public class SmtpSinkTest {
   }
 
   @Test
+  public void infoDescribesTheSink() throws Exception {
+    Response r = get("/info");
+    assertEquals(200, r.status);
+    assertEquals("{\"mailDomain\":\"sink.test\",\"maxMessageSizeBytes\":1000,\"retentionSeconds\":300}", r.body);
+  }
+
+  @Test
   public void httpStatuses() throws Exception {
     assertEquals(404, get("/messages/" + UUID.randomUUID()).status);
     assertEquals(404, get("/messages/not-a-uuid").status);

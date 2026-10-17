@@ -11,6 +11,7 @@ import { LogsIcon } from "../atoms/icons/LogsIcon";
 import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
 import { Routing } from "../../utils/navigation/Routing";
+import { Endpoints } from "../../utils/navigation/Endpoints";
 import { accountEditSessions } from "../../utils/AccountEditSession";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 import { formatDuration } from "../../utils/format";
@@ -87,6 +88,13 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
         m("p", "Check that this account's domain and outgoing mail server are set up to deliver mail reliably: "
           + "SPF, DKIM and DMARC records, MX records, reverse DNS (PTR) and HELO/EHLO name, MTA-STS, TLS-RPT and DANE (TLSA), "
           + "and whether the domain or the sending IP address is listed on DNS blocklists."),
+        this.data && !this.data.mailDiagnosticsConfigured
+          ? m("p.field-hint", [
+            "Checks that send a test message need an SMTP sink, set in ",
+            m("a", { onclick: () => Routing.goToScreen(Endpoints.GENERAL_SETTINGS) }, "General settings"),
+            ".",
+          ])
+          : null,
       ]),
     ]);
   }

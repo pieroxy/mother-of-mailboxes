@@ -14,9 +14,16 @@ material.
   ```
   Return-Path: <sender@example.org>
   Received: from mx.example.org ([203.0.113.7])
-  	by mail.mom.pieroxy.net (MOM SMTP sink) with ESMTPS (TLSv1.3:TLS_AES_256_GCM_SHA384)
-  	for <test@mail.mom.pieroxy.net>; Fri, 16 Oct 2026 21:52:32 +0200
+  	by smtp-sink.mom.pieroxy.net (MOM SMTP sink) with ESMTPS (TLSv1.3:TLS_AES_256_GCM_SHA384)
+  	for <test@smtp-sink.mom.pieroxy.net>; Fri, 16 Oct 2026 21:52:32 +0200
   ```
+- **HTTP:** `GET /info` returns what a MOM instance needs to use the sink, so its settings only
+  need the sink's URL:
+  ```json
+  {"mailDomain":"smtp-sink.mom.pieroxy.net","maxMessageSizeBytes":102400,"retentionSeconds":300}
+  ```
+  `mailDomain` is the first of `acceptedDomains` (or `hostname` if that list is empty): MOM sends
+  its test messages to any address at that domain.
 - **HTTP:** `GET /messages/<uuid>` returns the stored message (`200`, `message/rfc822`), or `404`
   if there is none: never received, or older than `retentionSeconds` (default 5 minutes).
 
@@ -43,7 +50,9 @@ stderr.
   (`BEGIN PRIVATE KEY`, which certbot writes). They are reloaded automatically when they change
   on disk. The user running the sink must be able to read them: certbot's `privkey.pem` is
   root-only by default.
-- **DNS:** an MX record for the accepted domain pointing to `hostname`, which should also be the
-  certificate's name and have matching forward and reverse DNS.
+- **DNS:** one name can serve everything, e.g. `smtp-sink.mom.pieroxy.net`: the URL MOM instances
+  are given (`https://smtp-sink.mom.pieroxy.net`, through the reverse proxy), the `hostname`, the
+  accepted mail domain, and the certificate's name. It needs an A/AAAA record, an MX record
+  pointing to itself, and matching reverse DNS.
 - Binding port 25 as non-root: `setcap 'cap_net_bind_service=+ep'` on the java binary, or
   `AmbientCapabilities=CAP_NET_BIND_SERVICE` in a systemd unit.

@@ -8,6 +8,10 @@ import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { WebServerControls } from "../WebServerControls";
+import { TestConnectionButton } from "../TestConnectionButton";
+
+/** The SMTP sink run by MOM's author — offered, never preselected: see renderMailDiagnosticsSection. */
+const PUBLIC_SMTP_SINK_URL = "https://smtp-sink.mom.pieroxy.net";
 
 /** One reputation list in the page's working list, tracking enough to render "New"/"Edited"/"Deleted" and to rebuild the final array on save. */
 interface PendingReputationList {
@@ -50,6 +54,9 @@ export class GeneralSettingsPage extends AbstractPage {
 
   private reputationLists: PendingReputationList[] = [];
 
+  private baselineSinkUrl = "";
+  private workingSinkUrl = "";
+
   private loading = true;
   private saving = false;
   private error: string | undefined;
@@ -84,6 +91,7 @@ export class GeneralSettingsPage extends AbstractPage {
         this.renderReputationListsSection(),
         m("button.add-item-button", { onclick: () => this.addReputationList() }, "+ Add reputation list"),
       ]),
+      m(".page-card", [m("h2", "Mail Diagnostics"), this.renderMailDiagnosticsSection()]),
     ]);
   }
 
@@ -134,6 +142,38 @@ export class GeneralSettingsPage extends AbstractPage {
           oninput: (e: Event) => (this.workingPassword = (e.target as HTMLInputElement).value),
         }),
         m("span.field-hint", "The current password is never shown here — leave this blank to keep it unchanged."),
+      ]),
+    ]);
+  }
+
+  /**
+   * Off by default, on purpose: a test reveals the account's sending IP and domain to whoever runs
+   * the sink — no more than any recipient sees, but still not something to do without asking.
+   */
+  private renderMailDiagnosticsSection(): m.Children {
+    return m(".edit-form", [
+      m("p.field-hint", "Some of an account's mail server checks send a test message through the account's own SMTP settings "
+        + "to an SMTP sink, a server that receives it and hands it back to MOM to see how it arrived: sending IP, HELO name, "
+        + "TLS, SPF, DKIM and DMARC. Leave the URL empty to disable these checks."),
+      this.field("SMTP sink URL", [
+        m("input", {
+          type: "text", value: this.workingSinkUrl, placeholder: "https://… (empty: disabled)",
+          oninput: (e: Event) => (this.workingSinkUrl = (e.target as HTMLInputElement).value),
+        }),
+        m("span.field-hint", "The public instance is convenient, but whoever runs a sink sees your mail server's IP address "
+          + "and domain, as any recipient of your mail would. Host your own if you'd rather not share them."),
+      ]),
+      m(".mail-diagnostics-actions", [
+        m("button.secondary", {
+          onclick: () => (this.workingSinkUrl = PUBLIC_SMTP_SINK_URL),
+          disabled: this.workingSinkUrl.trim() === PUBLIC_SMTP_SINK_URL,
+        }, "Use the public instance"),
+        this.workingSinkUrl.trim()
+          ? m(TestConnectionButton, {
+            label: "Test SMTP Sink",
+            run: () => ApiEndpoints.TestSmtpSink.call({ sinkUrl: this.workingSinkUrl }),
+          })
+          : null,
       ]),
     ]);
   }
@@ -214,6 +254,7 @@ export class GeneralSettingsPage extends AbstractPage {
       || JSON.stringify(this.workingTrustedProxies) !== JSON.stringify(this.baselineTrustedProxies)
       || this.workingUsername !== this.baselineUsername
       || this.workingPassword !== ""
+      || this.workingSinkUrl !== this.baselineSinkUrl
       || this.reputationLists.some((r) => r.deleted || r.edited || r.originalIndex === null);
   }
 
@@ -234,6 +275,8 @@ export class GeneralSettingsPage extends AbstractPage {
         this.baselineUsername = output.webServerUsername || "";
         this.workingUsername = output.webServerUsername || "";
         this.workingPassword = "";
+        this.baselineSinkUrl = output.mailDiagnosticsSinkUrl || "";
+        this.workingSinkUrl = this.baselineSinkUrl;
         this.reputationLists = output.reputationLists.map((list, index) => ({ list, originalIndex: index, deleted: false, edited: false }));
         this.loading = false;
         m.redraw();
@@ -262,6 +305,8 @@ export class GeneralSettingsPage extends AbstractPage {
       if (list.refreshHours <= 0) return "Reputation list \"" + list.id + "\" needs a positive refresh interval.";
       if (list.score < 0 || list.score > 1) return "Reputation list \"" + list.id + "\" score must be between 0 and 1.";
     }
+    const sinkUrl = this.workingSinkUrl.trim();
+    if (sinkUrl && !/^https?:\/\/[^\s/]+/i.test(sinkUrl)) return "The SMTP sink URL must start with http:// or https://.";
     return undefined;
   }
 
@@ -282,6 +327,7 @@ export class GeneralSettingsPage extends AbstractPage {
       webServerUsername: this.workingUsername,
       webServerPassword: this.workingPassword,
       reputationLists: this.reputationLists.filter((r) => !r.deleted).map((r) => r.list),
+      mailDiagnosticsSinkUrl: this.workingSinkUrl,
     })
       .then(() => this.load())
       .catch((err: Error) => {

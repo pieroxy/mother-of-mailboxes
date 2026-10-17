@@ -10,6 +10,7 @@ import net.pieroxy.mom.config.credentials.CredentialsFileStore;
 import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
+import net.pieroxy.mom.config.general.MailDiagnosticsConfiguration;
 import net.pieroxy.mom.config.general.ReputationListConfig;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.detection.reputation.ReputationRegistry;
@@ -328,17 +329,24 @@ public class SettingsService implements Service {
   /**
    * Applies the general settings page's staged fields. The web server's own login and the whole
    * {@code reputationLists} list take effect immediately (login on the next request; lists via a
-   * hot-swapped {@link ReputationRegistry}), as do {@code trustedProxies}. {@code dataFolder} and {@code keepLogFiles} are
+   * hot-swapped {@link ReputationRegistry}), as do {@code trustedProxies} and {@code mailDiagnosticsSinkUrl}
+   * (null: diagnostics disabled — already normalized, see {@code SmtpSinkClient#normalizeUrl}). {@code dataFolder} and {@code keepLogFiles} are
    * persisted to {@code config.json} but only take effect once the process is restarted by hand.
    */
   public synchronized void updateGeneralSettings(String newDataFolder, Integer keepLogFiles, List<String> trustedProxies,
                                                   String webServerUsername, String webServerPassword,
-                                                  List<ReputationListConfig> reputationLists) {
+                                                  List<ReputationListConfig> reputationLists, String mailDiagnosticsSinkUrl) {
     TrustedProxies parsedTrustedProxies = TrustedProxies.parse(trustedProxies);
     config.setDataFolder(newDataFolder);
     config.setTrustedProxies(parsedTrustedProxies.isEmpty() ? null : parsedTrustedProxies.entries());
     this.trustedProxies = parsedTrustedProxies;
     config.setKeepLogFiles(keepLogFiles);
+    if (mailDiagnosticsSinkUrl == null) {
+      config.setMailDiagnostics(null);
+    } else {
+      if (config.getMailDiagnostics() == null) config.setMailDiagnostics(new MailDiagnosticsConfiguration());
+      config.getMailDiagnostics().setSinkUrl(mailDiagnosticsSinkUrl);
+    }
 
     if (config.getWebServer() != null) {
       if (webServerCredential == null) {

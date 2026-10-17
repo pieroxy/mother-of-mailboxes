@@ -29,8 +29,10 @@ public class AccountStatusApi extends AbstractAuthenticatedEndpoint<AccountStatu
 
     MailAccountConfiguration config = account.getConfig();
     SmtpConfiguration smtp = config.getSmtp();
-    return new AccountStatusApiOutput(AccountsApi.toDto(account), config.getHost(), config.getPort(), config.getRunEvery(),
+    AccountStatusApiOutput output = new AccountStatusApiOutput(AccountsApi.toDto(account), config.getHost(), config.getPort(), config.getRunEvery(),
         smtp == null ? null : smtp.getHost(), smtp == null ? 0 : smtp.getPort(), smtp == null ? null : smtp.getFromAddress());
+    output.setMailDiagnosticsConfigured(serviceProvider.getSettingsService().getConfiguration().getMailDiagnosticsSinkUrl() != null);
+    return output;
   }
 }
 
@@ -60,6 +62,8 @@ class AccountStatusApiOutput {
   private int smtpPort;
   /** Null if the account has no SMTP settings. */
   private String smtpFromAddress;
+  /** Whether an SMTP sink is configured server-wide (General Settings) — see MailDiagnosticsConfiguration. */
+  private boolean mailDiagnosticsConfigured;
 
   public AccountStatusApiOutput() {
   }
@@ -129,5 +133,13 @@ class AccountStatusApiOutput {
 
   public void setSmtpFromAddress(String smtpFromAddress) {
     this.smtpFromAddress = smtpFromAddress;
+  }
+
+  public boolean isMailDiagnosticsConfigured() {
+    return mailDiagnosticsConfigured;
+  }
+
+  public void setMailDiagnosticsConfigured(boolean mailDiagnosticsConfigured) {
+    this.mailDiagnosticsConfigured = mailDiagnosticsConfigured;
   }
 }

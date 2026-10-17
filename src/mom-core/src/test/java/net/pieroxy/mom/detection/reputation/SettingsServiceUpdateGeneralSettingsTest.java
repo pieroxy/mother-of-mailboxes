@@ -80,7 +80,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
   @Test
   public void changesTheWebServerLoginInPlaceAndPersistsIt() throws Exception {
     settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, null,
-        "new-admin", "new-password", List.of());
+        "new-admin", "new-password", List.of(), null);
 
     assertEquals("new-admin", webServerCredential.getUsername());
     assertEquals("the plaintext password must never be kept once hashed", null, webServerCredential.getPassword());
@@ -101,7 +101,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
     // SettingsServiceTest) before this test ever runs — a blank password here must leave that
     // hash untouched, not the (long gone) plaintext.
     settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, null,
-        "new-admin", "", List.of());
+        "new-admin", "", List.of(), null);
 
     assertEquals("new-admin", webServerCredential.getUsername());
     assertTrue("a blank password must leave the original hash untouched",
@@ -109,11 +109,25 @@ public class SettingsServiceUpdateGeneralSettingsTest {
   }
 
   @Test
+  public void persistsAndClearsTheMailDiagnosticsSinkUrl() throws Exception {
+    File configFile = new File(tmp.getRoot(), "config.json");
+
+    settingsService.updateGeneralSettings("/data", 30, null, "admin", "", List.of(), "https://sink.example.org");
+    assertEquals("https://sink.example.org", settingsService.getConfiguration().getMailDiagnosticsSinkUrl());
+    Configuration reloaded = new Gson().fromJson(new FileReader(configFile), Configuration.class);
+    assertEquals("https://sink.example.org", reloaded.getMailDiagnosticsSinkUrl());
+
+    settingsService.updateGeneralSettings("/data", 30, null, "admin", "", List.of(), null);
+    reloaded = new Gson().fromJson(new FileReader(configFile), Configuration.class);
+    assertEquals(null, reloaded.getMailDiagnostics());
+  }
+
+  @Test
   public void persistsDataFolderAndKeepLogFilesButLeavesTheWebServerConnectionSettingsAlone() throws Exception {
     File configFile = new File(tmp.getRoot(), "config.json");
     int portBefore = settingsService.getConfiguration().getWebServer().getHttpPort();
 
-    settingsService.updateGeneralSettings("/new/data/folder", 30, null, "admin", "", List.of());
+    settingsService.updateGeneralSettings("/new/data/folder", 30, null, "admin", "", List.of(), null);
 
     Configuration reloaded = new Gson().fromJson(new FileReader(configFile), Configuration.class);
     assertEquals("/new/data/folder", reloaded.getDataFolder());
@@ -124,20 +138,20 @@ public class SettingsServiceUpdateGeneralSettingsTest {
 
   @Test
   public void appliesTrustedProxiesRightAwayAndPersistsThem() throws Exception {
-    settingsService.updateGeneralSettings("/data", 30, List.of(" 127.0.0.1 ", "172.18.0.0/16"), "admin", "", List.of());
+    settingsService.updateGeneralSettings("/data", 30, List.of(" 127.0.0.1 ", "172.18.0.0/16"), "admin", "", List.of(), null);
 
     assertTrue(settingsService.getTrustedProxies().isTrusted("172.18.0.9"));
     Configuration reloaded = new Gson().fromJson(new FileReader(new File(tmp.getRoot(), "config.json")), Configuration.class);
     assertEquals(List.of("127.0.0.1", "172.18.0.0/16"), reloaded.getTrustedProxies());
 
-    settingsService.updateGeneralSettings("/data", 30, List.of(), "admin", "", List.of());
+    settingsService.updateGeneralSettings("/data", 30, List.of(), "admin", "", List.of(), null);
     assertTrue(settingsService.getTrustedProxies().isEmpty());
   }
 
   @Test
   public void anInvalidTrustedProxyChangesNothing() {
     try {
-      settingsService.updateGeneralSettings("/elsewhere", 30, List.of("not-an-ip"), "admin", "", List.of());
+      settingsService.updateGeneralSettings("/elsewhere", 30, List.of("not-an-ip"), "admin", "", List.of(), null);
       fail("should have thrown");
     } catch (IllegalArgumentException expected) {
       assertTrue(expected.getMessage(), expected.getMessage().contains("not-an-ip"));
@@ -161,7 +175,7 @@ public class SettingsServiceUpdateGeneralSettingsTest {
         ReputationRegistryHolder.get().ipScore("1.2.3.4", Set.of("blocklist")).isPresent());
 
     settingsService.updateGeneralSettings(tmp.getRoot().getAbsolutePath(), 14, null,
-        "admin", "", List.of(blocklist));
+        "admin", "", List.of(blocklist), null);
 
     Optional<ReputationMatch> match = ReputationRegistryHolder.get().ipScore("1.2.3.4", Set.of("blocklist"));
     assertTrue("the new list must be live immediately, no restart of anything needed", match.isPresent());

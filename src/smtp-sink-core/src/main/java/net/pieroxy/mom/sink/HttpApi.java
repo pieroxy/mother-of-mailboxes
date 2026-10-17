@@ -1,5 +1,6 @@
 package net.pieroxy.mom.sink;
 
+import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,20 +16,36 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * {@code GET /messages/<uuid>}: the raw message whose Subject was that UUID, Return-Path and
- * Received headers included (200, {@code message/rfc822}), or 404 if there's none — never
- * received, or already expired. Plain HTTP: TLS is the reverse proxy's job.
+ * <ul>
+ *   <li>{@code GET /info}: what a MOM instance needs to know to use this sink (see {@link Info}),
+ *   as JSON — so that its settings only need this server's URL.</li>
+ *   <li>{@code GET /messages/<uuid>}: the raw message whose Subject was that UUID, Return-Path and
+ *   Received headers included (200, {@code message/rfc822}), or 404 if there's none — never
+ *   received, or already expired.</li>
+ * </ul>
+ * Plain HTTP: TLS is the reverse proxy's job.
  */
 public class HttpApi {
   private final static Logger LOGGER = Logger.getLogger(HttpApi.class.getName());
   private final static String PREFIX = "/messages/";
+  private final static String INFO = "/info";
+
+  /**
+   * {@code mailDomain}: the domain to send test messages to (any local part) — the first of
+   * {@code acceptedDomains}, or {@code hostname} if they're all accepted.
+   */
+  record Info(String mailDomain, int maxMessageSizeBytes, int retentionSeconds) {}
 
   private final MessageStore store;
+  private final byte[] info;
   private final HttpServer server;
   private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
   public HttpApi(SinkConfiguration config, MessageStore store) throws IOException {
     this.store = store;
+    String mailDomain = config.getAcceptedDomains().isEmpty() ? config.getHostname() : config.getAcceptedDomains().get(0);
+    this.info = new Gson().toJson(new Info(mailDomain, config.getMaxMessageSizeBytes(), config.getRetentionSeconds()))
+        .getBytes(StandardCharsets.UTF_8);
     this.server = HttpServer.create(new InetSocketAddress(InetAddress.getByName(config.getHttpBindAddress()), config.getHttpPort()), 0);
     this.server.createContext("/", this::handle);
     this.server.setExecutor(executor);
@@ -56,6 +74,14 @@ public class HttpApi {
         return;
       }
       String path = exchange.getRequestURI().getPath();
+      if (path.equals(INFO)) {
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.sendResponseHeaders(200, info.length);
+        try (OutputStream body = exchange.getResponseBody()) {
+          body.write(info);
+        }
+        return;
+      }
       Optional<byte[]> message = path.startsWith(PREFIX) ? store.read(path.substring(PREFIX.length())) : Optional.empty();
       if (message.isEmpty()) {
         exchange.sendResponseHeaders(404, -1);

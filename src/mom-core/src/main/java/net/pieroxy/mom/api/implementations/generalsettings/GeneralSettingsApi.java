@@ -50,6 +50,7 @@ public class GeneralSettingsApi extends AbstractAuthenticatedEndpoint<GeneralSet
     output.setWebServerAddressChangeError(serviceProvider.getWebServerService().getAddressChangeError());
     output.setWebServerSecureCookie(webServer != null && webServer.isSecureCookie());
     output.setTrustedProxies(config.getTrustedProxies() != null ? config.getTrustedProxies() : List.of());
+    output.setMailDiagnosticsSinkUrl(config.getMailDiagnosticsSinkUrl());
     return output;
   }
 }
@@ -74,6 +75,8 @@ class GeneralSettingsApiOutput {
   private List<ReputationListDto> reputationLists;
   /** Why the last scheduled address switch failed, if it did — see WebServerService#changeAddress. */
   private String webServerAddressChangeError;
+  /** Null: mail server diagnostics disabled. */
+  private String mailDiagnosticsSinkUrl;
 
   public GeneralSettingsApiOutput() {
   }
@@ -93,6 +96,14 @@ class GeneralSettingsApiOutput {
 
   public String getDataFolder() {
     return dataFolder;
+  }
+
+  public String getMailDiagnosticsSinkUrl() {
+    return mailDiagnosticsSinkUrl;
+  }
+
+  public void setMailDiagnosticsSinkUrl(String mailDiagnosticsSinkUrl) {
+    this.mailDiagnosticsSinkUrl = mailDiagnosticsSinkUrl;
   }
 
   public String getWebServerAddressChangeError() {
