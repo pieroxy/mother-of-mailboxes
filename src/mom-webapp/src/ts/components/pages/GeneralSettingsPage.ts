@@ -132,13 +132,16 @@ export class GeneralSettingsPage extends AbstractPage {
   private renderWebLoginSection(): m.Children {
     return m(".edit-form", [
       configRow("Credentials key", this.webServerCredentialsKey),
+      // Both fields opt out of the browser's password manager: autofilling the web login saved
+      // for this very site would silently stage a "change" (see isDirty) every time the page opens.
+      // "new-password" is the value browsers honor — "off" alone is ignored for login fields.
       this.field("Username", m("input", {
-        type: "text", value: this.workingUsername,
+        type: "text", value: this.workingUsername, autocomplete: "off",
         oninput: (e: Event) => (this.workingUsername = (e.target as HTMLInputElement).value),
       })),
       this.field("Password", [
         m("input", {
-          type: "password", value: this.workingPassword, placeholder: "Leave blank to keep the current password",
+          type: "password", value: this.workingPassword, autocomplete: "new-password", placeholder: "Leave blank to keep the current password",
           oninput: (e: Event) => (this.workingPassword = (e.target as HTMLInputElement).value),
         }),
         m("span.field-hint", "The current password is never shown here — leave this blank to keep it unchanged."),
