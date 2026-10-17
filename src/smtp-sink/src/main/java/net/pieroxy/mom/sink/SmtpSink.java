@@ -24,7 +24,8 @@ import java.util.logging.Logger;
  * setup, and hands each one back over HTTP for a few minutes. See {@link SmtpSession} for what's
  * accepted, {@link HttpApi} for how it's fetched.
  * <p>
- * Usage: {@code java -jar mom-smtp-sink.jar [config.json]} (default: {@code smtp-sink.json}).
+ * Usage: {@code java -jar mom-smtp-sink.jar <configDir>}, reading {@code <configDir>/config.json} —
+ * same convention as MOM itself.
  */
 public class SmtpSink {
   private final static int CLEANUP_INTERVAL_SECONDS = 30;
@@ -63,25 +64,33 @@ public class SmtpSink {
     return http.getPort();
   }
 
-  public static SinkConfiguration loadConfiguration(File configFile) throws IOException {
+  /** Reads {@code <configDir>/config.json}; relative paths in it are resolved against {@code configDir}. */
+  public static SinkConfiguration loadConfiguration(File configDir) throws IOException {
+    File configFile = new File(configDir, "config.json");
+    if (!configFile.isFile()) throw new IllegalArgumentException("missing " + configFile.getAbsolutePath());
     SinkConfiguration config;
     try (Reader reader = new FileReader(configFile)) {
       config = new Gson().fromJson(reader, SinkConfiguration.class);
     }
     if (config == null) throw new IllegalArgumentException(configFile + " is empty.");
-    config.validateAndResolve(configFile.getAbsoluteFile().getParentFile());
+    config.validateAndResolve(configDir.getAbsoluteFile());
     return config;
   }
 
   public static void main(String[] args) throws Exception {
     configureLogging();
     Logger logger = Logger.getLogger(SmtpSink.class.getName());
-    File configFile = new File(args.length > 0 ? args[0] : "smtp-sink.json");
+    if (args.length < 1) {
+      System.err.println("Usage: java -jar mom-smtp-sink.jar <configDir>");
+      System.exit(1);
+      return;
+    }
+    File configDir = new File(args[0]);
     SinkConfiguration config;
     try {
-      config = loadConfiguration(configFile);
+      config = loadConfiguration(configDir);
     } catch (IOException | RuntimeException e) {
-      System.err.println("Could not load " + configFile.getAbsolutePath() + ": " + e.getMessage());
+      System.err.println("Could not load the configuration: " + e.getMessage());
       System.exit(1);
       return;
     }

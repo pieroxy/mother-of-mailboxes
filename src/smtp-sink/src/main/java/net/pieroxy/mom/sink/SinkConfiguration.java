@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The sink's runtime configuration, read from a JSON file (see {@code smtp-sink.example.json}).
+ * The sink's runtime configuration, read from {@code <configDir>/config.json} (see {@code config.example.json}).
  * Every field has a usable default except {@link #hostname}. Relative paths ({@link #storageDir},
- * the {@link TlsFiles} entries) are resolved against the directory holding the config file.
+ * the {@link TlsFiles} entries) are resolved against the config directory.
  */
 public class SinkConfiguration {
   /** Name this server gives itself: SMTP greeting, EHLO reply and its Received header. Should match the MX record's target. */

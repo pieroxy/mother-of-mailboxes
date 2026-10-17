@@ -61,7 +61,7 @@ public class SmtpSinkTest {
         + "\"retentionSeconds\": " + retentionSeconds + ","
         + "\"tls\": {\"certFile\": \"cert.pem\", \"keyFile\": \"key.pem\"}"
         + "}");
-    sink = new SmtpSink(SmtpSink.loadConfiguration(dir.resolve("config.json").toFile()));
+    sink = new SmtpSink(SmtpSink.loadConfiguration(dir.toFile()));
     sink.start();
   }
 

@@ -24,11 +24,12 @@ material.
 
 ```
 mvn clean package
-java -jar target/mom-smtp-sink-1.0.0.jar smtp-sink.json
+java -jar target/mom-smtp-sink-1.0.0.jar /path/to/config-dir
 ```
 
-Start from `smtp-sink.example.json`. Relative paths are resolved against the config file's
-directory. Logs go to stderr.
+Same convention as MOM: the argument is a directory holding `config.json` (start from
+`config.example.json`). Relative paths in it are resolved against that directory. Logs go to
+stderr.
 
 ## Deployment notes
 
