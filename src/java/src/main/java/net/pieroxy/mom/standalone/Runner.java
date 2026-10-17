@@ -44,6 +44,11 @@ public class Runner {
   }
 
   public static void main(String[] args) throws Exception {
+    if (args.length < 1) {
+      System.err.println("Usage: java -jar mom-core.jar <configDir>");
+      System.exit(1);
+      return;
+    }
     Gson gson = new Gson();
     File configDir = new File(args[0]);
     File configFile = new File(configDir, "config.json");
