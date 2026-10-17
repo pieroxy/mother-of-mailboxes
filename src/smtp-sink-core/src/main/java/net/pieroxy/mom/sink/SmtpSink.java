@@ -24,7 +24,7 @@ import java.util.logging.Logger;
  * setup, and hands each one back over HTTP for a few minutes. See {@link SmtpSession} for what's
  * accepted, {@link HttpApi} for how it's fetched.
  * <p>
- * Usage: {@code java -jar mom-smtp-sink.jar <configDir>}, reading {@code <configDir>/config.json} —
+ * Usage: {@code java -jar smtp-sink-core.jar <configDir>}, reading {@code <configDir>/config.json} —
  * same convention as MOM itself.
  */
 public class SmtpSink {
@@ -81,7 +81,7 @@ public class SmtpSink {
     configureLogging();
     Logger logger = Logger.getLogger(SmtpSink.class.getName());
     if (args.length < 1) {
-      System.err.println("Usage: java -jar mom-smtp-sink.jar <configDir>");
+      System.err.println("Usage: java -jar smtp-sink-core.jar <configDir>");
       System.exit(1);
       return;
     }

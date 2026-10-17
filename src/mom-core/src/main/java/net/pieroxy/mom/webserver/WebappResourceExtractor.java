@@ -16,7 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Extracts the webapp's static files (see {@code src/webapp}, built and embedded under the
+ * Extracts the webapp's static files (see {@code src/mom-webapp}, built and embedded under the
  * "webapp/" classpath resource by the Maven build) to a real directory on disk: Tomcat's static
  * file serving needs an actual docBase, not classpath resources inside a jar. Runs fresh on every
  * startup — the target directory is wiped first — so an upgraded jar's UI is never served stale.
@@ -65,7 +65,7 @@ public class WebappResourceExtractor {
   private static void extractFromDirectory(File sourceDir, File targetDir) throws IOException {
     if (!sourceDir.isDirectory()) {
       LOGGER.log(Level.WARNING, "No webapp resources found at " + sourceDir.getAbsolutePath()
-          + " — did the frontend build run? (see src/webapp)");
+          + " — did the frontend build run? (see src/mom-webapp)");
       return;
     }
     try (var paths = Files.walk(sourceDir.toPath())) {

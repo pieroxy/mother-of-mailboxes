@@ -710,7 +710,7 @@ oldest failure is 5 minutes old, even with the right password. A successful logi
 and other addresses are never affected. Each failed or refused login is logged at `WARNING` with the
 address.
 
-The UI itself is a static single-page app, built from `src/webapp` and embedded into the release
+The UI itself is a static single-page app, built from `src/mom-webapp` and embedded into the release
 jar — it's extracted fresh to `<dataFolder>/webapp-ui` on every startup, so an upgraded jar never
 serves a stale UI. Responses above 1KB are gzip-compressed automatically.
 
@@ -721,8 +721,8 @@ are configured in `reputationLists`.
 
 ## Third-party data
 
-- `src/java/src/main/resources/unicode/confusables.txt`, from Unicode's
+- `src/mom-core/src/main/resources/unicode/confusables.txt`, from Unicode's
   [security data](https://www.unicode.org/Public/security/latest/) (UTS #39), © Unicode, Inc.,
   under the [Unicode License v3](https://www.unicode.org/license.txt) (copy alongside it). Used by
   [`LOOKALIKE_TEXT_EQUALS`](matchers/lookalike-text-equals.md). Refresh it with
-  `src/java/updateUnicodeData.sh` before a release.
+  `src/mom-core/updateUnicodeData.sh` before a release.

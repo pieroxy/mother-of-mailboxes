@@ -24,7 +24,7 @@ material.
 
 ```
 mvn clean package
-java -jar target/mom-smtp-sink-1.0.0.jar /path/to/config-dir
+java -jar target/smtp-sink-core-1.0.0.jar /path/to/config-dir
 ```
 
 Same convention as MOM: the argument is a directory holding `config.json` (start from

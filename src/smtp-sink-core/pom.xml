@@ -3,36 +3,32 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>net.pieroxy.mom</groupId>
-  <artifactId>mom-smtp-sink</artifactId>
+  <parent>
+    <groupId>net.pieroxy.mom</groupId>
+    <artifactId>mom-parent</artifactId>
+    <version>1.0.0</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>smtp-sink-core</artifactId>
   <version>1.0.0</version>
 
-  <name>mom-smtp-sink</name>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <gson.version>2.10.1</gson.version>
-  </properties>
+  <name>smtp-sink-core</name>
 
   <dependencies>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>${gson.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
 
   <build>
     <defaultGoal>clean package</defaultGoal>
-    <finalName>mom-smtp-sink-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

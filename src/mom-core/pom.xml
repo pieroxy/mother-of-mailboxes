@@ -3,104 +3,85 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>net.pieroxy.mom</groupId>
-  <artifactId>pieroxy-mom</artifactId>
+  <parent>
+    <groupId>net.pieroxy.mom</groupId>
+    <artifactId>mom-parent</artifactId>
+    <version>1.0.0</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>mom-core</artifactId>
   <version>2.0.0</version>
 
-  <name>mom</name>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <slf4j.version>1.7.36</slf4j.version>
-    <gson.version>2.10.1</gson.version>
-    <tomcat.version>11.0.26</tomcat.version>
-  </properties>
+  <name>mom-core</name>
 
   <dependencies>
     <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>${gson.version}</version>
     </dependency>
     <dependency>
       <groupId>org.lz4</groupId>
       <artifactId>lz4-java</artifactId>
-      <version>1.4</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-email</artifactId>
-      <version>1.5</version>
     </dependency>
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>javax.mail</artifactId>
-      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.15</version>
     </dependency>
     <dependency>
       <groupId>dnsjava</groupId>
       <artifactId>dnsjava</artifactId>
-      <version>3.6.5</version>
     </dependency>
     <dependency>
       <groupId>org.apache.james.jdkim</groupId>
       <artifactId>apache-jdkim-library</artifactId>
-      <version>0.5</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>33.7.1-jre</version>
     </dependency>
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.15</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.opennlp</groupId>
       <artifactId>opennlp-tools</artifactId>
-      <version>2.5.11</version>
     </dependency>
     <dependency>
       <groupId>org.jsoup</groupId>
       <artifactId>jsoup</artifactId>
-      <version>1.18.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
-      <version>${tomcat.version}</version>
     </dependency>
   </dependencies>
 
   <build>
     <defaultGoal>clean package</defaultGoal>
-    <finalName>mom-core-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -167,9 +148,9 @@
             <configuration>
               <target>
                 <echo message="Generating API TS stubs." />
-                <mkdir dir="${basedir}/../webapp/src/ts/auto"/>
+                <mkdir dir="${basedir}/../mom-webapp/src/ts/auto"/>
                 <java failonerror="true" fork="true" classname="net.pieroxy.mom.api.GenerateTsStubs">
-                  <arg value="${basedir}/../webapp/src/ts/auto/ApiEndpoints.ts"/>
+                  <arg value="${basedir}/../mom-webapp/src/ts/auto/ApiEndpoints.ts"/>
                   <classpath>
                     <path refid="maven.runtime.classpath"/>
                   </classpath>
@@ -186,19 +167,19 @@
             <configuration>
               <target>
                 <echo message="Building webapp." />
-                <copy todir="${basedir}/../webapp/src/ts/auto/">
+                <copy todir="${basedir}/../mom-webapp/src/ts/auto/">
                   <fileset dir="${basedir}/target/typescript-generator/"/>
                 </copy>
-                <exec executable="npm" dir="${basedir}/../webapp" failonerror="true">
+                <exec executable="npm" dir="${basedir}/../mom-webapp" failonerror="true">
                   <arg value="install"/>
                 </exec>
-                <exec executable="npm" dir="${basedir}/../webapp" failonerror="true">
+                <exec executable="npm" dir="${basedir}/../mom-webapp" failonerror="true">
                   <arg value="run"/>
                   <arg value="build"/>
                 </exec>
                 <delete dir="${basedir}/target/classes/webapp" failonerror="false"/>
                 <copy todir="${basedir}/target/classes/webapp">
-                  <fileset dir="${basedir}/../webapp/dist"/>
+                  <fileset dir="${basedir}/../mom-webapp/dist"/>
                 </copy>
               </target>
             </configuration>
