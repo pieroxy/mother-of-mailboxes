@@ -1,8 +1,8 @@
 package net.pieroxy.mom.diagnostics;
 
-import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.detection.spf.DnsJavaSpfDnsResolver;
+import net.pieroxy.mom.rules.MailAccount;
 
 import java.util.Locale;
 
@@ -13,8 +13,12 @@ import java.util.Locale;
 public final class DeliveryChecks {
   private DeliveryChecks() {}
 
-  public static DeliveryCheckResultDto run(DeliveryCheck check, MailAccountConfiguration config) {
-    SmtpConfiguration smtp = config.getSmtp();
+  /**
+   * @param sinkUrl the configured SMTP sink, or null if there's none (no test send).
+   * @param runId identifies the diagnostics run, so all its checks share one test send (see {@link TestSends}).
+   */
+  public static DeliveryCheckResultDto run(DeliveryCheck check, MailAccount account, String sinkUrl, String runId) {
+    SmtpConfiguration smtp = account.getConfig().getSmtp();
     if (smtp == null) {
       return DeliveryCheckResultDto.skipped(check, "This account has no SMTP settings: there's no sending domain to check.");
     }
@@ -23,7 +27,9 @@ public final class DeliveryChecks {
       return DeliveryCheckResultDto.skipped(check, "The SMTP settings have no valid From address: there's no sending domain to check.");
     }
     return switch (check) {
-      case SPF -> new SpfCheck(new DnsJavaSpfDnsResolver()).run(domain, smtp.getHost());
+      case SPF -> new SpfCheck(new DnsJavaSpfDnsResolver()).run(domain, smtp.getHost(), () -> sinkUrl == null || account.getMailSender() == null
+          ? TestSendOutcome.notConfigured()
+          : TestSends.await(account.getAccountLabel(), runId, account.getMailSender(), sinkUrl));
     };
   }
 

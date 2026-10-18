@@ -4,7 +4,8 @@ import net.pieroxy.mom.api.metadata.TypeScriptType;
 
 /**
  * Outcome of one delivery check, or of one finding within it (see {@link DeliveryCheckResultDto}).
- * {@link #IN_PROGRESS} is never returned by the server: the webapp shows it while a check runs.
+ * {@link #IN_PROGRESS}: the check is waiting on something (e.g. a test send) and must be called
+ * again — the webapp also shows it while a call is running.
  */
 @TypeScriptType
 public enum CheckStatus {

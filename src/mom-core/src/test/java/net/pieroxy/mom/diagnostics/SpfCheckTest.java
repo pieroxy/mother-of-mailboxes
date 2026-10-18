@@ -8,7 +8,15 @@ import static org.junit.Assert.assertTrue;
 
 public class SpfCheckTest {
   private static DeliveryCheckResultDto run(FakeSpfDnsResolver dns, String smtpHost) {
-    return new SpfCheck(dns).run("example.org", smtpHost);
+    return new SpfCheck(dns).run("example.org", smtpHost, TestSendOutcome::notConfigured);
+  }
+
+  private static DeliveryCheckResultDto runWithTestSend(FakeSpfDnsResolver dns, TestSendOutcome outcome) {
+    return new SpfCheck(dns).run("example.org", "smtp.provider.net", () -> outcome);
+  }
+
+  private static TestSendOutcome received(String ip, String helo, String envelopeFrom) {
+    return TestSendOutcome.received(new ReceivedTestMessage(new byte[0], ip, helo, envelopeFrom, "TLSv1.3:TLS_AES_256_GCM_SHA384", 4000));
   }
 
   private static boolean hasFinding(DeliveryCheckResultDto r, CheckStatus status, String fragment) {
@@ -125,5 +133,64 @@ public class SpfCheckTest {
     assertEquals(null, DeliveryChecks.domainOf("nobody"));
     assertEquals(null, DeliveryChecks.domainOf("me@"));
     assertEquals(null, DeliveryChecks.domainOf(null));
+  }
+
+  @Test
+  public void pendingTestSendMakesTheCheckPending() {
+    DeliveryCheckResultDto r = runWithTestSend(new FakeSpfDnsResolver(), TestSendOutcome.pending("Waiting (12s so far)…"));
+    assertEquals(CheckStatus.IN_PROGRESS, r.getStatus());
+    assertEquals("Waiting (12s so far)…", r.getSummary());
+  }
+
+  @Test
+  public void testMessagePassingSpfReplacesTheGuess() {
+    FakeSpfDnsResolver dns = new FakeSpfDnsResolver()
+        .withTxt("example.org", "v=spf1 ip4:203.0.113.0/24 -all")
+        .withA("smtp.provider.net", "198.51.100.7");
+    DeliveryCheckResultDto r = runWithTestSend(dns, received("203.0.113.9", "out.example.org", "me@example.org"));
+    assertEquals(dump(r), CheckStatus.OK, r.getStatus());
+    assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "passed SPF: it was sent from 203.0.113.9"));
+    assertTrue("the SMTP server guess is replaced by the real result: " + dump(r),
+        r.getFindings().stream().noneMatch(f -> f.getMessage().contains("smtp.provider.net")));
+  }
+
+  @Test
+  public void testMessageFailingSpfIsAnErrorWithTheFix() {
+    FakeSpfDnsResolver dns = new FakeSpfDnsResolver().withTxt("example.org", "v=spf1 ip4:192.0.2.1 -all");
+    DeliveryCheckResultDto r = runWithTestSend(dns, received("2001:db8::25", "out.example.org", "me@example.org"));
+    assertEquals(dump(r), CheckStatus.ERROR, r.getStatus());
+    assertTrue(dump(r), hasFinding(r, CheckStatus.ERROR, "Add \"ip6:2001:db8::25\" to example.org's record"));
+  }
+
+  @Test
+  public void unalignedEnvelopeSenderIsReported() {
+    FakeSpfDnsResolver dns = new FakeSpfDnsResolver()
+        .withTxt("example.org", "v=spf1 include:_spf.provider.net -all")
+        .withTxt("_spf.provider.net", "v=spf1 ip4:198.51.100.0/24 -all")
+        .withTxt("bounces.provider.net", "v=spf1 ip4:198.51.100.0/24 -all");
+    DeliveryCheckResultDto r = runWithTestSend(dns, received("198.51.100.7", "out.provider.net", "bounce-123@bounces.provider.net"));
+    assertEquals(dump(r), CheckStatus.OK, r.getStatus());
+    assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "which bounces.provider.net's record allows"));
+    assertTrue(dump(r), hasFinding(r, CheckStatus.INFO, "SPF doesn't count toward example.org's DMARC"));
+  }
+
+  @Test
+  public void subdomainEnvelopeSenderIsAligned() {
+    FakeSpfDnsResolver dns = new FakeSpfDnsResolver()
+        .withTxt("example.org", "v=spf1 -all")
+        .withTxt("mail.example.org", "v=spf1 ip4:203.0.113.9 -all");
+    DeliveryCheckResultDto r = runWithTestSend(dns, received("203.0.113.9", "out.example.org", "bounce@mail.example.org"));
+    assertTrue(dump(r), r.getFindings().stream().noneMatch(f -> f.getMessage().contains("DMARC")));
+  }
+
+  @Test
+  public void failedTestSendFallsBackToTheGuess() {
+    FakeSpfDnsResolver dns = new FakeSpfDnsResolver()
+        .withTxt("example.org", "v=spf1 a:smtp.provider.net -all")
+        .withA("smtp.provider.net", "198.51.100.7");
+    DeliveryCheckResultDto r = runWithTestSend(dns, TestSendOutcome.failed("Could not reach the SMTP sink: timeout"));
+    assertEquals(dump(r), CheckStatus.WARNING, r.getStatus());
+    assertTrue(dump(r), hasFinding(r, CheckStatus.WARNING, "Test send failed: Could not reach the SMTP sink"));
+    assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "smtp.provider.net (198.51.100.7) is allowed"));
   }
 }

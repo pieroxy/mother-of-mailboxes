@@ -33,6 +33,14 @@ public class DeliveryCheckResultDto {
     return result;
   }
 
+  /** A check still waiting on something (e.g. a test send): the webapp calls it again. */
+  public static DeliveryCheckResultDto inProgress(DeliveryCheck check, String summary) {
+    DeliveryCheckResultDto result = new DeliveryCheckResultDto(check);
+    result.status = CheckStatus.IN_PROGRESS;
+    result.summary = summary;
+    return result;
+  }
+
   public DeliveryCheckResultDto fact(String label, String value) {
     facts.add(new CheckFactDto(label, value));
     return this;

@@ -11,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Talks to an SMTP sink (see {@code src/smtp-sink-core}): the server MOM's mail diagnostics send
@@ -55,6 +56,21 @@ public final class SmtpSinkClient {
       throw new IllegalArgumentException("The SMTP sink URL is invalid: " + e.getMessage());
     }
     return trimmed;
+  }
+
+  /**
+   * {@code GET <sinkUrl>/messages/<uuid>}: the raw message the sink received with that UUID as
+   * its Subject, or empty if it has none (not arrived yet, or already expired).
+   */
+  public static Optional<byte[]> fetchMessage(String sinkUrl, String uuid) throws IOException, InterruptedException {
+    HttpRequest request = HttpRequest.newBuilder(URI.create(sinkUrl + "/messages/" + uuid))
+        .timeout(REQUEST_TIMEOUT)
+        .GET()
+        .build();
+    HttpResponse<byte[]> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofByteArray());
+    if (response.statusCode() == 404) return Optional.empty();
+    if (response.statusCode() != 200) throw new IOException("HTTP " + response.statusCode() + " from " + request.uri());
+    return Optional.of(response.body());
   }
 
   /** {@code GET <sinkUrl>/info}. {@code sinkUrl} must be normalized (see {@link #normalizeUrl}). */

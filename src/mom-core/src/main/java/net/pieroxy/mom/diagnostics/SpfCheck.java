@@ -4,21 +4,26 @@ import net.pieroxy.mom.detection.spf.SpfDnsException;
 import net.pieroxy.mom.detection.spf.SpfDnsResolver;
 import net.pieroxy.mom.detection.spf.SpfEvaluator;
 import net.pieroxy.mom.detection.spf.SpfResult;
+import net.pieroxy.mom.detection.dmarc.DmarcEvaluator;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Checks a sending domain's SPF record (RFC 7208) from DNS alone: that there's exactly one, that
- * it parses, stays within the 10 DNS lookups limit (counted through every include and redirect),
- * avoids {@code ptr}, and ends with a protective {@code all}. Then, as a best guess, whether the
- * account's SMTP server is one of the servers it authorizes — only a guess, since the server mail
- * is submitted to isn't always the one that delivers it (big providers send from other servers).
+ * Checks a sending domain's SPF record (RFC 7208): first from DNS alone — that there's exactly
+ * one, that it parses, stays within the 10 DNS lookups limit (counted through every include and
+ * redirect), avoids {@code ptr}, and ends with a protective {@code all}. Then against a test send
+ * (see {@link TestSends}), if an SMTP sink is configured: the real SPF result of a message sent
+ * through the account, from the server that actually delivered it and for its actual envelope
+ * sender. Without a sink, only a best guess: whether the account's SMTP server is one of the
+ * servers the record authorizes — a guess, since the server mail is submitted to isn't always the
+ * one that delivers it (big providers send from other servers).
  */
 public class SpfCheck {
   // RFC 7208 §4.6.4.
@@ -36,8 +41,15 @@ public class SpfCheck {
     this.resolver = resolver;
   }
 
-  /** @param smtpHost the account's SMTP server, or null if it has none. */
-  public DeliveryCheckResultDto run(String domain, String smtpHost) {
+  /**
+   * @param smtpHost the account's SMTP server, or null if it has none.
+   * @param testSend the test send's outcome, asked first: a pending one makes the whole check
+   *     pending (see {@link DeliveryCheckResultDto#inProgress}).
+   */
+  public DeliveryCheckResultDto run(String domain, String smtpHost, Supplier<TestSendOutcome> testSend) {
+    TestSendOutcome outcome = testSend.get();
+    if (outcome.kind() == TestSendOutcome.Kind.PENDING) return DeliveryCheckResultDto.inProgress(DeliveryCheck.SPF, outcome.message());
+
     DeliveryCheckResultDto result = new DeliveryCheckResultDto(DeliveryCheck.SPF).fact("Domain", domain);
 
     List<String> records;
@@ -83,7 +95,17 @@ public class SpfCheck {
     }
 
     addAllFinding(result, domain, all);
-    addSmtpHostFindings(result, domain, smtpHost);
+    switch (outcome.kind()) {
+      case RECEIVED -> addTestSendFindings(result, domain, outcome.received());
+      case FAILED -> {
+        result.finding(CheckStatus.WARNING, "Test send failed: " + outcome.message());
+        addSmtpHostFindings(result, domain, smtpHost);
+      }
+      default -> {
+        addSmtpHostFindings(result, domain, smtpHost);
+        result.finding(CheckStatus.INFO, "Set an SMTP sink in General settings to check SPF with a real test message.");
+      }
+    }
     return result.conclude("SPF is correctly set up for " + domain + ".");
   }
 
@@ -142,6 +164,46 @@ public class SpfCheck {
             + "the one you submit it to — a test send will tell for sure.");
       }
     }
+  }
+
+  /** The real SPF result of the test message, and whether it can count for {@code fromDomain}'s DMARC. */
+  private void addTestSendFindings(DeliveryCheckResultDto result, String fromDomain, ReceivedTestMessage received) {
+    // RFC 7208 §2.4: with a null envelope sender, SPF checks the HELO name instead.
+    String spfDomain = received.envelopeDomain() != null ? received.envelopeDomain() : received.helo().toLowerCase(Locale.ROOT);
+    String ip = received.clientIp();
+    result.fact("Test message", "received by the SMTP sink " + received.delayMs() / 1000 + "s after it was sent");
+    result.fact("Sending server", ip + " (HELO " + received.helo() + ")");
+    result.fact("Envelope sender", received.envelopeFrom().isEmpty() ? "<> (empty: SPF checks the HELO name)" : received.envelopeFrom());
+
+    String fix = "Add \"" + (ip.contains(":") ? "ip6:" : "ip4:") + ip + "\" to " + spfDomain + "'s record, or the include your provider documents.";
+    SpfResult spf = new SpfEvaluator(resolver).evaluate(ip, spfDomain);
+    String sent = "The test message was sent from " + ip;
+    switch (spf) {
+      case PASS -> result.finding(CheckStatus.OK, "The test message passed SPF: it was sent from " + ip + ", which "
+          + spfDomain + "'s record allows.");
+      case FAIL -> result.finding(CheckStatus.ERROR, sent + ", which " + spfDomain + "'s record doesn't allow: it failed SPF, "
+          + "so many servers will reject your mail. " + fix);
+      case SOFTFAIL -> result.finding(CheckStatus.WARNING, sent + ", which " + spfDomain + "'s record doesn't allow: it soft-failed "
+          + "SPF, so your mail may be marked as spam. " + fix);
+      case NEUTRAL -> result.finding(CheckStatus.WARNING, sent + ", which " + spfDomain + "'s record doesn't mention: SPF is "
+          + "neutral, it doesn't vouch for your mail. " + fix);
+      case NONE -> result.finding(CheckStatus.WARNING, sent + " with " + spfDomain + " as envelope sender domain, which has no "
+          + "SPF record: nothing vouches for your mail.");
+      case PERMERROR -> result.finding(CheckStatus.ERROR, "The test message got a permanent SPF error: " + spfDomain
+          + "'s record is broken, receiving servers can't evaluate it.");
+      case TEMPERROR -> result.finding(CheckStatus.WARNING, "Could not evaluate SPF for the test message: a DNS lookup failed. "
+          + "Try again later.");
+    }
+
+    if (!spfDomain.equals(fromDomain) && !organizationalDomain(spfDomain).equals(organizationalDomain(fromDomain))) {
+      result.finding(CheckStatus.INFO, "SPF was checked against " + spfDomain + ", the envelope sender domain, not " + fromDomain
+          + ": that's usual with a mail provider, but then SPF doesn't count toward " + fromDomain + "'s DMARC, which relies "
+          + "on DKIM instead.");
+    }
+  }
+
+  private static String organizationalDomain(String domain) {
+    return DmarcEvaluator.organizationalDomainOf(domain).orElse(domain.toLowerCase(Locale.ROOT));
   }
 
   private static final class Analysis {

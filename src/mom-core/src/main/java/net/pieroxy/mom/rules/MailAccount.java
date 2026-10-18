@@ -524,6 +524,11 @@ public class MailAccount implements Runnable {
     stateStore.save(state);
   }
 
+  /** Sends mail as this account through its SMTP settings, or null if it has none. */
+  public MailSender getMailSender() {
+    return mailSender;
+  }
+
   private long sentCount() {
     return mailSender != null ? mailSender.getSentCount() : 0;
   }
