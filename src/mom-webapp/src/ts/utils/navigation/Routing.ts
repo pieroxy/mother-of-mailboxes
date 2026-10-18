@@ -19,6 +19,10 @@ export class Routing {
     m.route.set(Endpoints.ACCOUNT_HOME, { accountName });
   }
 
+  static goToDeliveryCheck(accountName: string) {
+    m.route.set(Endpoints.DELIVERY_CHECK, { accountName });
+  }
+
   static goToStats(accountName: string) {
     m.route.set(Endpoints.STATS, { accountName });
   }

@@ -19,6 +19,7 @@ import { ChangePasswordPage } from "./components/pages/ChangePasswordPage";
 import { AccountCreatePage } from "./components/pages/AccountCreatePage";
 import { SetupWizardPage } from "./components/pages/SetupWizardPage";
 import { AccountHomePage } from "./components/pages/AccountHomePage";
+import { DeliveryCheckPage } from "./components/pages/DeliveryCheckPage";
 
 const routes: m.RouteDefs = {
   [Endpoints.LOGIN]: LoginPage,
@@ -30,6 +31,7 @@ const routes: m.RouteDefs = {
   [Endpoints.APP_LOGS]: new AuthenticatedPageResolver(AppLogsPage),
   [Endpoints.ACCOUNT_CREATE]: new AuthenticatedPageResolver(AccountCreatePage),
   [Endpoints.ACCOUNT_HOME]: new AuthenticatedPageResolver(AccountHomePage),
+  [Endpoints.DELIVERY_CHECK]: new AuthenticatedPageResolver(DeliveryCheckPage),
   [Endpoints.STATS]: new AuthenticatedPageResolver(StatsPage),
   [Endpoints.LOGS]: new AuthenticatedPageResolver(LogsPage),
   [Endpoints.ACCOUNT_SETTINGS]: new AuthenticatedPageResolver(AccountSettingsPage),

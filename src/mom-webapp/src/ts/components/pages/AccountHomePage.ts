@@ -8,6 +8,7 @@ import { CycleProgressBar } from "../CycleProgressBar";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 import { StatsIcon } from "../atoms/icons/StatsIcon";
 import { LogsIcon } from "../atoms/icons/LogsIcon";
+import { DocumentCheckIcon } from "../atoms/icons/DocumentCheckIcon";
 import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusInfoIcon } from "../atoms/icons/StatusInfoIcon";
 import { Routing } from "../../utils/navigation/Routing";
@@ -23,7 +24,14 @@ interface AccountHomePageAttrs {
   accountName: string;
 }
 
-const LINKS: { title: string; description: string; icon: m.ComponentTypes; go: (accountName: string) => void }[] = [
+interface AccountLink {
+  title: string;
+  description: string;
+  icon: m.ComponentTypes;
+  go: (accountName: string) => void;
+}
+
+const LINKS: AccountLink[] = [
   {
     title: "Settings", icon: SettingsIcon, go: (accountName) => Routing.goToAccountSettings(accountName),
     description: "Configure the IMAP and SMTP connections, rules, shortcuts and learned rules.",
@@ -38,10 +46,18 @@ const LINKS: { title: string; description: string; icon: m.ComponentTypes; go: (
   },
 ];
 
+const TOOLS: AccountLink[] = [
+  {
+    title: "Check delivery settings", icon: DocumentCheckIcon, go: (accountName) => Routing.goToDeliveryCheck(accountName),
+    description: "Check that your domain and mail server are set up so the mail you send gets delivered: SPF for now, more to come.",
+  },
+];
+
 /**
  * An account's hub, reached by clicking its card on the home page: links to its settings, stats
  * and decision log pages, then a detailed view of what the card summarizes (status, cycle timing,
- * counters, classifier training, connection), with the pause/resume toggle.
+ * counters, classifier training, connection), with the pause/resume toggle, then its tools (see
+ * DeliveryCheckPage).
  */
 export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
   private accountName = "";
@@ -72,29 +88,27 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
   render(): m.Children {
     return m("page.accounthomepage", [
       m(AccountPageHeader, { accountName: this.accountName, current: "home" }),
-      m(".account-home-links", LINKS.map((link) =>
-        m("a.account-home-link", { onclick: () => link.go(this.accountName) }, [
-          m(link.icon),
-          m(".account-home-link-text", [
-            m(".account-home-link-title", link.title),
-            m(".account-home-link-description", link.description),
-          ]),
-        ]))),
+      m(".account-home-links", LINKS.map((link) => this.renderLink(link))),
       this.error ? m(".account-home-error.errorMessage", this.error) : null,
       this.data ? this.renderInformation(this.data) : (this.error ? null : m(".page-loading", "Loading…")),
       m("h2", "Tools"),
-      m(".page-card.account-home-coming-soon", [
-        m("h2", "Mail server diagnostics — coming soon"),
-        m("p", "Check that this account's domain and outgoing mail server are set up to deliver mail reliably: "
-          + "SPF, DKIM and DMARC records, MX records, reverse DNS (PTR) and HELO/EHLO name, MTA-STS, TLS-RPT and DANE (TLSA), "
-          + "and whether the domain or the sending IP address is listed on DNS blocklists."),
-        this.data && !this.data.mailDiagnosticsConfigured
-          ? m("p.field-hint", [
-            "Checks that send a test message need an SMTP sink, set in ",
-            m("a", { onclick: () => Routing.goToScreen(Endpoints.GENERAL_SETTINGS) }, "General settings"),
-            ".",
-          ])
-          : null,
+      m(".account-home-links", TOOLS.map((link) => this.renderLink(link))),
+      this.data && !this.data.mailDiagnosticsConfigured
+        ? m("p.field-hint.account-home-tools-hint", [
+          "Upcoming checks that send a test message will need an SMTP sink, set in ",
+          m("a", { onclick: () => Routing.goToScreen(Endpoints.GENERAL_SETTINGS) }, "General settings"),
+          ".",
+        ])
+        : null,
+    ]);
+  }
+
+  private renderLink(link: AccountLink): m.Children {
+    return m("a.account-home-link", { onclick: () => link.go(this.accountName) }, [
+      m(link.icon),
+      m(".account-home-link-text", [
+        m(".account-home-link-title", link.title),
+        m(".account-home-link-description", link.description),
       ]),
     ]);
   }

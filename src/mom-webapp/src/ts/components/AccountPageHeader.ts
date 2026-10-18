@@ -5,7 +5,7 @@ import { SettingsIcon } from "./atoms/icons/SettingsIcon";
 import { StatsIcon } from "./atoms/icons/StatsIcon";
 import { LogsIcon } from "./atoms/icons/LogsIcon";
 
-export type AccountPage = "home" | "settings" | "stats" | "logs";
+export type AccountPage = "home" | "settings" | "stats" | "logs" | "delivery-check";
 
 interface AccountPageHeaderAttrs {
   accountName: string;

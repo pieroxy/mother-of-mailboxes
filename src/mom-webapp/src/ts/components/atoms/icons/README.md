@@ -11,3 +11,10 @@ bar chart.
 `StatusPausedIcon.ts` combines that collection's "pause" icon (the two bars,
 redrawn as filled shapes instead of strokes) with the other status icons' round
 outline, to match their two-tone convention.
+
+`DocumentCheckIcon.ts` is that collection's "document-check" icon, unmodified.
+
+`StatusInProgressIcon.ts` combines that collection's "menu-horizontal" icon (the
+three dots, redrawn as filled circles instead of strokes) with the other status
+icons' round outline, like `StatusPausedIcon.ts`. The dots pulse one after the
+other (see `style.scss`), unless the system asks for reduced motion.

@@ -1,0 +1,85 @@
+package net.pieroxy.mom.api.implementations.diagnostics;
+
+import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
+import net.pieroxy.mom.api.metadata.ApiMethod;
+import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
+import net.pieroxy.mom.api.metadata.Endpoint;
+import net.pieroxy.mom.api.metadata.TypeScriptType;
+import net.pieroxy.mom.diagnostics.DeliveryCheck;
+import net.pieroxy.mom.diagnostics.DeliveryCheckResultDto;
+import net.pieroxy.mom.diagnostics.DeliveryChecks;
+import net.pieroxy.mom.rules.MailAccount;
+import net.pieroxy.mom.services.IServiceProvider;
+
+import java.util.logging.Logger;
+
+/**
+ * Runs one check of an account's delivery settings (see {@link DeliveryCheck}). One call per
+ * check, so the webapp shows each result as soon as it's in, and a slow one doesn't hold up the
+ * others. Problems found are the expected outcome of a check, reported in its result, not thrown.
+ */
+@Endpoint(method = ApiMethod.POST)
+public class RunDeliveryCheckApi extends AbstractAuthenticatedEndpoint<RunDeliveryCheckApiInput, RunDeliveryCheckApiOutput> {
+  private final static Logger LOGGER = Logger.getLogger(RunDeliveryCheckApi.class.getName());
+
+  public RunDeliveryCheckApi(IServiceProvider serviceProvider) {
+    super(serviceProvider);
+  }
+
+  @Override
+  public RunDeliveryCheckApiOutput processAuthenticated(RunDeliveryCheckApiInput input) {
+    if (input.getCheck() == null) throw new IllegalArgumentException("check must be set.");
+    MailAccount account = serviceProvider.getAccountService().getAccounts().stream()
+        .filter(a -> a.getAccountLabel().equals(input.getAccountName()))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("No such account: " + input.getAccountName()));
+
+    long start = System.currentTimeMillis();
+    DeliveryCheckResultDto result = DeliveryChecks.run(input.getCheck(), account.getConfig());
+    LOGGER.info("Delivery check " + input.getCheck() + " [" + input.getAccountName() + "]: " + result.getStatus()
+        + " in " + (System.currentTimeMillis() - start) + "ms — " + result.getSummary());
+    return new RunDeliveryCheckApiOutput(result);
+  }
+}
+
+@TypeScriptType
+class RunDeliveryCheckApiInput extends AuthenticatedApiInput {
+  private String accountName;
+  private DeliveryCheck check;
+
+  public String getAccountName() {
+    return accountName;
+  }
+
+  public void setAccountName(String accountName) {
+    this.accountName = accountName;
+  }
+
+  public DeliveryCheck getCheck() {
+    return check;
+  }
+
+  public void setCheck(DeliveryCheck check) {
+    this.check = check;
+  }
+}
+
+@TypeScriptType
+class RunDeliveryCheckApiOutput {
+  private DeliveryCheckResultDto result;
+
+  public RunDeliveryCheckApiOutput() {
+  }
+
+  public RunDeliveryCheckApiOutput(DeliveryCheckResultDto result) {
+    this.result = result;
+  }
+
+  public DeliveryCheckResultDto getResult() {
+    return result;
+  }
+
+  public void setResult(DeliveryCheckResultDto result) {
+    this.result = result;
+  }
+}
