@@ -18,6 +18,11 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> 
     title: "SPF",
     description: "The DNS record listing which servers may send mail for your domain (Sender Policy Framework).",
   },
+  [DeliveryCheck.DKIM]: {
+    title: "DKIM",
+    description: "The cryptographic signature proving your mail comes from your domain and wasn't altered on the way "
+      + "(DomainKeys Identified Mail). Checked on the test message.",
+  },
 };
 
 /**

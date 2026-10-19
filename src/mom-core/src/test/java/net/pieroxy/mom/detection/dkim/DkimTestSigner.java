@@ -30,18 +30,28 @@ public class DkimTestSigner {
 
   /** headers must preserve insertion order (e.g. LinkedHashMap). */
   public static SignedMessage sign(String selector, String domain, Map<String, String> headers, String body) throws Exception {
+    return sign(selector, domain, headers, body, 2048, "sha256", "");
+  }
+
+  /**
+   * @param hash "sha256" or "sha1".
+   * @param extraTags inserted as is before "h=", e.g. "l=12; " — must end with "; " if not empty.
+   */
+  public static SignedMessage sign(String selector, String domain, Map<String, String> headers, String body,
+                                   int keySize, String hash, String extraTags) throws Exception {
     KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-    keyGen.initialize(2048);
+    keyGen.initialize(keySize);
     KeyPair keyPair = keyGen.generateKeyPair();
 
-    String bodyHash = base64(MessageDigest.getInstance("SHA-256").digest(body.getBytes(StandardCharsets.UTF_8)));
+    String digest = hash.equals("sha1") ? "SHA-1" : "SHA-256";
+    String bodyHash = base64(MessageDigest.getInstance(digest).digest(body.getBytes(StandardCharsets.UTF_8)));
     String signedHeaderNames = String.join(":", headers.keySet());
 
     // The "b=" tag is present but empty at the point of computing the signature (RFC 6376 §3.7
     // step 4), and the DKIM-Signature header itself does NOT have a trailing CRLF in the signed
     // input.
-    String dkimHeaderPrefix = "DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=" + domain + "; s=" + selector
-            + "; h=" + signedHeaderNames + "; bh=" + bodyHash + "; b=";
+    String dkimHeaderPrefix = "DKIM-Signature: v=1; a=rsa-" + hash + "; c=simple/simple; d=" + domain + "; s=" + selector
+            + "; " + extraTags + "h=" + signedHeaderNames + "; bh=" + bodyHash + "; b=";
 
     StringBuilder signingInput = new StringBuilder();
     for (Map.Entry<String, String> header : headers.entrySet()) {
@@ -49,7 +59,7 @@ public class DkimTestSigner {
     }
     signingInput.append(dkimHeaderPrefix);
 
-    Signature signer = Signature.getInstance("SHA256withRSA");
+    Signature signer = Signature.getInstance(hash.equals("sha1") ? "SHA1withRSA" : "SHA256withRSA");
     signer.initSign(keyPair.getPrivate());
     signer.update(signingInput.toString().getBytes(StandardCharsets.US_ASCII));
     String signature = base64(signer.sign());

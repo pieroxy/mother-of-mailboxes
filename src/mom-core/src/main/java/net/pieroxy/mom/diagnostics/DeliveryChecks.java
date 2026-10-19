@@ -3,6 +3,12 @@ package net.pieroxy.mom.diagnostics;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.detection.spf.DnsJavaSpfDnsResolver;
 import net.pieroxy.mom.rules.MailAccount;
+import org.apache.james.jdkim.impl.DNSPublicKeyRecordRetriever;
+import org.xbill.DNS.SimpleResolver;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.function.Supplier;
 
 import java.util.Locale;
 
@@ -26,11 +32,23 @@ public final class DeliveryChecks {
     if (domain == null) {
       return DeliveryCheckResultDto.skipped(check, "The SMTP settings have no valid From address: there's no sending domain to check.");
     }
+    Supplier<TestSendOutcome> testSend = () -> sinkUrl == null || account.getMailSender() == null
+        ? TestSendOutcome.notConfigured()
+        : TestSends.await(account.getAccountLabel(), runId, account.getMailSender(), sinkUrl);
     return switch (check) {
-      case SPF -> new SpfCheck(new DnsJavaSpfDnsResolver()).run(domain, smtp.getHost(), () -> sinkUrl == null || account.getMailSender() == null
-          ? TestSendOutcome.notConfigured()
-          : TestSends.await(account.getAccountLabel(), runId, account.getMailSender(), sinkUrl));
+      case SPF -> new SpfCheck(new DnsJavaSpfDnsResolver()).run(domain, smtp.getHost(), testSend);
+      case DKIM -> new DkimCheck(dkimKeyRetriever()).run(domain, testSend);
     };
+  }
+
+  private static DNSPublicKeyRecordRetriever dkimKeyRetriever() {
+    try {
+      SimpleResolver resolver = new SimpleResolver();
+      resolver.setTimeout(Duration.ofSeconds(5));
+      return new DNSPublicKeyRecordRetriever(resolver);
+    } catch (IOException e) {
+      throw new IllegalStateException("Could not initialize the DNS resolver for DKIM", e);
+    }
   }
 
   /** The domain of an address such as "me@example.org" or "Me &lt;me@example.org&gt;", lowercased, or null. */

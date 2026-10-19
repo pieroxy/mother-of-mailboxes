@@ -11,4 +11,5 @@ import net.pieroxy.mom.api.metadata.TypeScriptType;
 @TypeScriptNonConstEnum
 public enum DeliveryCheck {
   SPF,
+  DKIM,
 }
