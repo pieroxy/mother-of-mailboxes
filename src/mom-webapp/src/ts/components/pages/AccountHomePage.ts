@@ -49,7 +49,7 @@ const LINKS: AccountLink[] = [
 const TOOLS: AccountLink[] = [
   {
     title: "Check delivery settings", icon: DocumentCheckIcon, go: (accountName) => Routing.goToDeliveryCheck(accountName),
-    description: "Check that your domain and mail servers are set up so mail gets delivered: SPF, DKIM, DMARC, reverse DNS, MX, DANE, MTA-STS and TLS-RPT.",
+    description: "Check that your domain and mail servers are set up so mail gets delivered: SPF, DKIM, DMARC, reverse DNS, MX, DANE, MTA-STS, TLS-RPT and reputation lists.",
   },
 ];
 

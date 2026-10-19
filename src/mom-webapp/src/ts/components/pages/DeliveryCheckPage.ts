@@ -50,6 +50,16 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; shortTitle?: string; de
     description: "A policy telling servers sending you mail to always encrypt it and check your mail servers' certificates "
       + "(MTA-STS), and where to report when they can't (TLS-RPT). Optional; your mail servers' certificates are checked on port 25.",
   },
+  [DeliveryCheck.IP_REPUTATION]: {
+    title: "IP reputation",
+    description: "Whether the address your mail comes from is on the IP reputation lists configured in General settings — "
+      + "the ones MOM also uses to filter your incoming mail.",
+  },
+  [DeliveryCheck.DOMAIN_REPUTATION]: {
+    title: "Domain reputation",
+    description: "Whether your domains — From, envelope sender, DKIM signer — are on the domain reputation lists configured in "
+      + "General settings.",
+  },
 };
 
 /**

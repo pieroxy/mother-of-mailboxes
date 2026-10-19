@@ -4,6 +4,7 @@ import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.detection.dkim.DkimVerifier;
 import net.pieroxy.mom.detection.dmarc.DnsJavaDmarcDnsResolver;
 import net.pieroxy.mom.detection.fcrdns.DnsJavaFcrdnsDnsResolver;
+import net.pieroxy.mom.detection.reputation.ReputationRegistryHolder;
 import net.pieroxy.mom.detection.spf.DnsJavaSpfDnsResolver;
 import net.pieroxy.mom.rules.MailAccount;
 import org.apache.james.jdkim.impl.DNSPublicKeyRecordRetriever;
@@ -47,6 +48,8 @@ public final class DeliveryChecks {
       case DANE -> new DaneCheck(new DnsJavaDaneDns(), StartTlsProbe.PORT_25).run(domain);
       case MTA_STS -> new MtaStsCheck(new DnsJavaSpfDnsResolver(), new DnsJavaMxDnsResolver(), MtaStsCheck.HTTPS,
           StartTlsProbe.PORT_25, MtaStsCheck.defaultTrust()).run(domain);
+      case IP_REPUTATION -> new ReputationCheck(ReputationRegistryHolder.get(), new DnsJavaMxDnsResolver()).runIp(smtp.getHost(), testSend);
+      case DOMAIN_REPUTATION -> new ReputationCheck(ReputationRegistryHolder.get(), new DnsJavaMxDnsResolver()).runDomain(domain, testSend);
     };
   }
 

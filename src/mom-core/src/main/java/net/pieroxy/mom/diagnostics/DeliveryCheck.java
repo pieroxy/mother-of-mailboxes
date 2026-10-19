@@ -17,4 +17,6 @@ public enum DeliveryCheck {
   MX,
   DANE,
   MTA_STS,
+  IP_REPUTATION,
+  DOMAIN_REPUTATION,
 }
