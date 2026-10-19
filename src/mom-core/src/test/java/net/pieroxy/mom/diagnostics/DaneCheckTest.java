@@ -60,7 +60,7 @@ public class DaneCheckTest {
   }
 
   /** Each host presents its own certificate; "down.example.org" can't be reached, "plain.example.org" has no STARTTLS. */
-  private static final DaneCheck.CertificateSource SERVERS = host -> switch (host) {
+  private static final StartTlsProbe.CertificateSource SERVERS = host -> switch (host) {
     case "mx1.example.org" -> List.of(CERT_1);
     case "mx2.example.org" -> List.of(CERT_2);
     case "plain.example.org" -> throw new StartTlsProbe.NoStartTlsException("no STARTTLS");

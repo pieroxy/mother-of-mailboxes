@@ -3,7 +3,6 @@ package net.pieroxy.mom.diagnostics;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
@@ -12,9 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -30,21 +26,10 @@ import java.util.stream.Collectors;
 public class DaneCheck {
   /** MX hosts with TLSA records are probed in parallel, up to this many. */
   static final int MAX_PROBED_HOSTS = 10;
-  private static final ExecutorService PROBE_EXECUTOR = Executors.newCachedThreadPool(r -> {
-    Thread t = new Thread(r, "dane-probe");
-    t.setDaemon(true);
-    return t;
-  });
-
-  /** Fetches the certificate chain an MX presents after STARTTLS on port 25 (see {@link StartTlsProbe}). */
-  public interface CertificateSource {
-    List<X509Certificate> fetch(String host) throws IOException;
-  }
-
   private final DaneDns dns;
-  private final CertificateSource certificates;
+  private final StartTlsProbe.CertificateSource certificates;
 
-  public DaneCheck(DaneDns dns, CertificateSource certificates) {
+  public DaneCheck(DaneDns dns, StartTlsProbe.CertificateSource certificates) {
     this.dns = dns;
     this.certificates = certificates;
   }
@@ -121,13 +106,10 @@ public class DaneCheck {
           + "Publish TLSA records for every MX host.");
     }
 
-    // In parallel: each probe can take several seconds, and a check call must stay well under a minute.
     List<HostTlsa> probed = usable.subList(0, Math.min(usable.size(), MAX_PROBED_HOSTS));
-    List<CompletableFuture<Probe>> probes = probed.stream()
-        .map(h -> CompletableFuture.supplyAsync(() -> fetch(h.host), PROBE_EXECUTOR))
-        .toList();
+    List<StartTlsProbe.Result> probes = StartTlsProbe.fetchAll(probed.stream().map(HostTlsa::host).toList(), certificates);
     for (int i = 0; i < probed.size(); i++) {
-      report(result, probed.get(i), probes.get(i).join());
+      report(result, probed.get(i), probes.get(i));
     }
     for (HostTlsa skipped : usable.subList(probed.size(), usable.size())) {
       result.finding(CheckStatus.INFO, "Certificate of " + skipped.host + " not checked: only " + MAX_PROBED_HOSTS + " MX hosts are.");
@@ -162,31 +144,20 @@ public class DaneCheck {
     return good;
   }
 
-  /** What probing one MX gave: its certificate chain, or why there's none. */
-  private record Probe(List<X509Certificate> chain, IOException failure) {}
-
-  private Probe fetch(String host) {
-    try {
-      return new Probe(certificates.fetch(host), null);
-    } catch (IOException e) {
-      return new Probe(null, e);
-    }
-  }
-
-  private static void report(DeliveryCheckResultDto result, HostTlsa hostTlsa, Probe probe) {
+  private static void report(DeliveryCheckResultDto result, HostTlsa hostTlsa, StartTlsProbe.Result probe) {
     String host = hostTlsa.host;
-    if (probe.failure instanceof StartTlsProbe.NoStartTlsException) {
+    if (probe.failure() instanceof StartTlsProbe.NoStartTlsException) {
       result.finding(CheckStatus.ERROR, host + " has TLSA records but doesn't offer STARTTLS: senders validating DANE refuse to "
           + "deliver to it unencrypted. Enable STARTTLS on it.");
       return;
     }
-    if (probe.failure != null) {
+    if (probe.failure() != null) {
       result.setPartial(true);
-      result.finding(CheckStatus.INFO, "Couldn't connect to " + host + " on port 25 from here (" + probe.failure.getMessage()
+      result.finding(CheckStatus.INFO, "Couldn't connect to " + host + " on port 25 from here (" + probe.failure().getMessage()
           + "), so its certificate wasn't checked against its TLSA records. Outgoing port 25 is often blocked on home connections.");
       return;
     }
-    List<X509Certificate> chain = probe.chain;
+    List<X509Certificate> chain = probe.chain();
     if (chain.isEmpty()) {
       result.finding(CheckStatus.ERROR, host + " presented no certificate.");
       return;

@@ -16,4 +16,5 @@ public enum DeliveryCheck {
   REVERSE_DNS,
   MX,
   DANE,
+  MTA_STS,
 }

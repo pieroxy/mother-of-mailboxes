@@ -43,6 +43,11 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> 
     description: "DNSSEC-signed TLSA records pinning your mail servers' certificates, so servers sending you mail can't be "
       + "fooled into talking to an impostor. Optional, but must be right when present: their certificates are checked on port 25.",
   },
+  [DeliveryCheck.MTA_STS]: {
+    title: "MTA-STS & TLS-RPT",
+    description: "A policy telling servers sending you mail to always encrypt it and check your mail servers' certificates "
+      + "(MTA-STS), and where to report when they can't (TLS-RPT). Optional; your mail servers' certificates are checked on port 25.",
+  },
 };
 
 /**

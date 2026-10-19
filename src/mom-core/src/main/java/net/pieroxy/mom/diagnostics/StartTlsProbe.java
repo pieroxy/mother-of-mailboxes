@@ -20,6 +20,9 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Connects to a mail server on port 25, upgrades the connection with STARTTLS, and returns the
@@ -29,6 +32,39 @@ import java.util.Locale;
 public class StartTlsProbe {
   static int connectTimeoutMs = 8_000;
   static int readTimeoutMs = 10_000;
+  private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(r -> {
+    Thread t = new Thread(r, "starttls-probe");
+    t.setDaemon(true);
+    return t;
+  });
+
+  /** Fetches the certificate chain a mail server presents after STARTTLS on port 25: {@link #certificates} for real, canned answers in tests. */
+  public interface CertificateSource {
+    List<X509Certificate> fetch(String host) throws IOException;
+  }
+
+  /** The real thing: port 25. */
+  public static final CertificateSource PORT_25 = host -> new StartTlsProbe().certificates(host, 25);
+
+  /** What probing one host gave: its certificate chain (leaf first), or why there's none. */
+  public record Result(List<X509Certificate> chain, IOException failure) {}
+
+  /**
+   * Probes every host at once — each probe can take several seconds, and a check call must stay
+   * well under a minute — and returns the results in the same order.
+   */
+  public static List<Result> fetchAll(List<String> hosts, CertificateSource source) {
+    List<CompletableFuture<Result>> probes = hosts.stream()
+        .map(host -> CompletableFuture.supplyAsync(() -> {
+          try {
+            return new Result(source.fetch(host), null);
+          } catch (IOException e) {
+            return new Result(null, e);
+          }
+        }, EXECUTOR))
+        .toList();
+    return probes.stream().map(CompletableFuture::join).toList();
+  }
 
   /** The server doesn't offer STARTTLS. */
   public static class NoStartTlsException extends IOException {

@@ -44,7 +44,9 @@ public final class DeliveryChecks {
       case DMARC -> new DmarcCheck(new DnsJavaDmarcDnsResolver(), new DnsJavaSpfDnsResolver(), DkimVerifier.createDefault()).run(domain, testSend);
       case REVERSE_DNS -> new ReverseDnsCheck(new DnsJavaFcrdnsDnsResolver()).run(testSend);
       case MX -> new MxCheck(new DnsJavaMxDnsResolver()).run(domain);
-      case DANE -> new DaneCheck(new DnsJavaDaneDns(), host -> new StartTlsProbe().certificates(host, 25)).run(domain);
+      case DANE -> new DaneCheck(new DnsJavaDaneDns(), StartTlsProbe.PORT_25).run(domain);
+      case MTA_STS -> new MtaStsCheck(new DnsJavaSpfDnsResolver(), new DnsJavaMxDnsResolver(), MtaStsCheck.HTTPS,
+          StartTlsProbe.PORT_25, MtaStsCheck.defaultTrust()).run(domain);
     };
   }
 
