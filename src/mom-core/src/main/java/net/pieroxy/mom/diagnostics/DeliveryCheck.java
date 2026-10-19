@@ -12,4 +12,5 @@ import net.pieroxy.mom.api.metadata.TypeScriptType;
 public enum DeliveryCheck {
   SPF,
   DKIM,
+  DMARC,
 }

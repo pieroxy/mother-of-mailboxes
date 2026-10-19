@@ -23,6 +23,11 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> 
     description: "The cryptographic signature proving your mail comes from your domain and wasn't altered on the way "
       + "(DomainKeys Identified Mail). Checked on the test message.",
   },
+  [DeliveryCheck.DMARC]: {
+    title: "DMARC",
+    description: "The DNS record telling receiving servers what to do with mail that fails SPF and DKIM for your domain, "
+      + "such as mail forged in your name (Domain-based Message Authentication, Reporting and Conformance).",
+  },
 };
 
 /**
