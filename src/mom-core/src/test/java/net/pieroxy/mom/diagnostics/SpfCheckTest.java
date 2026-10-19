@@ -37,10 +37,11 @@ public class SpfCheckTest {
         .withA("smtp.example.org", "203.0.113.5");
     DeliveryCheckResultDto r = run(dns, "smtp.example.org");
     assertEquals(dump(r), CheckStatus.OK, r.getStatus());
-    assertEquals("SPF is correctly set up for example.org.", r.getSummary());
+    assertTrue("no SMTP sink: DNS only", r.isPartial());
+    assertEquals("SPF record is correctly set up for example.org (DNS only: no test message to check it against).", r.getSummary());
     assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "2 DNS lookups"));
     assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "ends with -all"));
-    assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "smtp.example.org (203.0.113.5) is allowed"));
+    assertTrue(dump(r), hasFinding(r, CheckStatus.INFO, "smtp.example.org (203.0.113.5) is allowed"));
   }
 
   @Test
@@ -85,7 +86,6 @@ public class SpfCheckTest {
     DeliveryCheckResultDto r = run(dns, null);
     assertEquals(dump(r), CheckStatus.OK, r.getStatus());
     assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "1 DNS lookup needed"));
-    assertTrue(dump(r), hasFinding(r, CheckStatus.INFO, "No SMTP server configured"));
   }
 
   @Test
@@ -115,15 +115,16 @@ public class SpfCheckTest {
   }
 
   @Test
-  public void smtpServerNotAuthorizedIsAWarning() {
+  public void smtpServerNotAuthorizedIsOnlyInformationWithoutATestSend() {
     FakeSpfDnsResolver dns = new FakeSpfDnsResolver()
         .withTxt("example.org", "v=spf1 ip4:192.0.2.1 -all")
         .withA("smtp.provider.net", "198.51.100.7")
         .withAaaa("smtp.provider.net", "2001:db8::7");
     DeliveryCheckResultDto r = run(dns, "smtp.provider.net");
-    assertEquals(dump(r), CheckStatus.WARNING, r.getStatus());
-    assertTrue(dump(r), hasFinding(r, CheckStatus.WARNING, "smtp.provider.net (198.51.100.7) is not allowed"));
-    assertTrue(dump(r), hasFinding(r, CheckStatus.WARNING, "smtp.provider.net (2001:db8::7) is not allowed"));
+    assertEquals(dump(r), CheckStatus.OK, r.getStatus());
+    assertTrue(r.isPartial());
+    assertTrue(dump(r), hasFinding(r, CheckStatus.INFO, "smtp.provider.net (198.51.100.7) isn't allowed"));
+    assertTrue(dump(r), hasFinding(r, CheckStatus.INFO, "smtp.provider.net (2001:db8::7) isn't allowed"));
   }
 
   @Test
@@ -149,6 +150,8 @@ public class SpfCheckTest {
         .withA("smtp.provider.net", "198.51.100.7");
     DeliveryCheckResultDto r = runWithTestSend(dns, received("203.0.113.9", "out.example.org", "me@example.org"));
     assertEquals(dump(r), CheckStatus.OK, r.getStatus());
+    assertTrue("a received test message makes the check complete", !r.isPartial());
+    assertEquals("SPF is correctly set up for example.org.", r.getSummary());
     assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "passed SPF: it was sent from 203.0.113.9"));
     assertTrue("the SMTP server guess is replaced by the real result: " + dump(r),
         r.getFindings().stream().noneMatch(f -> f.getMessage().contains("smtp.provider.net")));
@@ -190,7 +193,8 @@ public class SpfCheckTest {
         .withA("smtp.provider.net", "198.51.100.7");
     DeliveryCheckResultDto r = runWithTestSend(dns, TestSendOutcome.failed("Could not reach the SMTP sink: timeout"));
     assertEquals(dump(r), CheckStatus.WARNING, r.getStatus());
+    assertTrue(r.isPartial());
     assertTrue(dump(r), hasFinding(r, CheckStatus.WARNING, "Test send failed: Could not reach the SMTP sink"));
-    assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "smtp.provider.net (198.51.100.7) is allowed"));
+    assertTrue(dump(r), hasFinding(r, CheckStatus.INFO, "smtp.provider.net (198.51.100.7) is allowed"));
   }
 }

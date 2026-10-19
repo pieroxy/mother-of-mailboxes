@@ -95,7 +95,7 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
       m(".account-home-links", TOOLS.map((link) => this.renderLink(link))),
       this.data && !this.data.mailDiagnosticsConfigured
         ? m("p.field-hint.account-home-tools-hint", [
-          "Upcoming checks that send a test message will need an SMTP sink, set in ",
+          "No SMTP sink configured: delivery checks will be partial, from DNS records only. Set one in ",
           m("a", { onclick: () => Routing.goToScreen(Endpoints.GENERAL_SETTINGS) }, "General settings"),
           ".",
         ])

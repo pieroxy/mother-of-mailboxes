@@ -15,6 +15,11 @@ public class DeliveryCheckResultDto {
   private DeliveryCheck check;
   private CheckStatus status;
   private String summary;
+  /**
+   * Whether part of the check couldn't run — typically the part needing a test send, with no SMTP
+   * sink configured or a test send that failed — so its status only covers what could be checked.
+   */
+  private boolean partial;
   private List<CheckFactDto> facts = new ArrayList<>();
   private List<CheckFindingDto> findings = new ArrayList<>();
 
@@ -59,6 +64,14 @@ public class DeliveryCheckResultDto {
       default -> okSummary;
     };
     return this;
+  }
+
+  public boolean isPartial() {
+    return partial;
+  }
+
+  public void setPartial(boolean partial) {
+    this.partial = partial;
   }
 
   public DeliveryCheck getCheck() {

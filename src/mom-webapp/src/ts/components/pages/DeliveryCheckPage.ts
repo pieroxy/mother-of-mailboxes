@@ -4,6 +4,9 @@ import { CheckStatus, DeliveryCheck, DeliveryCheckResultDto } from "../../auto/p
 import { AbstractPage } from "./AbstractPage";
 import { AccountPageHeader } from "../AccountPageHeader";
 import { CheckStatusIcon, checkStatusLabel } from "../CheckStatusIcon";
+import { StatusWarningIcon } from "../atoms/icons/StatusWarningIcon";
+import { Routing } from "../../utils/navigation/Routing";
+import { Endpoints } from "../../utils/navigation/Endpoints";
 
 interface DeliveryCheckPageAttrs {
   accountName: string;
@@ -31,6 +34,8 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
   /** Progress reported by a check still running, e.g. "Waiting for the test message (12s so far)…". */
   private progress = new Map<DeliveryCheck, string>();
   private runId = "";
+  /** Undefined until known: no notice rather than a wrong one. */
+  private sinkConfigured: boolean | undefined;
   private removed = false;
 
   getPageTitle(): string {
@@ -39,6 +44,13 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
 
   oninit({ attrs }: m.Vnode<DeliveryCheckPageAttrs>) {
     this.accountName = attrs.accountName;
+    ApiEndpoints.AccountStatus.call({ accountName: this.accountName })
+      .then((output) => {
+        this.sinkConfigured = output.mailDiagnosticsConfigured;
+        m.redraw();
+      })
+      // Not worth an error of its own: the checks still run, and report themselves as partial.
+      .catch(() => undefined);
   }
 
   onremove() {
@@ -59,7 +71,25 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
         m("button", { onclick: () => this.runAll(), disabled: this.running.size > 0 },
           this.running.size > 0 ? "Running…" : "Start diagnostics"),
       ]),
+      this.sinkConfigured === false ? this.renderNoSinkNotice() : null,
       m(".delivery-checks", Object.values(DeliveryCheck).map((check) => this.renderCheck(check))),
+    ]);
+  }
+
+  private renderNoSinkNotice(): m.Children {
+    return m(".delivery-check-notice", [
+      m(StatusWarningIcon),
+      m("div", [
+        m("strong", "Partial diagnostics: no SMTP sink configured."),
+        m("p", "Without one, MOM can only read your DNS records: it can't see how your mail actually leaves your server — "
+          + "which IP address sends it, for which envelope domain, signed or not. Checks will be partial at best, and some "
+          + "will be skipped."),
+        m("p", [
+          "Set an SMTP sink in ",
+          m("a", { onclick: () => Routing.goToScreen(Endpoints.GENERAL_SETTINGS) }, "General settings"),
+          ": a public instance is available, or you can host your own.",
+        ]),
+      ]),
     ]);
   }
 
@@ -74,7 +104,12 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
           m("h2", info.title),
           m(".field-hint", info.description),
         ]),
-        status ? m(".delivery-check-status.status-" + status.toLowerCase(), checkStatusLabel(status)) : null,
+        status ? m(".delivery-check-status.status-" + status.toLowerCase(), [
+          checkStatusLabel(status),
+          result?.partial && !this.running.has(check)
+            ? m("span.delivery-check-partial", { title: "Part of this check couldn't run: see its findings" }, "Partial")
+            : null,
+        ]) : null,
       ]),
       this.running.has(check)
         ? m(".delivery-check-summary.pending", this.progress.get(check) ?? "Checking…")
@@ -121,7 +156,7 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
       // A failed call (server unreachable, unknown account...) shows on the check itself, like any other problem.
       .catch((err: Error) => {
         if (runId !== this.runId) return;
-        this.finish(check, { check, status: CheckStatus.ERROR, summary: "The check could not run: " + err.message, facts: [], findings: [] });
+        this.finish(check, { check, status: CheckStatus.ERROR, summary: "The check could not run: " + err.message, partial: false, facts: [], findings: [] });
       })
       .finally(() => m.redraw());
   }

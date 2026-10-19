@@ -41,7 +41,7 @@ public class RunDeliveryCheckApi extends AbstractAuthenticatedEndpoint<RunDelive
     String sinkUrl = serviceProvider.getSettingsService().getConfiguration().getMailDiagnosticsSinkUrl();
     DeliveryCheckResultDto result = DeliveryChecks.run(input.getCheck(), account, sinkUrl, input.getRunId());
     LOGGER.info("Delivery check " + input.getCheck() + " [" + input.getAccountName() + "]: " + result.getStatus()
-        + " in " + (System.currentTimeMillis() - start) + "ms — " + result.getSummary());
+        + (result.isPartial() ? " (partial)" : "") + " in " + (System.currentTimeMillis() - start) + "ms — " + result.getSummary());
     return new RunDeliveryCheckApiOutput(result);
   }
 }

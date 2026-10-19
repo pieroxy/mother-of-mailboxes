@@ -21,9 +21,10 @@ import java.util.regex.Pattern;
  * redirect), avoids {@code ptr}, and ends with a protective {@code all}. Then against a test send
  * (see {@link TestSends}), if an SMTP sink is configured: the real SPF result of a message sent
  * through the account, from the server that actually delivered it and for its actual envelope
- * sender. Without a sink, only a best guess: whether the account's SMTP server is one of the
- * servers the record authorizes — a guess, since the server mail is submitted to isn't always the
- * one that delivers it (big providers send from other servers).
+ * sender. Without one (no sink configured, or the test send failed) the check is partial, and only
+ * offers a guess as information: whether the account's SMTP server is one of the servers the
+ * record authorizes — a guess, since the server mail is submitted to isn't always the one that
+ * delivers it (big providers send from other servers).
  */
 public class SpfCheck {
   // RFC 7208 §4.6.4.
@@ -95,18 +96,14 @@ public class SpfCheck {
     }
 
     addAllFinding(result, domain, all);
-    switch (outcome.kind()) {
-      case RECEIVED -> addTestSendFindings(result, domain, outcome.received());
-      case FAILED -> {
-        result.finding(CheckStatus.WARNING, "Test send failed: " + outcome.message());
-        addSmtpHostFindings(result, domain, smtpHost);
-      }
-      default -> {
-        addSmtpHostFindings(result, domain, smtpHost);
-        result.finding(CheckStatus.INFO, "Set an SMTP sink in General settings to check SPF with a real test message.");
-      }
+    if (outcome.kind() == TestSendOutcome.Kind.RECEIVED) {
+      addTestSendFindings(result, domain, outcome.received());
+      return result.conclude("SPF is correctly set up for " + domain + ".");
     }
-    return result.conclude("SPF is correctly set up for " + domain + ".");
+    if (outcome.kind() == TestSendOutcome.Kind.FAILED) result.finding(CheckStatus.WARNING, "Test send failed: " + outcome.message());
+    addSmtpHostGuess(result, domain, smtpHost);
+    result.setPartial(true);
+    return result.conclude("SPF record is correctly set up for " + domain + " (DNS only: no test message to check it against).");
   }
 
   private static String lookups(int n) {
@@ -130,38 +127,31 @@ public class SpfCheck {
     }
   }
 
-  private void addSmtpHostFindings(DeliveryCheckResultDto result, String domain, String smtpHost) {
-    if (smtpHost == null || smtpHost.isBlank()) {
-      result.finding(CheckStatus.INFO, "No SMTP server configured: couldn't check whether it's allowed to send for " + domain + ".");
-      return;
-    }
+  /** Without a test message: whether the account's SMTP server is allowed by the record — information only, never a verdict. */
+  private void addSmtpHostGuess(DeliveryCheckResultDto result, String domain, String smtpHost) {
+    if (smtpHost == null || smtpHost.isBlank()) return;
     List<String> ips = new ArrayList<>();
     try {
       ips.addAll(resolver.lookupA(smtpHost));
       ips.addAll(resolver.lookupAaaa(smtpHost));
     } catch (SpfDnsException e) {
-      result.finding(CheckStatus.WARNING, "Could not resolve the SMTP server " + smtpHost + " (" + e.getMessage() + ").");
       return;
     }
-    result.fact("SMTP server", smtpHost + (ips.isEmpty() ? "" : " (" + String.join(", ", ips) + ")"));
-    if (ips.isEmpty()) {
-      result.finding(CheckStatus.WARNING, "The SMTP server " + smtpHost + " has no IP address in the DNS.");
-      return;
-    }
+    if (ips.isEmpty()) return;
+    result.fact("SMTP server", smtpHost + " (" + String.join(", ", ips) + ")");
     SpfEvaluator evaluator = new SpfEvaluator(resolver);
     for (String ip : ips) {
       SpfResult spf = evaluator.evaluate(ip, domain);
       String server = smtpHost + " (" + ip + ")";
       switch (spf) {
-        case PASS -> result.finding(CheckStatus.OK, server + " is allowed by the record to send mail for " + domain + ".");
-        case TEMPERROR -> result.finding(CheckStatus.WARNING, "Could not finish evaluating the record for " + server
-            + ": a DNS lookup failed. Try again later.");
-        case PERMERROR -> {
-          // Already reported above, from the record's own analysis.
+        case PASS -> result.finding(CheckStatus.INFO, "Your SMTP server " + server + " is allowed by the record. That's a good "
+            + "sign, but it may not be the server that actually delivers your mail.");
+        case FAIL, SOFTFAIL, NEUTRAL -> result.finding(CheckStatus.INFO, "Your SMTP server " + server + " isn't allowed by the "
+            + "record (SPF result: " + spf.getCode() + "). That's fine if your provider delivers your mail from other servers "
+            + "than the one you submit it to, as big providers do.");
+        default -> {
+          // PERMERROR: already reported from the record's own analysis. TEMPERROR: nothing to guess from.
         }
-        default -> result.finding(CheckStatus.WARNING, server + " is not allowed by the record to send mail for " + domain
-            + " (SPF result: " + spf.getCode() + "). That's fine if your provider delivers your mail from other servers than "
-            + "the one you submit it to — a test send will tell for sure.");
       }
     }
   }

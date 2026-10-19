@@ -781,6 +781,37 @@ body {
               }
           }
 
+          .delivery-check-notice {
+              display: flex;
+              gap: 12px;
+              align-items: flex-start;
+              padding: 14px 16px;
+              margin-bottom: 16px;
+              border: 1px solid $status-warning;
+              border-radius: 10px;
+              color: $text-muted;
+              font-size: 14px;
+
+              > svg.icon {
+                  width: 28px;
+                  height: 28px;
+                  flex-shrink: 0;
+              }
+
+              strong {
+                  color: $text-color;
+              }
+
+              p {
+                  margin: 6px 0 0 0;
+              }
+
+              a {
+                  color: $accent-color;
+                  cursor: pointer;
+              }
+          }
+
           .delivery-checks {
               display: flex;
               flex-direction: column;
@@ -825,6 +856,15 @@ body {
                       &.status-error { color: $status-error; }
                       &.status-info { color: $status-info; }
                       &.status-in_progress { color: $accent-color; }
+
+                      .delivery-check-partial {
+                          margin-left: 8px;
+                          padding: 1px 6px;
+                          border: 1px solid $status-warning;
+                          border-radius: 6px;
+                          color: $status-warning;
+                          cursor: help;
+                      }
                   }
               }
 
