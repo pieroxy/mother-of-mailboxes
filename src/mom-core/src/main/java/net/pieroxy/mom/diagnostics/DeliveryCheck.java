@@ -15,4 +15,5 @@ public enum DeliveryCheck {
   DMARC,
   REVERSE_DNS,
   MX,
+  DANE,
 }

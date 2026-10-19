@@ -38,6 +38,11 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> 
     description: "The DNS records naming the servers that receive mail for your domain: replies and bounces need them, and "
       + "some receivers distrust mail from a domain that can't be answered.",
   },
+  [DeliveryCheck.DANE]: {
+    title: "DANE",
+    description: "DNSSEC-signed TLSA records pinning your mail servers' certificates, so servers sending you mail can't be "
+      + "fooled into talking to an impostor. Optional, but must be right when present: their certificates are checked on port 25.",
+  },
 };
 
 /**
