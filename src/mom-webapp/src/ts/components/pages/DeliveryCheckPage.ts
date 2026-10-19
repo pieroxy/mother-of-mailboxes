@@ -13,7 +13,7 @@ interface DeliveryCheckPageAttrs {
 }
 
 /** What the page says about each check before it has run. A new DeliveryCheck needs an entry here. */
-const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> = {
+const CHECK_INFO: Record<DeliveryCheck, { title: string; shortTitle?: string; description: string }> = {
   [DeliveryCheck.SPF]: {
     title: "SPF",
     description: "The DNS record listing which servers may send mail for your domain (Sender Policy Framework).",
@@ -30,6 +30,7 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> 
   },
   [DeliveryCheck.REVERSE_DNS]: {
     title: "Reverse DNS & HELO",
+    shortTitle: "Reverse DNS",
     description: "The name the IP address sending your mail resolves to (PTR record), and the name your server introduces "
       + "itself with (HELO): many receivers distrust a server without a proper, consistent name. Checked on the test message.",
   },
@@ -45,6 +46,7 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> 
   },
   [DeliveryCheck.MTA_STS]: {
     title: "MTA-STS & TLS-RPT",
+    shortTitle: "MTA-STS",
     description: "A policy telling servers sending you mail to always encrypt it and check your mail servers' certificates "
       + "(MTA-STS), and where to report when they can't (TLS-RPT). Optional; your mail servers' certificates are checked on port 25.",
   },
@@ -102,6 +104,7 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
           this.running.size > 0 ? "Running…" : "Start diagnostics"),
       ]),
       this.sinkConfigured === false ? this.renderNoSinkNotice() : null,
+      m(".delivery-check-overview", Object.values(DeliveryCheck).map((check) => this.renderOverviewTile(check))),
       m(".delivery-checks", Object.values(DeliveryCheck).map((check) => this.renderCheck(check))),
     ]);
   }
@@ -123,11 +126,37 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
     ]);
   }
 
+  /** Undefined before the check has ever run. */
+  private statusOf(check: DeliveryCheck): CheckStatus | undefined {
+    return this.running.has(check) ? CheckStatus.IN_PROGRESS : this.results.get(check)?.status;
+  }
+
+  /**
+   * One tile per check, linking to its card. Not an href="#…": the router owns the URL's
+   * fragment (#!/account/…), so the tile scrolls to the card instead.
+   */
+  private renderOverviewTile(check: DeliveryCheck): m.Children {
+    const info = CHECK_INFO[check];
+    const status = this.statusOf(check);
+    const partial = this.results.get(check)?.partial && !this.running.has(check);
+    return m("a.delivery-check-tile" + (status ? ".status-" + status.toLowerCase() : ".not-run"), {
+      key: check,
+      title: info.title,
+      onclick: () => document.getElementById(cardId(check))?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    }, [
+      status ? m(CheckStatusIcon, { status }) : m(".delivery-check-tile-placeholder"),
+      m(".delivery-check-tile-text", [
+        m(".delivery-check-tile-name", info.shortTitle ?? info.title),
+        m(".delivery-check-tile-status", (status ? checkStatusLabel(status) : "Not run") + (partial ? " · Partial" : "")),
+      ]),
+    ]);
+  }
+
   private renderCheck(check: DeliveryCheck): m.Children {
     const info = CHECK_INFO[check];
     const result = this.results.get(check);
-    const status = this.running.has(check) ? CheckStatus.IN_PROGRESS : result?.status;
-    return m(".page-card.delivery-check", { key: check }, [
+    const status = this.statusOf(check);
+    return m(".page-card.delivery-check", { key: check, id: cardId(check) }, [
       m(".delivery-check-header", [
         status ? m(CheckStatusIcon, { status }) : null,
         m(".delivery-check-title", [
@@ -196,4 +225,8 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
     this.running.delete(check);
     this.progress.delete(check);
   }
+}
+
+function cardId(check: DeliveryCheck): string {
+  return "delivery-check-" + check.toLowerCase();
 }

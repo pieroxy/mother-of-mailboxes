@@ -812,6 +812,71 @@ body {
               }
           }
 
+          // DeliveryCheckPage's overview: one small tile per check, scrolling to its card.
+          .delivery-check-overview {
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+              gap: 10px;
+              margin-bottom: 16px;
+
+              .delivery-check-tile {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 8px 10px;
+                  border-radius: 8px;
+                  background-color: $bg-color-l3;
+                  border: 1px solid transparent;
+                  cursor: pointer;
+                  transition: border-color 0.15s linear;
+
+                  &:hover {
+                      border-color: $accent-color;
+                  }
+
+                  > svg.icon, .delivery-check-tile-placeholder {
+                      width: 22px;
+                      height: 22px;
+                      flex-shrink: 0;
+                  }
+
+                  .delivery-check-tile-placeholder {
+                      border-radius: 50%;
+                      border: 1.5px dashed $text-faint;
+                      box-sizing: border-box;
+                  }
+
+                  .delivery-check-tile-text {
+                      min-width: 0;
+                  }
+
+                  .delivery-check-tile-name {
+                      color: $text-color;
+                      font-size: 13px;
+                      font-weight: bold;
+                      white-space: nowrap;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                  }
+
+                  .delivery-check-tile-status {
+                      font-size: 11px;
+                      color: $text-faint;
+                  }
+
+                  &.status-ok .delivery-check-tile-status { color: $status-ok; }
+                  &.status-warning .delivery-check-tile-status { color: $status-warning; }
+                  &.status-error .delivery-check-tile-status { color: $status-error; }
+                  &.status-info .delivery-check-tile-status { color: $status-info; }
+                  &.status-in_progress .delivery-check-tile-status { color: $accent-color; }
+              }
+          }
+
+          // A card scrolled to from the overview lands below the fixed 3em top bar, with some room.
+          .delivery-check {
+              scroll-margin-top: 4em;
+          }
+
           .delivery-checks {
               display: flex;
               flex-direction: column;
