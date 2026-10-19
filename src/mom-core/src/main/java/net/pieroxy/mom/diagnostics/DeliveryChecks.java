@@ -43,6 +43,7 @@ public final class DeliveryChecks {
       case DKIM -> new DkimCheck(dkimKeyRetriever()).run(domain, testSend);
       case DMARC -> new DmarcCheck(new DnsJavaDmarcDnsResolver(), new DnsJavaSpfDnsResolver(), DkimVerifier.createDefault()).run(domain, testSend);
       case REVERSE_DNS -> new ReverseDnsCheck(new DnsJavaFcrdnsDnsResolver()).run(testSend);
+      case MX -> new MxCheck(new DnsJavaMxDnsResolver()).run(domain);
     };
   }
 

@@ -33,6 +33,11 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> 
     description: "The name the IP address sending your mail resolves to (PTR record), and the name your server introduces "
       + "itself with (HELO): many receivers distrust a server without a proper, consistent name. Checked on the test message.",
   },
+  [DeliveryCheck.MX]: {
+    title: "MX",
+    description: "The DNS records naming the servers that receive mail for your domain: replies and bounces need them, and "
+      + "some receivers distrust mail from a domain that can't be answered.",
+  },
 };
 
 /**

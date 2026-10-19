@@ -14,4 +14,5 @@ public enum DeliveryCheck {
   DKIM,
   DMARC,
   REVERSE_DNS,
+  MX,
 }
