@@ -28,6 +28,11 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; description: string }> 
     description: "The DNS record telling receiving servers what to do with mail that fails SPF and DKIM for your domain, "
       + "such as mail forged in your name (Domain-based Message Authentication, Reporting and Conformance).",
   },
+  [DeliveryCheck.REVERSE_DNS]: {
+    title: "Reverse DNS & HELO",
+    description: "The name the IP address sending your mail resolves to (PTR record), and the name your server introduces "
+      + "itself with (HELO): many receivers distrust a server without a proper, consistent name. Checked on the test message.",
+  },
 };
 
 /**

@@ -3,6 +3,7 @@ package net.pieroxy.mom.diagnostics;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.detection.dkim.DkimVerifier;
 import net.pieroxy.mom.detection.dmarc.DnsJavaDmarcDnsResolver;
+import net.pieroxy.mom.detection.fcrdns.DnsJavaFcrdnsDnsResolver;
 import net.pieroxy.mom.detection.spf.DnsJavaSpfDnsResolver;
 import net.pieroxy.mom.rules.MailAccount;
 import org.apache.james.jdkim.impl.DNSPublicKeyRecordRetriever;
@@ -41,6 +42,7 @@ public final class DeliveryChecks {
       case SPF -> new SpfCheck(new DnsJavaSpfDnsResolver()).run(domain, smtp.getHost(), testSend);
       case DKIM -> new DkimCheck(dkimKeyRetriever()).run(domain, testSend);
       case DMARC -> new DmarcCheck(new DnsJavaDmarcDnsResolver(), new DnsJavaSpfDnsResolver(), DkimVerifier.createDefault()).run(domain, testSend);
+      case REVERSE_DNS -> new ReverseDnsCheck(new DnsJavaFcrdnsDnsResolver()).run(testSend);
     };
   }
 
