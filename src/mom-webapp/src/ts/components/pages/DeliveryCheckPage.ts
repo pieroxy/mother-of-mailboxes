@@ -52,8 +52,8 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; shortTitle?: string; de
   },
   [DeliveryCheck.IP_REPUTATION]: {
     title: "IP reputation",
-    description: "Whether the address your mail comes from is on the IP reputation lists configured in General settings — "
-      + "the ones MOM also uses to filter your incoming mail.",
+    description: "Whether the address your mail comes from — and its neighbors in the same /24 — are on the IP reputation "
+      + "lists configured in General settings, the ones MOM also uses to filter your incoming mail.",
   },
   [DeliveryCheck.DOMAIN_REPUTATION]: {
     title: "Domain reputation",

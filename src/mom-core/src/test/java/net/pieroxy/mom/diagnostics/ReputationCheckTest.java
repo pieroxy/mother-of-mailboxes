@@ -146,4 +146,27 @@ public class ReputationCheckTest {
     assertTrue(r.isPartial());
     assertEquals(CheckStatus.IN_PROGRESS, check.runDomain("example.org", () -> TestSendOutcome.pending("…")).getStatus());
   }
+
+  @Test
+  public void neighborhood() throws Exception {
+    StringBuilder crowded = new StringBuilder();
+    for (int i = 100; i < 130; i++) crowded.append("203.0.113.").append(i).append('\n');
+    ReputationCheck check = new ReputationCheck(registry(ReputationListType.IP_CIDR, Map.of(
+        "crowded", crowded.toString(), "sparse", "203.0.113.200\n", "elsewhere", "192.0.2.0/24\n", "allowlist", "203.0.113.0/24\n")), DNS);
+    DeliveryCheckResultDto r = check.runIp(null, () -> received("203.0.113.7", "me@example.org", null));
+    assertEquals(dump(r), CheckStatus.WARNING, r.getStatus());
+    assertTrue(dump(r), hasFinding(r, CheckStatus.WARNING, "30 other addresses of 203.0.113.0/24 are on crowded"));
+    assertTrue(dump(r), hasFinding(r, CheckStatus.INFO, "1 other address of 203.0.113.0/24 is on sparse"));
+    assertTrue(dump(r), hasFinding(r, CheckStatus.OK, "No other address of 203.0.113.0/24 is on elsewhere"));
+    assertTrue("trusted lists aren't neighborhood-checked: " + dump(r), r.getFindings().stream()
+        .noneMatch(f -> f.getMessage().contains("of 203.0.113.0/24 are on allowlist")));
+  }
+
+  @Test
+  public void neighborhoodNotRepeatedWhenListedItself() throws Exception {
+    ReputationCheck check = new ReputationCheck(registry(ReputationListType.IP_CIDR, Map.of("spamlist", "203.0.113.0/24\n")), DNS);
+    DeliveryCheckResultDto r = check.runIp(null, () -> received("203.0.113.7", "me@example.org", null));
+    assertTrue(dump(r), hasFinding(r, CheckStatus.ERROR, "203.0.113.7 is listed on spamlist"));
+    assertTrue(dump(r), r.getFindings().stream().noneMatch(f -> f.getMessage().contains("other address")));
+  }
 }

@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
  */
 public class ReputationCheck {
   private static final double ERROR_SCORE = 0.7;
+  /** From this many listed neighbors in the /24, the neighborhood is worth a warning rather than a note. */
+  static final int BAD_NEIGHBORHOOD = 26; // About 10%.
   private static final Pattern DKIM_DOMAIN = Pattern.compile("(?im)^DKIM-Signature:.*?[;\\s]d=([^;\\s]+)");
 
   private final ReputationRegistry registry;
@@ -77,6 +79,7 @@ public class ReputationCheck {
         continue;
       }
       lookUp(result, lists, ip, true);
+      checkNeighborhood(result, lists, ip);
     }
     return result.conclude("The address your mail comes from isn't on any of your IP reputation lists.");
   }
@@ -115,6 +118,40 @@ public class ReputationCheck {
 
     for (String domain : domains) lookUp(result, lists, domain, false);
     return result.conclude("Your domains aren't on any of your domain reputation lists.");
+  }
+
+  /**
+   * The other addresses of the IP's /24 on each (non-trusted) list the IP itself isn't on: some
+   * receivers judge whole neighborhoods, and a heavily listed one says something about the network
+   * the mail comes from (a hosting provider tolerating spammers, a residential pool…).
+   */
+  private void checkNeighborhood(DeliveryCheckResultDto result, List<ReputationListConfig> lists, String ip) {
+    String[] octets = ip.split("\\.");
+    if (octets.length != 4) return;
+    String prefix = octets[0] + "." + octets[1] + "." + octets[2] + ".";
+    String network = prefix + "0/24";
+    List<String> clean = new ArrayList<>();
+    for (ReputationListConfig list : lists) {
+      if (list.getScore() <= 0 || registry.getLastModified(list.getId()) == 0) continue;
+      Set<String> only = Set.of(list.getId());
+      if (registry.ipScore(ip, only).isPresent()) continue; // Listed itself: already reported.
+      int listed = 0;
+      for (int i = 0; i < 256; i++) {
+        String neighbor = prefix + i;
+        if (!neighbor.equals(ip) && registry.ipScore(neighbor, only).isPresent()) listed++;
+      }
+      if (listed == 0) {
+        clean.add(list.getId());
+      } else if (listed >= BAD_NEIGHBORHOOD) {
+        result.finding(CheckStatus.WARNING, listed + " other addresses of " + network + " are on " + list.getId() + ": a bad "
+            + "neighborhood. Some receivers judge whole networks, and may treat your mail with suspicion too. If you can, send "
+            + "from another network (your provider's relay, another host).");
+      } else {
+        result.finding(CheckStatus.INFO, listed + (listed == 1 ? " other address" : " other addresses") + " of " + network
+            + (listed == 1 ? " is" : " are") + " on " + list.getId() + ": not unusual, but worth keeping an eye on.");
+      }
+    }
+    if (!clean.isEmpty()) result.finding(CheckStatus.OK, "No other address of " + network + " is on " + String.join(", ", clean) + ".");
   }
 
   private void lookUp(DeliveryCheckResultDto result, List<ReputationListConfig> lists, String value, boolean ip) {
