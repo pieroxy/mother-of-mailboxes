@@ -63,7 +63,7 @@ export class AccountImapSettingsEditPage extends AbstractPage<AccountImapSetting
       m(".edit-field", [
         m("label", "Username"),
         m("input", {
-          type: "text", value: this.username,
+          type: "text", value: this.username, autocomplete: "off",
           oninput: (e: Event) => (this.username = (e.target as HTMLInputElement).value),
         }),
         session.workingUsername !== session.baselineUsername

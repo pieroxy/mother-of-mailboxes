@@ -104,7 +104,7 @@ export class AccountCreatePage extends AbstractPage {
         oninput: (e: Event) => (this.port = Number((e.target as HTMLInputElement).value)),
       }), "IMAPS (implicit TLS) only, usually 993."),
       this.field("Username", m("input", {
-        type: "text", value: this.username,
+        type: "text", value: this.username, autocomplete: "off",
         oninput: (e: Event) => (this.username = (e.target as HTMLInputElement).value),
       })),
       this.field("Password", m("input", {

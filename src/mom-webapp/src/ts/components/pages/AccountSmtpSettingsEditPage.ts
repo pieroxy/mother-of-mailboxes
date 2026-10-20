@@ -92,7 +92,7 @@ export class AccountSmtpSettingsEditPage extends AbstractPage<AccountSmtpSetting
     return [
       this.field("SMTP username", baseline?.ownCredentials && baseline.username !== this.smtp.username ? "originally: " + baseline.username : null,
         m("input", {
-          type: "text", value: this.smtp.username,
+          type: "text", value: this.smtp.username, autocomplete: "off",
           oninput: (e: Event) => (this.smtp.username = (e.target as HTMLInputElement).value),
         })),
       m(".edit-field", [
