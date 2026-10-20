@@ -12,7 +12,7 @@ Teaching it a new rule is dead simple too: drop an example email into the right 
 
 * Java 17.
 * An IMAP account, reachable over IMAPS (implicit TLS) — there's no plain-IMAP mode, sorry. Folder-creation rights too, since MOM manages its own `mom-rules/` folder tree; the default on pretty much any account you'd actually own.
-* An internet connection — to your mail server, and for the SPF/DKIM/DMARC/FCrDNS checks, which are just DNS lookups. Nothing else ever leaves the box.
+* An internet connection — to your mail server, and for the SPF/DKIM/DMARC/FCrDNS checks, which are just DNS lookups. Nothing else ever leaves the box, except when you run [delivery checks](docs/README.md#delivery-checks).
 
 That's it.
 
@@ -27,7 +27,8 @@ Brings to your IMAP account:
 Additionally:
 
 * A web UI to manage accounts and rules, browse per-account stats, and a decision log showing, for each message, every rule it went through and why it matched
-* No third-party service ever sees your mail — the only outbound traffic is DNS lookups for SPF/DKIM/DMARC/FCrDNS checks, which reveal sender domains/IPs but never message content.
+* [Delivery checks](docs/README.md#delivery-checks): is *your* mail set up to be delivered? SPF, DKIM, DMARC and its reports, reverse DNS/HELO, MX, DANE, MTA-STS/TLS-RPT, IP/domain reputation — checked against a real test message when an [SMTP sink](docs/README.md#smtp-sink) is configured (a public one is available)
+* No third-party service ever sees your mail — filtering only does DNS lookups for SPF/DKIM/DMARC/FCrDNS checks, which reveal sender domains/IPs but never message content.
 
 ## Concepts
 
