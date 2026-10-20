@@ -37,8 +37,8 @@ public class DmarcCheck {
     this.dkimVerifier = dkimVerifier;
   }
 
-  /** A record as found in the DNS, and what it means for {@code fromDomain}. */
-  private record Found(String publishedAt, String text, Map<String, String> tags, boolean inherited) {}
+  /** A record as found in the DNS, and what it means for {@code fromDomain}. Also used by {@link DmarcReportsCheck}. */
+  record Found(String publishedAt, String text, Map<String, String> tags, boolean inherited) {}
 
   public DeliveryCheckResultDto run(String fromDomain, Supplier<TestSendOutcome> testSend) {
     TestSendOutcome outcome = testSend.get();
@@ -80,8 +80,11 @@ public class DmarcCheck {
     return result.conclude("DMARC record is set up for " + fromDomain + " (p=" + policy + "; DNS only: no test message to check it against).");
   }
 
-  /** The record that applies to {@code fromDomain}: its own, or its organizational domain's. Null if none (or several). */
-  private Found find(String fromDomain, DeliveryCheckResultDto result) throws DmarcDnsException {
+  /**
+   * The record that applies to {@code fromDomain}: its own, or its organizational domain's. Null if
+   * none, or several (then reported in {@code result}). Also used by {@link DmarcReportsCheck}.
+   */
+  Found find(String fromDomain, DeliveryCheckResultDto result) throws DmarcDnsException {
     Found own = lookup(fromDomain, false, result);
     if (own != null || !result.getFindings().isEmpty()) return own;
     Optional<String> org = DmarcEvaluator.organizationalDomainOf(fromDomain);
@@ -147,14 +150,7 @@ public class DmarcCheck {
       result.finding(CheckStatus.WARNING, "pct=" + pct + ": the policy only applies to " + pct + "% of failing mail, the rest "
           + "being treated as with p=none. Remove pct (or set it to 100) once you're confident.");
     }
-    String rua = found.tags.get("rua");
-    if (rua == null || rua.isBlank()) {
-      result.finding(CheckStatus.INFO, "No rua= tag: you get no aggregate reports, so you can't see who sends mail as your domain, "
-          + "nor whether your own mail passes. Add rua=mailto:<an address of yours>.");
-    } else {
-      result.fact("Aggregate reports (rua)", rua);
-    }
-    if (found.tags.containsKey("ruf")) result.fact("Failure reports (ruf)", found.tags.get("ruf"));
+    // rua=/ruf=: see DmarcReportsCheck.
     result.fact("Alignment", "DKIM " + mode(found.tags.get("adkim")) + ", SPF " + mode(found.tags.get("aspf")));
     return policy;
   }
@@ -197,6 +193,14 @@ public class DmarcCheck {
           + "but it will be rejected or sent to spam as soon as you tighten the policy, and some receivers already distrust it.");
     }
     return false;
+  }
+
+  /** The policy {@code found} applies (sp= when inherited, p= otherwise), or null if the record is invalid. */
+  static String effectivePolicy(Found found) {
+    String p = found.tags.get("p");
+    String sp = found.tags.get("sp");
+    if (p == null || !isPolicy(p) || (sp != null && !isPolicy(sp))) return null;
+    return (found.inherited && sp != null ? sp : p).toLowerCase(Locale.ROOT);
   }
 
   private static boolean isPolicy(String value) {

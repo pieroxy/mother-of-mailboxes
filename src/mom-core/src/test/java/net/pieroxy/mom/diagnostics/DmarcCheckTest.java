@@ -94,10 +94,10 @@ public class DmarcCheckTest {
   }
 
   @Test
-  public void policyNoneAndPctAndNoRua() {
+  public void policyNoneAndPct() {
     DeliveryCheckResultDto none = dnsOnly(new FakeDmarcDnsResolver().withTxt("_dmarc.example.org", "v=DMARC1; p=none"), "example.org");
     assertEquals(dump(none), CheckStatus.WARNING, none.getStatus());
-    assertTrue(dump(none), hasFinding(none, CheckStatus.INFO, "No rua= tag"));
+    assertTrue("rua= is the DMARC reports check's business: " + dump(none), none.getFindings().stream().noneMatch(f -> f.getMessage().contains("rua")));
     DeliveryCheckResultDto pct = dnsOnly(new FakeDmarcDnsResolver().withTxt("_dmarc.example.org", "v=DMARC1; p=quarantine; pct=20; rua=mailto:d@example.org"), "example.org");
     assertTrue(dump(pct), hasFinding(pct, CheckStatus.WARNING, "pct=20"));
   }

@@ -28,6 +28,11 @@ const CHECK_INFO: Record<DeliveryCheck, { title: string; shortTitle?: string; de
     description: "The DNS record telling receiving servers what to do with mail that fails SPF and DKIM for your domain, "
       + "such as mail forged in your name (Domain-based Message Authentication, Reporting and Conformance).",
   },
+  [DeliveryCheck.DMARC_REPORTS]: {
+    title: "DMARC reports",
+    description: "Where receivers send the daily DMARC reports (rua=) showing who sends mail as your domain and whether it "
+      + "passes: how much they matter depends on the policy, and an address outside your domain must agree to receive them.",
+  },
   [DeliveryCheck.REVERSE_DNS]: {
     title: "Reverse DNS & HELO",
     shortTitle: "Reverse DNS",
