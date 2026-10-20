@@ -110,8 +110,7 @@ export class DeliveryCheckPage extends AbstractPage<DeliveryCheckPageAttrs> {
       m(".page-card.delivery-check-intro", [
         m("h2", "Check delivery settings"),
         m("p.field-hint", "Checks that this account's sending domain — the one in its SMTP settings' From address — "
-          + "and its mail server are set up so that the mail you send gets delivered, rather than rejected or sent to spam. "
-          + "More checks are coming."),
+          + "and its mail server are set up so that the mail you send gets delivered, rather than rejected or sent to spam. "),
         m("p.field-hint", "If an SMTP sink is set in General settings, a test message is sent through this account's SMTP "
           + "server to see how your mail really leaves: it can take a minute or two, and your provider may keep a copy of it "
           + "in your Sent folder."),

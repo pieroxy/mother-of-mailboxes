@@ -98,7 +98,7 @@ export class AccountSmtpSettingsEditPage extends AbstractPage<AccountSmtpSetting
       m(".edit-field", [
         m("label", "SMTP password"),
         m("input", {
-          type: "password", value: this.password,
+          type: "password", autocomplete: "new-password", value: this.password,
           placeholder: hasSavedPassword ? "Leave blank to keep the current password" : "",
           oninput: (e: Event) => (this.password = (e.target as HTMLInputElement).value),
         }),

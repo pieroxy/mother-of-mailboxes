@@ -108,7 +108,7 @@ export class AccountCreatePage extends AbstractPage {
         oninput: (e: Event) => (this.username = (e.target as HTMLInputElement).value),
       })),
       this.field("Password", m("input", {
-        type: "password", value: this.password,
+        type: "password", autocomplete: "new-password", value: this.password,
         oninput: (e: Event) => (this.password = (e.target as HTMLInputElement).value),
       })),
       m(TestImapConnectionButton, {

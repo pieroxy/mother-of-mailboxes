@@ -72,7 +72,7 @@ export class AccountImapSettingsEditPage extends AbstractPage<AccountImapSetting
       m(".edit-field", [
         m("label", "Password"),
         m("input", {
-          type: "password", value: this.password, placeholder: "Leave blank to keep the current password",
+          type: "password", autocomplete: "new-password", value: this.password, placeholder: "Leave blank to keep the current password",
           oninput: (e: Event) => (this.password = (e.target as HTMLInputElement).value),
         }),
         m("span.field-hint", "The current password is never shown here — leave this blank to keep it unchanged."),
