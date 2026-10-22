@@ -8,7 +8,7 @@ import { StatusIcon, accountDisplayStatus, statusDescription, statusLabel } from
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { formatBytes, formatCount } from "../../utils/format";
-import { RefreshIcon } from "../atoms/icons/RefreshIcon";
+import { RefreshAction } from "../RefreshAction";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -154,18 +154,17 @@ class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
         m(".reputationlist-meta", list.type + " · score " + list.score + " · " + formatCount(list.itemCount) + " entries · " + formatBytes(list.contentSizeBytes)),
         m(CycleProgressBar, { lastTimestamp: list.lastRefreshTimestamp, nextTimestamp }),
       ]),
-      m(".reputationlist-refresh" + (this.refreshing ? ".refreshing" : ""), {
+      m(RefreshAction, {
+        label: "Refresh",
+        busyLabel: "Refreshing…",
         title: this.refreshing ? "Downloading…" : "Download this list again now",
+        busy: this.refreshing,
         onclick: () => this.refresh(attrs),
-      }, [
-        m(RefreshIcon),
-        m(".reputationlist-refresh-label", this.refreshing ? "Refreshing…" : "Refresh"),
-      ]),
+      }),
     ]);
   }
 
   private refresh(attrs: ReputationListRowAttrs) {
-    if (this.refreshing) return;
     this.refreshing = true;
     ApiEndpoints.RefreshReputationList.call({ id: attrs.list.id })
       .then((output) => {

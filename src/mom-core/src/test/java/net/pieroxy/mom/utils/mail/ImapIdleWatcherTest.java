@@ -143,6 +143,67 @@ public class ImapIdleWatcherTest {
     assertTrue("await() must wait out its budget (elapsed=" + elapsed + "ms)", elapsed >= 900);
   }
 
+  @Test
+  public void wakeUpEndsAnInProgressWaitRightAway() throws Exception {
+    MailAccountConfiguration config = fixture.accountConfig("idle-test");
+    ImapIdleWatcher watcher = new ImapIdleWatcher(config, fixture.accountCredential(), (c, credential) -> fixture.connectStore());
+
+    Thread waker = new Thread(() -> {
+      try {
+        Thread.sleep(500);
+        watcher.wakeUp();
+      } catch (InterruptedException ignored) {
+      }
+    });
+    waker.start();
+
+    long start = System.currentTimeMillis();
+    watcher.await(60_000);
+    long elapsed = System.currentTimeMillis() - start;
+    waker.join(2000);
+
+    assertTrue("await() must return soon after wakeUp() (elapsed=" + elapsed + "ms)", elapsed < 5000);
+  }
+
+  @Test
+  public void wakeUpBeforeAwaitEndsTheNextWaitOnlyOnce() throws Exception {
+    MailAccountConfiguration config = fixture.accountConfig("idle-test");
+    ImapIdleWatcher watcher = new ImapIdleWatcher(config, fixture.accountCredential(), (c, credential) -> fixture.connectStore());
+
+    watcher.wakeUp();
+    long start = System.currentTimeMillis();
+    watcher.await(60_000);
+    assertTrue("a pending wakeUp() must end the next await() right away", System.currentTimeMillis() - start < 2000);
+
+    start = System.currentTimeMillis();
+    watcher.await(1000);
+    assertTrue("the wakeUp() must have been consumed", System.currentTimeMillis() - start >= 900);
+  }
+
+  @Test
+  public void wakeUpEndsAPlainWaitAfterAFailedLogin() throws Exception {
+    MailAccountConfiguration config = fixture.accountConfig("idle-test");
+    ImapIdleWatcher watcher = new ImapIdleWatcher(config, fixture.accountCredential(), (c, credential) -> {
+      throw new AuthenticationFailedException("Invalid credentials");
+    }, 100);
+
+    Thread waker = new Thread(() -> {
+      try {
+        Thread.sleep(500);
+        watcher.wakeUp();
+      } catch (InterruptedException ignored) {
+      }
+    });
+    waker.start();
+
+    long start = System.currentTimeMillis();
+    watcher.await(60_000);
+    long elapsed = System.currentTimeMillis() - start;
+    waker.join(2000);
+
+    assertTrue("await() must return soon after wakeUp() (elapsed=" + elapsed + "ms)", elapsed < 5000);
+  }
+
   private MimeMessage messageFrom(String address) throws Exception {
     MimeMessage message = new MimeMessage(Session.getDefaultInstance(new Properties()));
     message.setFrom(new InternetAddress(address));

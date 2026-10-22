@@ -60,6 +60,9 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
   // Set for as long as idleForOneSlice() is actually blocked in idle() — read from another
   // thread by interruptNow(), so it can close this specific connection out from under it.
   private volatile Store activeStore;
+  private final Object wakeLock = new Object();
+  // Set by wakeUp(), consumed by the await() it ends. Guarded by wakeLock.
+  private boolean wakeRequested;
 
   public ImapIdleWatcher(MailAccountConfiguration config, Credential credential) {
     this(config, credential, ImapIdleWatcher::connectImaps);
@@ -87,13 +90,14 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
   @Override
   public void await(long delayMs) throws InterruptedException {
     if (idleUnsupported) {
-      Thread.sleep(delayMs);
+      sleepUnlessWoken(delayMs);
       return;
     }
     long deadline = System.currentTimeMillis() + delayMs;
     boolean networkDown = false;
     while (System.currentTimeMillis() < deadline) {
       if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
+      if (consumeWakeRequest()) return;
       long sliceMs = Math.min(deadline - System.currentTimeMillis(), SLICE_MS);
       try {
         // After a network failure, reconnecting is enough of a reason to run a cycle now.
@@ -106,19 +110,53 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
                 + "), retrying every " + networkProbeMs / 1000 + "s to run a cycle as soon as it's back.");
           }
           networkDown = true;
-          Thread.sleep(Math.max(0, Math.min(networkProbeMs, deadline - System.currentTimeMillis())));
+          if (sleepUnlessWoken(Math.min(networkProbeMs, deadline - System.currentTimeMillis()))) return;
           continue;
         }
         LOGGER.log(Level.FINE, "IDLE watcher [" + config.getDisplayName() + "]: wait failed ("
             + e.getMessage() + "), falling back to a plain wait for the rest of this cycle.", e);
-        Thread.sleep(Math.max(0, deadline - System.currentTimeMillis()));
+        sleepUnlessWoken(deadline - System.currentTimeMillis());
         return;
       }
       if (idleUnsupported) {
-        Thread.sleep(Math.max(0, deadline - System.currentTimeMillis()));
+        sleepUnlessWoken(deadline - System.currentTimeMillis());
         return;
       }
       // Otherwise just this slice's timeout, no new mail: loop again if budget remains.
+    }
+  }
+
+  /**
+   * Ends the current {@link #await} right away, or the next one if none is in progress (e.g.
+   * mid-{@code processMessages()}). Safe to call from another thread.
+   */
+  public void wakeUp() {
+    synchronized (wakeLock) {
+      wakeRequested = true;
+      wakeLock.notifyAll();
+    }
+    interruptNow();
+  }
+
+  private boolean consumeWakeRequest() {
+    synchronized (wakeLock) {
+      boolean requested = wakeRequested;
+      wakeRequested = false;
+      return requested;
+    }
+  }
+
+  /** @return true if {@link #wakeUp()} ended the sleep before {@code ms} elapsed. */
+  private boolean sleepUnlessWoken(long ms) throws InterruptedException {
+    long deadline = System.currentTimeMillis() + ms;
+    synchronized (wakeLock) {
+      while (!wakeRequested) {
+        long remaining = deadline - System.currentTimeMillis();
+        if (remaining <= 0) return false;
+        wakeLock.wait(remaining);
+      }
+      wakeRequested = false;
+      return true;
     }
   }
 
@@ -140,6 +178,11 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
     Store store = storeConnector.connect(config, credential);
     activeStore = store;
     try {
+      // A wakeUp() that ran before activeStore was set couldn't close this store: checked after
+      // setting it, so either that close or this check catches it.
+      synchronized (wakeLock) {
+        if (wakeRequested) return false;
+      }
       if (returnOnceConnected) {
         LOGGER.info("IDLE watcher [" + config.getDisplayName() + "]: server reachable again, running a cycle now.");
         return true;

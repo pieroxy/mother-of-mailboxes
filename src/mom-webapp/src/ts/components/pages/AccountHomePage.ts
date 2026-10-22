@@ -5,6 +5,7 @@ import { AbstractPage } from "./AbstractPage";
 import { AccountPageHeader } from "../AccountPageHeader";
 import { StatusIcon, accountDisplayStatus, statusDescription, statusLabel } from "../AccountStatus";
 import { CycleProgressBar } from "../CycleProgressBar";
+import { RefreshAction } from "../RefreshAction";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 import { StatsIcon } from "../atoms/icons/StatsIcon";
 import { LogsIcon } from "../atoms/icons/LogsIcon";
@@ -19,6 +20,9 @@ import { formatDuration } from "../../utils/format";
 
 const REFRESH_INTERVAL_MS = 60_000;
 const TICK_INTERVAL_MS = 1_000;
+// After asking for a cycle: how often to check whether it's done, and for how long at most.
+const CYCLE_POLL_INTERVAL_MS = 2_000;
+const CYCLE_POLL_TIMEOUT_MS = 120_000;
 
 interface AccountHomePageAttrs {
   accountName: string;
@@ -64,6 +68,8 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
   private data: AccountStatusApiOutput | undefined;
   private error: string | undefined;
   private togglingActive = false;
+  private runningCycle = false;
+  private cyclePollTimer: number | undefined;
   private refreshTimer: number | undefined;
   private tickTimer: number | undefined;
 
@@ -83,6 +89,7 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
   onremove() {
     if (this.refreshTimer !== undefined) window.clearInterval(this.refreshTimer);
     if (this.tickTimer !== undefined) window.clearInterval(this.tickTimer);
+    if (this.cyclePollTimer !== undefined) window.clearTimeout(this.cyclePollTimer);
   }
 
   render(): m.Children {
@@ -144,7 +151,16 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
             this.togglingActive ? (account.active ? "Pausing…" : "Resuming…") : (account.active ? "Pause Account" : "Resume Account")),
         ]),
         m(".page-card", [
-          m("h2", "Cycles"),
+          m(".page-card-header", [
+            m("h2", "Cycles"),
+            account.active ? m(RefreshAction, {
+              label: "Run now",
+              busyLabel: "Running…",
+              title: this.runningCycle ? "Waiting for the cycle to finish" : "Run a cycle now",
+              busy: this.runningCycle,
+              onclick: () => this.runCycle(),
+            }) : null,
+          ]),
           m(CycleProgressBar, {
             lastTimestamp: account.lastCycleCompletedTimestamp,
             nextTimestamp: account.nextScheduledCycleTimestamp,
@@ -187,8 +203,8 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
     ];
   }
 
-  private loadData() {
-    ApiEndpoints.AccountStatus.call({ accountName: this.accountName })
+  private loadData(): Promise<void> {
+    return ApiEndpoints.AccountStatus.call({ accountName: this.accountName })
       .then((output) => {
         this.error = undefined;
         this.data = output;
@@ -198,6 +214,37 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
         this.error = err.message;
         m.redraw();
       });
+  }
+
+  /** The cycle runs in the background: spins until a newer cycle completion shows up. */
+  private runCycle() {
+    if (!this.data) return;
+    const before = this.data.account.lastCycleCompletedTimestamp;
+    const deadline = Date.now() + CYCLE_POLL_TIMEOUT_MS;
+    this.runningCycle = true;
+    ApiEndpoints.RunAccountCycle.call({ accountName: this.accountName })
+      .then(() => this.pollCycle(before, deadline))
+      .catch((err: Error) => {
+        this.runningCycle = false;
+        Notifications.addNotification(new Notification(NotificationsClass.ACCOUNT_CYCLE_REQUESTED, NotificationsType.ERROR,
+          "Could not run a cycle: " + err.message, 10));
+        m.redraw();
+      });
+  }
+
+  private pollCycle(before: string | undefined, deadline: number) {
+    this.cyclePollTimer = window.setTimeout(() => {
+      this.cyclePollTimer = undefined;
+      this.loadData().then(() => {
+        const done = this.data?.account.lastCycleCompletedTimestamp !== before;
+        if (done || Date.now() >= deadline) {
+          this.runningCycle = false;
+          m.redraw();
+        } else {
+          this.pollCycle(before, deadline);
+        }
+      });
+    }, CYCLE_POLL_INTERVAL_MS);
   }
 
   private toggleActive() {

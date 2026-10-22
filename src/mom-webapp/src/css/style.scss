@@ -676,6 +676,12 @@ body {
                   gap: 10px;
                   color: $text-muted;
 
+                  .page-card-header {
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: flex-start;
+                  }
+
                   .field-hint {
                       margin: 0;
                       font-size: 12px;
@@ -1043,39 +1049,6 @@ body {
                   .reputationlist-left {
                       display: flex;
                       align-items: center;
-                  }
-
-                  .reputationlist-refresh {
-                      display: flex;
-                      flex-direction: column;
-                      align-items: center;
-                      gap: 2px;
-                      cursor: pointer;
-                      opacity: 0.6;
-                      transition: opacity 0.15s linear;
-
-                      &:hover {
-                          opacity: 1;
-                      }
-
-                      &.refreshing {
-                          opacity: 1;
-                          cursor: default;
-
-                          svg.icon {
-                              animation: reputationlist-refresh-spin 1s linear infinite;
-                          }
-                      }
-
-                      svg.icon {
-                          width: 22px;
-                          height: 22px;
-                      }
-
-                      .reputationlist-refresh-label {
-                          font-size: 10px;
-                          white-space: nowrap;
-                      }
                   }
 
                   .reputationlist-details {
@@ -2529,8 +2502,41 @@ button {
   }
 }
 
-@keyframes reputationlist-refresh-spin {
+@keyframes refresh-action-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+.refresh-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s linear;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &.busy {
+    opacity: 1;
+    cursor: default;
+
+    svg.icon {
+      animation: refresh-action-spin 1s linear infinite;
+    }
+  }
+
+  svg.icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .refresh-action-label {
+    font-size: 10px;
+    white-space: nowrap;
   }
 }

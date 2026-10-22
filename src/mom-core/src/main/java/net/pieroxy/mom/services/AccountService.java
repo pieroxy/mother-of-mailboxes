@@ -150,6 +150,21 @@ public class AccountService implements Service {
   }
 
   /**
+   * See {@link MailAccount#requestCycle}.
+   *
+   * @throws IllegalArgumentException if there's no such account.
+   * @throws IllegalStateException if the account is paused.
+   */
+  public synchronized void requestCycle(String accountName) {
+    MailAccount account = accounts.stream()
+        .filter(a -> a.getAccountLabel().equals(accountName))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("No such account: " + accountName));
+    if (!account.getConfig().isActive()) throw new IllegalStateException("The account is paused.");
+    account.requestCycle();
+  }
+
+  /**
    * Persists a brand-new account (see {@link SettingsService#addAccountConfig}) and starts it.
    *
    * @throws IllegalArgumentException if the displayName is not a valid file name (it names the

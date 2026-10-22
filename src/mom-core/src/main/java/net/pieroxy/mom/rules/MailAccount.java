@@ -157,6 +157,12 @@ public class MailAccount implements Runnable {
     idleWatcher.interruptNow();
   }
 
+  /** Runs a cycle right away, or right after the one in progress. */
+  public void requestCycle() {
+    LOGGER.info("Account " + config.getDisplayName() + ": cycle requested by hand");
+    idleWatcher.wakeUp();
+  }
+
   /** Waits up to timeoutMs for this account's thread to finish — see {@link Thread#join(long)}. */
   public void join(long timeoutMs) throws InterruptedException {
     thread.join(timeoutMs);
