@@ -4,11 +4,12 @@ import net.pieroxy.mom.config.general.MailAccountConfiguration;
 
 import javax.mail.MessagingException;
 import javax.net.ssl.SSLException;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
-/** Human-readable reason for a failed IMAP/SMTP connection, for the "Test connection" buttons. */
+/** Classifies a failed IMAP/SMTP connection: a human-readable reason for the "Test connection" buttons, and whether it is a network failure. */
 public final class ConnectionFailures {
   private ConnectionFailures() {
   }
@@ -22,6 +23,14 @@ public final class ConnectionFailures {
       if (cause instanceof SSLException) return "TLS handshake failed: " + cause.getMessage();
     }
     return e.getMessage() != null ? e.getMessage() : "Connection failed.";
+  }
+
+  /** True if {@code e} comes from the network (unreachable host, DNS, timeout...), not from the server's answer (e.g. a bad login). */
+  public static boolean isNetworkFailure(MessagingException e) {
+    for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+      if (cause instanceof IOException) return true;
+    }
+    return false;
   }
 
   /** The JDK only tells a connect timeout from a read timeout through its message ("Connect timed out" vs "Read timed out"). */

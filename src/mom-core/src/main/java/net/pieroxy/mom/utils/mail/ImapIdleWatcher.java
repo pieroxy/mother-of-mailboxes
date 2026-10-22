@@ -39,14 +39,21 @@ import java.util.logging.Logger;
  * #interruptNow()} (see {@code Runner.shutdown()}) closes it out immediately instead of waiting
  * for the slice to run out. Also stays well under the ~29 minute IDLE duration servers are
  * recommended to tolerate (RFC 2177).
+ * <p>
+ * When the server can't be reached at all (see {@link ConnectionFailures#isNetworkFailure}), the
+ * wait retries connecting every {@link #NETWORK_PROBE_MS} and returns as soon as one succeeds: the
+ * network is back, so the cycle that failed shouldn't wait out the rest of its backoff. Any other
+ * failure (a bad login, say) falls back to a plain wait, so as not to retry a login every minute.
  */
 public class ImapIdleWatcher implements BackoffLoop.Waiter {
   private final static Logger LOGGER = Logger.getLogger(ImapIdleWatcher.class.getName());
   private final static long SLICE_MS = 2 * 60 * 1000L;
+  private final static long NETWORK_PROBE_MS = 60 * 1000L;
 
   private final MailAccountConfiguration config;
   private final Credential credential;
   private final ImapStoreConnector storeConnector;
+  private final long networkProbeMs;
   // Once a server proves it doesn't support IDLE, that's a static property of the server: no
   // point reconnecting to re-ask on every single wait for the rest of the process's lifetime.
   private volatile boolean idleUnsupported;
@@ -60,9 +67,15 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
 
   /** Visible for tests: lets a store connector be injected without real IMAPS/TLS. */
   ImapIdleWatcher(MailAccountConfiguration config, Credential credential, ImapStoreConnector storeConnector) {
+    this(config, credential, storeConnector, NETWORK_PROBE_MS);
+  }
+
+  /** Visible for tests: same, with a shorter network probe interval. */
+  ImapIdleWatcher(MailAccountConfiguration config, Credential credential, ImapStoreConnector storeConnector, long networkProbeMs) {
     this.config = config;
     this.credential = credential;
     this.storeConnector = storeConnector;
+    this.networkProbeMs = networkProbeMs;
   }
 
   private static Store connectImaps(MailAccountConfiguration config, Credential credential) throws MessagingException {
@@ -78,12 +91,24 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
       return;
     }
     long deadline = System.currentTimeMillis() + delayMs;
+    boolean networkDown = false;
     while (System.currentTimeMillis() < deadline) {
       if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
       long sliceMs = Math.min(deadline - System.currentTimeMillis(), SLICE_MS);
       try {
-        if (idleForOneSlice(sliceMs)) return; // new mail: let the caller run a cycle right now
+        // After a network failure, reconnecting is enough of a reason to run a cycle now.
+        if (idleForOneSlice(sliceMs, networkDown)) return; // new mail: let the caller run a cycle right now
+        networkDown = false;
       } catch (MessagingException e) {
+        if (ConnectionFailures.isNetworkFailure(e)) {
+          if (!networkDown) {
+            LOGGER.info("IDLE watcher [" + config.getDisplayName() + "]: server unreachable (" + e.getMessage()
+                + "), retrying every " + networkProbeMs / 1000 + "s to run a cycle as soon as it's back.");
+          }
+          networkDown = true;
+          Thread.sleep(Math.max(0, Math.min(networkProbeMs, deadline - System.currentTimeMillis())));
+          continue;
+        }
         LOGGER.log(Level.FINE, "IDLE watcher [" + config.getDisplayName() + "]: wait failed ("
             + e.getMessage() + "), falling back to a plain wait for the rest of this cycle.", e);
         Thread.sleep(Math.max(0, deadline - System.currentTimeMillis()));
@@ -110,11 +135,15 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
     }
   }
 
-  /** @return true if new mail arrived in the INBOX during this slice. */
-  private boolean idleForOneSlice(long sliceMs) throws MessagingException {
+  /** @return true if new mail arrived in the INBOX during this slice, or right after connecting if {@code returnOnceConnected}. */
+  private boolean idleForOneSlice(long sliceMs, boolean returnOnceConnected) throws MessagingException {
     Store store = storeConnector.connect(config, credential);
     activeStore = store;
     try {
+      if (returnOnceConnected) {
+        LOGGER.info("IDLE watcher [" + config.getDisplayName() + "]: server reachable again, running a cycle now.");
+        return true;
+      }
       if (!((IMAPStore) store).hasCapability("IDLE")) {
         LOGGER.warning("IDLE watcher [" + config.getDisplayName() + "]: server does not advertise IDLE "
             + "support, giving up for this account (new mail will still be picked up by the regular runEvery cycle).");

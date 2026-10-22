@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -30,6 +31,8 @@ import java.util.logging.Logger;
  */
 public final class ReputationRegistry {
   private static final Logger LOGGER = Logger.getLogger(ReputationRegistry.class.getName());
+  /** First retry after a failed refresh; doubles on each further failure, capped at refreshHours. */
+  static final long FIRST_RETRY_DELAY_MS = TimeUnit.MINUTES.toMillis(5);
 
   private final Map<String, ReputationListConfig> configsById;
   private final ConcurrentHashMap<String, ReputationList> listsById = new ConcurrentHashMap<>();
@@ -40,9 +43,18 @@ public final class ReputationRegistry {
   private final ConcurrentHashMap<String, Integer> itemCountById = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Long> contentSizeBytesById = new ConcurrentHashMap<>();
   private final ReputationListStore store;
-  private ScheduledExecutorService scheduler;
+  // Filled by start(): without it, refreshNow() still downloads but schedules nothing.
+  private final ConcurrentHashMap<String, Schedule> schedulesById = new ConcurrentHashMap<>();
+  private final long firstRetryDelayMs;
+  private volatile ScheduledExecutorService scheduler;
 
   public ReputationRegistry(List<ReputationListConfig> lists, String dataFolder) {
+    this(lists, dataFolder, FIRST_RETRY_DELAY_MS);
+  }
+
+  /** Visible for tests: a shorter first retry delay. */
+  ReputationRegistry(List<ReputationListConfig> lists, String dataFolder, long firstRetryDelayMs) {
+    this.firstRetryDelayMs = firstRetryDelayMs;
     Map<String, ReputationListConfig> configs = new HashMap<>();
     if (lists != null) {
       for (ReputationListConfig cfg : lists) {
@@ -95,8 +107,9 @@ public final class ReputationRegistry {
   }
 
   /**
-   * Starts the periodic refresh (one task per list, on its own refreshHours). No effect if no
-   * list is configured, or already started.
+   * Starts the periodic refresh (one task per list, on its own refreshHours). A failed refresh is
+   * retried after {@link #FIRST_RETRY_DELAY_MS}, then twice as long after each further failure, up
+   * to refreshHours. No effect if no list is configured, or already started.
    * <p>
    * The first download of each list is deferred until its disk cache is actually due for a
    * refresh (file age &ge; refreshHours), rather than always firing on process startup:
@@ -113,13 +126,96 @@ public final class ReputationRegistry {
     });
     long now = System.currentTimeMillis();
     for (ReputationListConfig cfg : configsById.values()) {
-      long refreshMs = TimeUnit.HOURS.toMillis(Math.max(1, cfg.getRefreshHours()));
-      long initialDelayMs = initialDelayMs(store.lastModified(cfg.getId()), now, refreshMs);
+      Schedule schedule = new Schedule(cfg, firstRetryDelayMs);
+      long initialDelayMs = initialDelayMs(store.lastModified(cfg.getId()), now, schedule.refreshMs);
       if (initialDelayMs > 0) {
-        LOGGER.info("Reputation list [" + cfg.getId() + "]: cached copy is " + formatDuration(refreshMs - initialDelayMs)
+        LOGGER.info("Reputation list [" + cfg.getId() + "]: cached copy is " + formatDuration(schedule.refreshMs - initialDelayMs)
             + " old, next download in " + formatDuration(initialDelayMs));
       }
-      scheduler.scheduleAtFixedRate(() -> refresh(cfg), initialDelayMs, refreshMs, TimeUnit.MILLISECONDS);
+      schedulesById.put(cfg.getId(), schedule);
+      synchronized (schedule) {
+        scheduleNext(schedule, initialDelayMs);
+      }
+    }
+  }
+
+  /**
+   * Downloads a list right away, on the calling thread. On success, the next scheduled refresh is
+   * pushed back to refreshHours from now; on failure, the schedule is left as is.
+   *
+   * @throws IllegalArgumentException if no list has this id.
+   * @throws Exception why the download failed; the last known copy stays in use.
+   */
+  public void refreshNow(String id) throws Exception {
+    ReputationListConfig cfg = configsById.get(id);
+    if (cfg == null) throw new IllegalArgumentException("Unknown reputation list: " + id);
+    LOGGER.info("Reputation list [" + id + "]: refresh requested by hand");
+    Schedule schedule = schedulesById.get(id);
+    if (schedule == null) {
+      refreshByHand(cfg);
+      return;
+    }
+    synchronized (schedule) {
+      refreshByHand(cfg);
+      schedule.retryDelayMs = firstRetryDelayMs;
+      scheduleNext(schedule, schedule.refreshMs);
+    }
+  }
+
+  private void refreshByHand(ReputationListConfig cfg) throws Exception {
+    try {
+      refresh(cfg);
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Reputation list [" + cfg.getId() + "]: refresh by hand failed, keeping last known copy", e);
+      throw e;
+    }
+  }
+
+  private void runScheduled(Schedule schedule, long generation) {
+    synchronized (schedule) {
+      // A refreshNow() rescheduled this list while this run was waiting for the lock.
+      if (generation != schedule.generation) return;
+      long nextDelayMs;
+      try {
+        refresh(schedule.cfg);
+        schedule.retryDelayMs = firstRetryDelayMs;
+        nextDelayMs = schedule.refreshMs;
+      } catch (Exception e) {
+        nextDelayMs = Math.min(schedule.retryDelayMs, schedule.refreshMs);
+        schedule.retryDelayMs = Math.min(schedule.retryDelayMs * 2, schedule.refreshMs);
+        // A failed refresh must never wipe out an existing signal: the last version that worked
+        // (disk cache loaded at startup, or a previous success) stays in use.
+        LOGGER.log(Level.WARNING, "Reputation list [" + schedule.cfg.getId() + "]: refresh failed, keeping last known copy."
+            + " Next attempt in " + formatDuration(nextDelayMs), e);
+      }
+      scheduleNext(schedule, nextDelayMs);
+    }
+  }
+
+  /** Must be called with {@code schedule}'s lock held. Replaces any pending run. */
+  private void scheduleNext(Schedule schedule, long delayMs) {
+    ScheduledExecutorService current = scheduler;
+    if (current == null) return; // stopped
+    long generation = ++schedule.generation;
+    try {
+      current.schedule(() -> runScheduled(schedule, generation), delayMs, TimeUnit.MILLISECONDS);
+    } catch (RejectedExecutionException e) {
+      // stop() raced this: nothing left to schedule.
+    }
+  }
+
+  /** One list's refresh state; fields guarded by the instance's own lock. */
+  private static final class Schedule {
+    final ReputationListConfig cfg;
+    final long refreshMs;
+    long retryDelayMs;
+    // Bumped by each scheduleNext(): a pending run whose generation is stale does nothing.
+    long generation;
+
+    Schedule(ReputationListConfig cfg, long firstRetryDelayMs) {
+      this.cfg = cfg;
+      this.refreshMs = TimeUnit.HOURS.toMillis(Math.max(1, cfg.getRefreshHours()));
+      this.retryDelayMs = firstRetryDelayMs;
     }
   }
 
@@ -139,34 +235,28 @@ public final class ReputationRegistry {
     if (scheduler != null) {
       scheduler.shutdownNow();
       scheduler = null;
+      schedulesById.clear();
     }
   }
 
-  private void refresh(ReputationListConfig cfg) {
+  private void refresh(ReputationListConfig cfg) throws Exception {
     long overallStart = System.nanoTime();
-    try {
-      long fetchStart = System.nanoTime();
-      String content = ReputationListFetcher.fetch(cfg.getUrl());
-      long fetchMs = elapsedMs(fetchStart);
+    long fetchStart = System.nanoTime();
+    String content = ReputationListFetcher.fetch(cfg.getUrl());
+    long fetchMs = elapsedMs(fetchStart);
 
-      long parseStart = System.nanoTime();
-      ReputationListParser.ParseResult result = ReputationListParser.parse(cfg.getId(), cfg.getType(), content);
-      long parseMs = elapsedMs(parseStart);
+    long parseStart = System.nanoTime();
+    ReputationListParser.ParseResult result = ReputationListParser.parse(cfg.getId(), cfg.getType(), content);
+    long parseMs = elapsedMs(parseStart);
 
-      listsById.put(cfg.getId(), result.list());
-      store.save(cfg.getId(), content);
-      itemCountById.put(cfg.getId(), result.validCount());
-      contentSizeBytesById.put(cfg.getId(), (long) content.getBytes(StandardCharsets.UTF_8).length);
+    listsById.put(cfg.getId(), result.list());
+    store.save(cfg.getId(), content);
+    itemCountById.put(cfg.getId(), result.validCount());
+    contentSizeBytesById.put(cfg.getId(), (long) content.getBytes(StandardCharsets.UTF_8).length);
 
-      LOGGER.info("Reputation list [" + cfg.getId() + "] refreshed from " + cfg.getUrl() + ": "
-          + result.validCount() + " valid / " + result.invalidCount() + " invalid entries "
-          + "(fetch " + fetchMs + "ms, parse " + parseMs + "ms, total " + elapsedMs(overallStart) + "ms)");
-    } catch (Exception e) {
-      // Keep the last version that worked (disk cache already loaded at startup, or a previous
-      // in-memory success): a failed refresh must never wipe out an existing signal.
-      LOGGER.log(Level.WARNING, "Reputation list [" + cfg.getId() + "]: refresh failed after "
-          + elapsedMs(overallStart) + "ms, keeping last known copy", e);
-    }
+    LOGGER.info("Reputation list [" + cfg.getId() + "] refreshed from " + cfg.getUrl() + ": "
+        + result.validCount() + " valid / " + result.invalidCount() + " invalid entries "
+        + "(fetch " + fetchMs + "ms, parse " + parseMs + "ms, total " + elapsedMs(overallStart) + "ms)");
   }
 
   private static long elapsedMs(long startNanos) {

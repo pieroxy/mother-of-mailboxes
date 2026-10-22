@@ -8,6 +8,8 @@ import { StatusIcon, accountDisplayStatus, statusDescription, statusLabel } from
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { formatBytes, formatCount } from "../../utils/format";
+import { RefreshIcon } from "../atoms/icons/RefreshIcon";
+import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
 const REFRESH_INTERVAL_MS = 60_000;
 const TICK_INTERVAL_MS = 1_000;
@@ -45,7 +47,12 @@ export class HomePage extends AbstractPage {
       m("h2", "Reputation Lists"),
       this.reputationLists.length === 0
         ? m(".reputationlists-empty", "No reputation lists configured.")
-        : m(".reputationlists", this.reputationLists.map((list) => m(ReputationListRow, { list }))),
+        : m(".reputationlists", this.reputationLists.map((list) => m(ReputationListRow, {
+          list,
+          onRefreshed: (updated) => {
+            this.reputationLists = this.reputationLists.map((l) => (l.id === updated.id ? updated : l));
+          },
+        }))),
     ]);
   }
 
@@ -99,6 +106,7 @@ class AccountRow implements m.ClassComponent<AccountRowAttrs> {
 
 interface ReputationListRowAttrs {
   list: ReputationListDto;
+  onRefreshed: (list: ReputationListDto) => void;
 }
 
 /**
@@ -131,6 +139,8 @@ function reputationListStatusDescription(status: string): string {
 }
 
 class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
+  private refreshing = false;
+
   view({ attrs }: m.Vnode<ReputationListRowAttrs>): m.Children {
     const list = attrs.list;
     const status = reputationListStatus(list);
@@ -144,6 +154,35 @@ class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
         m(".reputationlist-meta", list.type + " · score " + list.score + " · " + formatCount(list.itemCount) + " entries · " + formatBytes(list.contentSizeBytes)),
         m(CycleProgressBar, { lastTimestamp: list.lastRefreshTimestamp, nextTimestamp }),
       ]),
+      m(".reputationlist-refresh" + (this.refreshing ? ".refreshing" : ""), {
+        title: this.refreshing ? "Downloading…" : "Download this list again now",
+        onclick: () => this.refresh(attrs),
+      }, [
+        m(RefreshIcon),
+        m(".reputationlist-refresh-label", this.refreshing ? "Refreshing…" : "Refresh"),
+      ]),
     ]);
+  }
+
+  private refresh(attrs: ReputationListRowAttrs) {
+    if (this.refreshing) return;
+    this.refreshing = true;
+    ApiEndpoints.RefreshReputationList.call({ id: attrs.list.id })
+      .then((output) => {
+        attrs.onRefreshed(output.list);
+        Notifications.addNotification(output.error
+          ? new Notification(NotificationsClass.REPUTATION_LIST_REFRESHED, NotificationsType.ERROR,
+            "Could not refresh " + attrs.list.id + ": " + output.error, 10)
+          : new Notification(NotificationsClass.REPUTATION_LIST_REFRESHED, NotificationsType.SUCCESS,
+            attrs.list.id + " refreshed.", 3));
+      })
+      .catch((err: Error) => {
+        Notifications.addNotification(new Notification(NotificationsClass.REPUTATION_LIST_REFRESHED, NotificationsType.ERROR,
+          "Could not refresh " + attrs.list.id + ": " + err.message, 10));
+      })
+      .finally(() => {
+        this.refreshing = false;
+        m.redraw();
+      });
   }
 }

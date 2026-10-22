@@ -5,12 +5,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.mail.AuthenticationFailedException;
+import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.net.ConnectException;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -102,6 +107,40 @@ public class ImapIdleWatcherTest {
 
     assertTrue("await() must not return noticeably before its budget (elapsed=" + elapsed + "ms)", elapsed >= 900);
     assertTrue("await() must return once its budget is exhausted (elapsed=" + elapsed + "ms)", elapsed < 5000);
+  }
+
+  @Test
+  public void awaitReturnsAsSoonAsTheServerIsReachableAgainAfterANetworkFailure() throws Exception {
+    MailAccountConfiguration config = fixture.accountConfig("idle-test");
+    AtomicInteger attempts = new AtomicInteger();
+    ImapIdleWatcher watcher = new ImapIdleWatcher(config, fixture.accountCredential(), (c, credential) -> {
+      if (attempts.incrementAndGet() <= 2) throw new MessagingException("Network down", new ConnectException("Network is unreachable"));
+      return fixture.connectStore();
+    }, 100);
+
+    long start = System.currentTimeMillis();
+    watcher.await(60_000);
+    long elapsed = System.currentTimeMillis() - start;
+
+    assertEquals(3, attempts.get());
+    assertTrue("await() must return once a connection succeeds again (elapsed=" + elapsed + "ms)", elapsed < 5000);
+  }
+
+  @Test
+  public void awaitDoesNotRetryAFailedLogin() throws Exception {
+    MailAccountConfiguration config = fixture.accountConfig("idle-test");
+    AtomicInteger attempts = new AtomicInteger();
+    ImapIdleWatcher watcher = new ImapIdleWatcher(config, fixture.accountCredential(), (c, credential) -> {
+      attempts.incrementAndGet();
+      throw new AuthenticationFailedException("Invalid credentials");
+    }, 100);
+
+    long start = System.currentTimeMillis();
+    watcher.await(1000);
+    long elapsed = System.currentTimeMillis() - start;
+
+    assertEquals(1, attempts.get());
+    assertTrue("await() must wait out its budget (elapsed=" + elapsed + "ms)", elapsed >= 900);
   }
 
   private MimeMessage messageFrom(String address) throws Exception {

@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class ReputationRegistryTest {
@@ -227,5 +228,65 @@ public class ReputationRegistryTest {
     } finally {
       registry.stop();
     }
+  }
+
+  // --- retries and refreshNow() ---
+
+  @Test
+  public void failedRefreshIsRetriedLongBeforeRefreshHours() throws Exception {
+    String dataFolder = tempFolder.getRoot().getAbsolutePath();
+    File sourceFile = new File(tempFolder.getRoot(), "source.txt"); // missing for now: the first download fails
+
+    ReputationListConfig cfg = list("blocklist", ReputationListType.IP_CIDR, 1.0);
+    cfg.setUrl(sourceFile.toURI().toString());
+    cfg.setRefreshHours(24);
+
+    ReputationRegistry registry = new ReputationRegistry(List.of(cfg), dataFolder, 100);
+    registry.start();
+    try {
+      Thread.sleep(300);
+      Files.writeString(sourceFile.toPath(), "9.9.9.0/24\n");
+      long deadline = System.currentTimeMillis() + 10_000;
+      while (!registry.ipScore("9.9.9.9", Set.of("blocklist")).isPresent() && System.currentTimeMillis() < deadline) {
+        Thread.sleep(20);
+      }
+      assertTrue("a failed download must be retried, not wait for refreshHours",
+          registry.ipScore("9.9.9.9", Set.of("blocklist")).isPresent());
+    } finally {
+      registry.stop();
+    }
+  }
+
+  @Test
+  public void refreshNowDownloadsRightAwayAndThrowsOnFailureKeepingTheLastCopy() throws Exception {
+    String dataFolder = tempFolder.getRoot().getAbsolutePath();
+    File sourceFile = tempFolder.newFile("source.txt");
+    Files.writeString(sourceFile.toPath(), "9.9.9.0/24\n");
+
+    new ReputationListStore(dataFolder).save("blocklist", "1.2.3.0/24\n"); // fresh: start() won't download it
+
+    ReputationListConfig cfg = list("blocklist", ReputationListType.IP_CIDR, 1.0);
+    cfg.setUrl(sourceFile.toURI().toString());
+
+    ReputationRegistry registry = new ReputationRegistry(List.of(cfg), dataFolder);
+    registry.start();
+    try {
+      registry.refreshNow("blocklist");
+      assertTrue(registry.ipScore("9.9.9.9", Set.of("blocklist")).isPresent());
+
+      assertTrue(sourceFile.delete());
+      assertThrows(Exception.class, () -> registry.refreshNow("blocklist"));
+      assertTrue("a failed refresh must keep the last copy", registry.ipScore("9.9.9.9", Set.of("blocklist")).isPresent());
+    } finally {
+      registry.stop();
+    }
+  }
+
+  @Test
+  public void refreshNowRejectsAnUnknownList() {
+    ReputationRegistry registry = new ReputationRegistry(
+        List.of(list("blocklist", ReputationListType.IP_CIDR, 1.0)), tempFolder.getRoot().getAbsolutePath());
+
+    assertThrows(IllegalArgumentException.class, () -> registry.refreshNow("does-not-exist"));
   }
 }
