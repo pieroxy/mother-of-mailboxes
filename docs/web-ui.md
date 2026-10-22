@@ -10,7 +10,8 @@ The top bar has, on the left, a refresh icon reloading the current page's data, 
 
 ## First start
 
-On the first start, MOM prints a temporary password on the console. Log in as `admin`, choose a
+On the first start, MOM prints a temporary password on the console (see
+[First start](running.md#first-start), also to reset a lost password). Log in as `admin`, choose a
 new password, and a setup wizard walks you through:
 
 1. **Web server**: the port and address the web UI listens on.

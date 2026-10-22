@@ -35,7 +35,9 @@ Additionally:
 
 ## Documentation
 
-* New here? [Quick start guide](docs/quickstart.md) — download the jar, try it, then run it as a systemd service.
+* New here? [Quick start guide](docs/quickstart.md) — download the jar and try it.
+* [Running MOM](docs/running.md) — install it as a service, upgrade, put it behind a reverse proxy, back it up.
+* [Troubleshooting](docs/troubleshooting.md) — when an account, a rule or a classifier doesn't behave.
 * [docs/](docs/README.md) — using the web UI, rules, learning by example, spam classifiers, reputation lists, configuration reference.
 * [Starter configuration](docs/configuration.md#starter-configuration) — the recommended spam rules, and what each one does.
 * [Roadmap](docs/ROADMAP.md) — what's planned next.

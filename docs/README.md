@@ -4,7 +4,9 @@ MOM (Mother Of Mailboxes) watches one or more IMAP accounts and applies rules to
 it, mark it read, forward it. Rules are set up in the web UI, taught by example by dropping
 messages into special IMAP folders, or written in `config.json`.
 
-- [Quick start](quickstart.md) — download the jar, try it, then run it as a systemd service.
+- [Quick start](quickstart.md) — download the jar and try it.
+- [Running MOM](running.md) — first start, systemd service, upgrading, reverse proxy, backup.
+- [Troubleshooting](troubleshooting.md) — an account in error, a rule that didn't match, classifiers, locked out.
 - [Using the web UI](web-ui.md) — accounts, rules, stats, the decision log, settings.
 - [Rules](rules.md) — matchers and actions, and the order rules are evaluated in.
 - [Learning rules by example](learning.md) — teaching rules by dropping messages into `mom-rules/`.

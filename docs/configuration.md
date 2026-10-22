@@ -5,26 +5,6 @@
 The reference for `config.json` and `credentials.json`. Most of it can also be set from the
 [web UI](web-ui.md).
 
-## Running MOM
-
-MOM requires Java 17. Download the jar from the
-[latest release](https://github.com/pieroxy/mother-of-mailboxes/releases/latest) (see the
-[Quick start](quickstart.md)), then run it with the path to a **directory containing
-`config.json` and `credentials.json`**:
-
-```sh
-java -jar mom-core-<version>.jar /path/to/config-dir
-```
-
-Each account declared in `configurations` is processed on its own:
-
-- New mail in the INBOX is picked up right away (IMAP IDLE). Everything else runs every
-  `runEvery` seconds, as does INBOX on a server without IDLE support.
-- If a cycle fails, the next one waits longer each time, up to 30 minutes. When the server was
-  unreachable, MOM checks every minute whether it's back, and runs a cycle as soon as it is.
-- The account's page in the web UI shows its status and last error, and **Run now** starts a
-  cycle right away.
-
 ## Configuration file
 
 `config.json` (found in the directory passed on the command line) is a plain JSON file.
@@ -56,7 +36,7 @@ Each entry in `configurations` is one IMAP account:
 | `host` | yes | IMAP server hostname. |
 | `port` | yes | IMAP server port. |
 | `credentials` | yes | Key into `credentials.json`'s `credentials` map, resolved into the IMAP login/password at startup. See [Credentials file](#credentials-file). |
-| `runEvery` | yes | Seconds between processing cycles (see [Running MOM](#running-mom) for how IMAP IDLE affects this). |
+| `runEvery` | yes | Seconds between processing cycles. New mail in the INBOX is picked up right away anyway (IMAP IDLE), unless the server doesn't support it. |
 | `connectTimeout` | no | Seconds to wait for the IMAP or SMTP connection to be established. `0` or absent defaults to 5. |
 | `readTimeout` | no | Seconds to wait for the IMAP or SMTP server to answer any single command. `0` or absent defaults to 60. |
 | `classifierSpamFolderName` | no | Folder treated as "Spam" for classifier corpus labeling. Defaults to `"Spam"`. |
@@ -198,8 +178,7 @@ Every `credentials` key referenced from `config.json` must exist in this map —
 at startup otherwise.
 
 On the web server's credential only, `"temporary": true` forces a password change right after
-login: until then, the web UI shows only the change-password screen and every other API call is
-refused. Changing the password clears the flag.
+login. See [First start](running.md#first-start) to reset a lost web UI password.
 
 ## Web server
 
