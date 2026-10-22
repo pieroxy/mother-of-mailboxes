@@ -496,6 +496,7 @@ body {
 
           .accounts {
               display: flex;
+              flex-wrap: wrap;
               gap: 24px;
 
               // The whole card links to the account's home page (AccountHomePage).
@@ -1768,14 +1769,6 @@ body {
               font-style: italic;
           }
 
-          .add-item-button {
-              margin-top: 12px;
-              background-color: $bg-color-d1;
-              color: $text-muted;
-              font-size: 13px;
-              padding: 6px 16px;
-          }
-
           .config-grid {
               display: flex;
               flex-direction: column;
@@ -1960,10 +1953,6 @@ body {
               color: $text-muted;
           }
 
-          &.homepage .add-account {
-              margin: 10px;
-          }
-
           &.accountcreatepage, &.setupwizardpage {
               display: block;
               color: $text-muted;
@@ -2120,14 +2109,10 @@ body {
                   gap: 12px;
                   padding: 12px 0 0 20px;
                   border-left: 1px solid $bg-color-l3;
-              }
 
-              .matcher-add-condition {
-                  align-self: flex-start;
-                  background-color: $bg-color-d1;
-                  color: $text-muted;
-                  font-size: 13px;
-                  padding: 4px 12px;
+                  > .add-card {
+                      margin-top: 0;
+                  }
               }
           }
         }
@@ -2474,5 +2459,59 @@ button {
   .icon-button-label {
     font-size: 10px;
     white-space: nowrap;
+  }
+}
+
+// See AddCard: dashed until hovered, its icon following the text color.
+.add-card {
+  border-radius: 8px;
+  border: 1px dashed $text-faint;
+  color: $text-muted;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s linear, color 0.15s linear;
+
+  &:hover {
+    border-style: solid;
+    border-color: $accent-color;
+    color: $text-color;
+  }
+
+  svg.icon > * {
+    &.primaryfill, &.secondary {
+      fill: currentColor;
+    }
+  }
+
+  .add-card-label {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  &.layout-row {
+    padding: 8px 16px;
+    margin-top: 12px;
+
+    svg.icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  // Sized like an account card (see HomePage).
+  &.layout-column {
+    flex-direction: column;
+    gap: 6px;
+    margin: 10px;
+    padding: 10px 24px;
+    border-radius: 10px;
+
+    svg.icon {
+      width: 32px;
+      height: 32px;
+    }
   }
 }

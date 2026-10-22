@@ -10,6 +10,7 @@ import { ArrowCircleUpIcon } from "../atoms/icons/ArrowCircleUpIcon";
 import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { IconButton } from "../IconButton";
+import { AddCard } from "../AddCard";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 import { defaultActionName } from "../../utils/actionNames";
 import { TokenListEditor } from "../TokenListEditor";
@@ -102,12 +103,12 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       m(".page-card", { key: "rules" }, [
         sectionHeader("Rules"),
         this.renderRulesSection(session),
-        m("button.add-item-button", { onclick: () => Routing.goToRuleEdit(this.accountName, "new") }, "+ Add rule"),
+        m(AddCard, { label: "Add rule", title: "Add a new rule", onclick: () => Routing.goToRuleEdit(this.accountName, "new") }),
       ]),
       m(".page-card", { key: "shortcuts" }, [
         sectionHeader("Shortcuts"),
         this.renderShortcutsSection(session),
-        m("button.add-item-button", { onclick: () => Routing.goToShortcutEdit(this.accountName, "new") }, "+ Add shortcut"),
+        m(AddCard, { label: "Add shortcut", title: "Add a new learning shortcut", onclick: () => Routing.goToShortcutEdit(this.accountName, "new") }),
       ]),
       m(".page-card", { key: "learned-rules" }, [
         sectionHeader("Learned Rules"),

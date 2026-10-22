@@ -14,6 +14,7 @@ import {
   SpfResult,
 } from "../auto/pieroxy-mom";
 import { TokenListEditor } from "./TokenListEditor";
+import { AddCard } from "./AddCard";
 import { LogLevelSelect } from "./LogLevelSelect";
 
 type MatcherFieldKind = "keys" | "threshold" | "reputation";
@@ -242,9 +243,10 @@ export class MatcherNodeEditor implements m.ClassComponent<MatcherNodeEditorAttr
         onRemove: isNot ? undefined : () => onChange({ ...node, children: children.filter((_, i) => i !== index) } as MailFilterRuleMatcherConfiguration),
         reputationLists,
       }))),
-      isNot ? null : m("button.matcher-add-condition", {
+      isNot ? null : m(AddCard, {
+        label: "Add condition", title: "Add a condition to this group",
         onclick: () => onChange({ ...node, children: [...children, defaultMatcherNode()] } as MailFilterRuleMatcherConfiguration),
-      }, "+ Add condition"),
+      }),
     ]);
   }
 

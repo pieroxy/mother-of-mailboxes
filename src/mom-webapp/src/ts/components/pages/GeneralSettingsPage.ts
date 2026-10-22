@@ -10,6 +10,7 @@ import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { WebServerControls } from "../WebServerControls";
 import { TestConnectionButton } from "../TestConnectionButton";
 import { IconButton } from "../IconButton";
+import { AddCard } from "../AddCard";
 
 /** The SMTP sink run by MOM's author — offered, never preselected: see renderMailDiagnosticsSection. */
 const PUBLIC_SMTP_SINK_URL = "https://smtp-sink.mom.pieroxy.net";
@@ -90,7 +91,7 @@ export class GeneralSettingsPage extends AbstractPage {
       m(".page-card", [
         m("h2", "Reputation Lists"),
         this.renderReputationListsSection(),
-        m("button.add-item-button", { onclick: () => this.addReputationList() }, "+ Add reputation list"),
+        m(AddCard, { label: "Add reputation list", title: "Add a new reputation list", onclick: () => this.addReputationList() }),
       ]),
       m(".page-card", [m("h2", "Mail Diagnostics"), this.renderMailDiagnosticsSection()]),
     ]);
