@@ -2418,6 +2418,11 @@ button {
     height: 26px;
   }
 
+  &.size-xlarge svg.icon {
+    width: 40px;
+    height: 40px;
+  }
+
   &:hover {
     color: $text-color;
     background-color: $icon-button-hover-bg;

@@ -4,8 +4,8 @@ interface IconButtonAttrs {
   icon: m.ComponentTypes;
   title: string;
   onclick: () => void;
-  /** Icon size: small 18px (rows), medium 22px (default), large 26px (toolbar, page header). */
-  size?: "small" | "medium" | "large";
+  /** Icon size: small 18px (rows), medium 22px (default), large 26px (page header), xlarge 40px (toolbar). */
+  size?: "small" | "medium" | "large" | "xlarge";
   /** Tiny label under the icon. */
   label?: string;
   /** The page this icon leads to is the current one: highlighted, not clickable. */
