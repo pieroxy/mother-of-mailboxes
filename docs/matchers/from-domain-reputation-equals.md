@@ -3,7 +3,7 @@
 [← back to docs](../README.md)
 
 Like [`IP_REPUTATION_EQUALS`](ip-reputation-equals.md), but on the domain of the `From:` header
-instead of the connecting IP, against `DOMAIN` [reputation lists](../README.md#reputation-lists).
+instead of the connecting IP, against `DOMAIN` [reputation lists](../reputation-lists.md).
 
 ## Config fields
 
@@ -11,7 +11,7 @@ instead of the connecting IP, against `DOMAIN` [reputation lists](../README.md#r
 |---|---|---|
 | `listIds` | yes | Set of `id`s from `reputationLists` to check against. Must all be of type `DOMAIN`. |
 | `key` | yes | A comparison: an operator (`>`, `>=`, `<`, or `<=`) followed by a number between 0 and 1, e.g. `">0.5"`. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## How the check works
 
@@ -48,4 +48,4 @@ mail to Spam unread, for review:
   — throwaway-mail providers, anonymous and easily re-created.
 - [HaGeZi's NRD7](https://github.com/hagezi/nrd) — domains registered in the last 7 days.
   **Much bigger than the other lists** (~2.5M entries): see
-  [Reputation lists](../README.md#reputation-lists) about memory.
+  [Reputation lists](../reputation-lists.md) about memory.

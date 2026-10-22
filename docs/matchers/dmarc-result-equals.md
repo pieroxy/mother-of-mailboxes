@@ -11,7 +11,7 @@ Matches when a **live-evaluated** DMARC (RFC 7489) result equals the configured 
 |---|---|---|
 | `key` | one of `key`/`keys` | DMARC result to match: `pass`, `fail`, `none`, `permerror`, or `temperror`. |
 | `keys` | one of `key`/`keys` | Set of results, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## What DMARC checks
 

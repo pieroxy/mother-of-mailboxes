@@ -8,7 +8,7 @@ Marks the message as read (`\Seen`), in place — doesn't move or otherwise touc
 
 | Field | Required | Description |
 |---|---|---|
-| `logLevel` | no | See [Logging](../README.md#logging). No `key` needed. |
+| `logLevel` | no | See [Logging](../logs.md#application-log). No `key` needed. |
 
 ## Behavior
 

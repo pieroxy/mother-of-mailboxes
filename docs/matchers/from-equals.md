@@ -11,7 +11,7 @@ just `address` if there's no display name), equals the configured value. **Case-
 |---|---|---|
 | `key` | one of `key`/`keys` | Exact `From:` string to match. |
 | `keys` | one of `key`/`keys` | Set of values, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 

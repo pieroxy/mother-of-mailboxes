@@ -11,7 +11,7 @@ configured value. **Case-insensitive.**
 |---|---|---|
 | `key` | one of `key`/`keys` | Result to match: `pass`, `fail`, `none`, or `temperror`. |
 | `keys` | one of `key`/`keys` | Set of results, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## What this checks
 

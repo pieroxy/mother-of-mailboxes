@@ -13,7 +13,7 @@ only reads the headers.
 |---|---|---|
 | `key` | one of `key`/`keys` | Kind to match: `mixed_script`, `whole_script`, or `fancy_letters`. |
 | `keys` | one of `key`/`keys` | Set of kinds, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Kinds
 

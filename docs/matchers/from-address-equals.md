@@ -11,7 +11,7 @@ the configured value. **Case-insensitive.**
 |---|---|---|
 | `key` | one of `key`/`keys` | Email address to match, e.g. `"jdupont@example.com"`. |
 | `keys` | one of `key`/`keys` | Set of addresses, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 

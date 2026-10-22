@@ -9,7 +9,7 @@ Moves the message to another IMAP folder.
 | Field | Required | Description |
 |---|---|---|
 | `key` | yes | Target folder, `"/"`-separated for a nested one, e.g. `"Admin/Backups"` or `"[Gmail]/Spam"`. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 

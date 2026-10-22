@@ -3,14 +3,14 @@
 [← back to docs](../README.md)
 
 Re-sends the message unchanged to another address, through the account's
-[SMTP settings](../README.md#smtp-settings).
+[SMTP settings](../configuration.md#smtp-settings).
 
 ## Config fields
 
 | Field | Required | Description |
 |---|---|---|
 | `key` | yes | Recipient: a single email address. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 

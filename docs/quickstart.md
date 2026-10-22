@@ -25,14 +25,14 @@ The web UI only listens on `127.0.0.1` at first. On a remote machine, either use
 `config.json` before restarting MOM.
 
 MOM starts one thread per account, connects, creates the `mom-rules/` folder skeleton used for
-[learning rules by example](README.md#learning-rules-by-example), and processes new mail as it
+[learning rules by example](learning.md), and processes new mail as it
 arrives. Watch `./data/logs/log.txt` (or the console) to confirm it's picking up mail and
 matching rules. Ctrl-C stops it.
 
 You can also write `config.json` and `credentials.json` by hand instead, starting from
 [`config.example.json`](../config.example.json) and
 [`credentials.example.json`](../credentials.example.json) — see the
-[configuration reference](README.md#configuration-file).
+[configuration reference](configuration.md#configuration-file).
 
 Once you're satisfied it's working, move on to running it as a service.
 
@@ -40,7 +40,7 @@ Once you're satisfied it's working, move on to running it as a service.
 
 This sets MOM up under a dedicated, unprivileged system user, with the FHS-style path the example
 config already assumes (`/var/lib/mom`, which also holds the logs — see
-[Logging](README.md#logging)).
+[Logging](logs.md#application-log)).
 
 Create the user and directory:
 
@@ -96,7 +96,7 @@ sudo systemctl status mom
 ```
 
 Two places to look for logs: `/var/lib/mom/logs/log.txt` (MOM's own rotating log, per
-`keepLogFiles` in the config — see [Logging](README.md#logging)) for the day-to-day activity,
+`keepLogFiles` in the config — see [Logging](logs.md#application-log)) for the day-to-day activity,
 and `journalctl -u mom -f` for service-level output (startup, crashes, anything printed before
 the log file is set up).
 

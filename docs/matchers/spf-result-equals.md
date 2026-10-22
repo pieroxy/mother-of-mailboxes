@@ -39,7 +39,7 @@ mechanism, which the RFC advises against.
 | `temperror` | A DNS lookup failed temporarily (timeout, SERVFAIL). |
 
 `softfail` is common even for large, legitimate providers who prefer not to hard-reject mail
-that doesn't match their published sources (see the [example config](../README.md#example-configjson),
+that doesn't match their published sources (see the [example config](../configuration.md#example-configjson),
 which routes `fail` to Spam pre-marked read and `softfail` to Spam left unread for review).
 
 ## Example

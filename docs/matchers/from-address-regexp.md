@@ -12,7 +12,7 @@ The whole address must match, not just part of it.
 |---|---|---|
 | `key` | one of `key`/`keys` | Regular expression to match against, e.g. `".*@(sales\|support)\\.example\\.com"`. |
 | `keys` | one of `key`/`keys` | Set of regular expressions, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 

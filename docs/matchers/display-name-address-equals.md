@@ -15,7 +15,7 @@ common phishing pattern that passes SPF, DKIM and DMARC for the attacker's own d
 |---|---|---|
 | `key` | one of `key`/`keys` | Value to match: `none`, `same`, `same_domain`, or `other_domain`. |
 | `keys` | one of `key`/`keys` | Set of values, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Values
 

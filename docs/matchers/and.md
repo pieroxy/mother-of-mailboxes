@@ -10,7 +10,7 @@ at the first child that doesn't match.
 | Field | Required | Description |
 |---|---|---|
 | `children` | yes | List of nested matcher configs (`type` + whatever fields that type needs). |
-| `logLevel` | no | See [Logging](../README.md#logging). Applies only to this `AND` node itself, not to its children — set `logLevel` on each child individually if you need to trace them. |
+| `logLevel` | no | See [Logging](../logs.md#application-log). Applies only to this `AND` node itself, not to its children — set `logLevel` on each child individually if you need to trace them. |
 
 ## Behavior
 

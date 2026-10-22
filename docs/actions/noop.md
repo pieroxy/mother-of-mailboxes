@@ -12,7 +12,7 @@ stops evaluation, which makes it an allow-list entry for the rules after it.
 | Field | Required | Description |
 |---|---|---|
 | `key` | no | Free-text label, logged when the rule applies. Required in a learning shortcut. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 
@@ -26,7 +26,7 @@ stops evaluation, which makes it an allow-list entry for the rules after it.
 Comparing [`HEADER_CLASSIFIER_EQUALS`](../matchers/header-classifier-equals.md) against
 [`SUBJECT_CLASSIFIER_EQUALS`](../matchers/subject-classifier-equals.md) without letting either
 one act on the mail, while the real rules further down the list still run — combine with
-`"keepProcessing": true` (see [Rule evaluation order](../README.md#rule-evaluation-order)):
+`"keepProcessing": true` (see [Rule evaluation order](../rules.md#rule-evaluation-order)):
 
 ```json
 {
@@ -38,7 +38,7 @@ one act on the mail, while the real rules further down the list still run — co
 
 Allow-listing domains that fail SPF: a learning shortcut teaches the allow-list, and
 `LEARNED_RULES` is placed before the SPF check so learned rules get evaluated first (see
-[Rule evaluation order](../README.md#rule-evaluation-order)):
+[Rule evaluation order](../rules.md#rule-evaluation-order)):
 
 ```json
 "rules": [

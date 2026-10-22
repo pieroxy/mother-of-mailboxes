@@ -11,7 +11,7 @@ particular message passed or failed. **Case-insensitive.**
 |---|---|---|
 | `key` | one of `key`/`keys` | Policy to match: `none`, `quarantine`, `reject`, `unpublished`, `permerror`, or `temperror`. |
 | `keys` | one of `key`/`keys` | Set of values, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Use it with `DMARC_RESULT_EQUALS`
 

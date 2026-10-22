@@ -10,7 +10,7 @@ Matches when the message's `Subject:` starts with the configured value. **Case-i
 |---|---|---|
 | `key` | one of `key`/`keys` | Subject prefix to match, e.g. `"Your invoice"`. |
 | `keys` | one of `key`/`keys` | Set of prefixes, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 
@@ -36,7 +36,7 @@ the key to the actual prefix you meant:
    prefix you actually want, then "Save Changes". It applies right away.
 
 You can also edit `<dataFolder>/<displayName>-learned-rules.json` by hand (see
-[Data files](../README.md#data-files)), but then **restart MOM**: the in-memory rule list is only
+[Data files](../logs.md#data-files)), but then **restart MOM**: the in-memory rule list is only
 reloaded from disk when a *new* example gets learned, so without a restart your edit sits on disk
 unused.
 

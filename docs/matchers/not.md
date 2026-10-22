@@ -9,7 +9,7 @@ Composite matcher: matches if its single child matcher does **not**.
 | Field | Required | Description |
 |---|---|---|
 | `children` | yes | Exactly one nested matcher config (`type` + whatever fields that type needs). |
-| `logLevel` | no | See [Logging](../README.md#logging). Applies only to this `NOT` node itself, not to its child. |
+| `logLevel` | no | See [Logging](../logs.md#application-log). Applies only to this `NOT` node itself, not to its child. |
 
 ## Behavior
 

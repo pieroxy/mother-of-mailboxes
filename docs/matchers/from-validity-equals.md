@@ -11,7 +11,7 @@ value. **Case-insensitive.** No network access: it only reads the header.
 |---|---|---|
 | `key` | one of `key`/`keys` | Validity to match: `valid`, `missing`, `multiple`, or `invalid`. |
 | `keys` | one of `key`/`keys` | Set of validities, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Validity values
 

@@ -10,7 +10,7 @@ fallback chain.
 | Field | Required | Description |
 |---|---|---|
 | `children` | yes | List of nested action configs (`type` + whatever fields that type needs), tried in list order. |
-| `logLevel` | no | See [Logging](../README.md#logging). Applies only to this `OR` node itself, not to its children — set `logLevel` on each child individually if you need to trace them. |
+| `logLevel` | no | See [Logging](../logs.md#application-log). Applies only to this `OR` node itself, not to its children — set `logLevel` on each child individually if you need to trace them. |
 
 ## Behavior
 

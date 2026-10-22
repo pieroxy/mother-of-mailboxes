@@ -11,7 +11,7 @@ Matches when the sender's domain (the part after `@`) equals the configured valu
 |---|---|---|
 | `key` | one of `key`/`keys` | Domain to match, e.g. `"hotmail.com"`. |
 | `keys` | one of `key`/`keys` | Set of domains, any of which matches. Takes priority over `key` if both are set. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 
@@ -20,7 +20,7 @@ Matches when the sender's domain (the part after `@`) equals the configured valu
   from that domain — a `From:` header is trivial to forge. Combine with
   [`SPF_RESULT_EQUALS`](spf-result-equals.md) or [`DKIM_RESULT_EQUALS`](dkim-result-equals.md)
   via an `AND` matcher if you need that guarantee (see the example in the
-  [main config example](../README.md#example-configjson)).
+  [main config example](../configuration.md#example-configjson)).
 - Learnable: dropping an example message into
   `mom-rules/FROM_DOMAIN_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's sender
   domain as the key. Fails to learn from a message with zero or multiple From addresses, or one

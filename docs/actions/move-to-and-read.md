@@ -10,7 +10,7 @@ Marks the message as read, **then** moves it. Equivalent to an `AND` of `READ` f
 | Field | Required | Description |
 |---|---|---|
 | `key` | yes | Target folder name — same as [`MOVE_TO`](move-to.md). |
-| `logLevel` | no | See [Logging](../README.md#logging). Applies to both the implicit `READ` and `MOVE_TO` steps. |
+| `logLevel` | no | See [Logging](../logs.md#application-log). Applies to both the implicit `READ` and `MOVE_TO` steps. |
 
 ## Behavior
 

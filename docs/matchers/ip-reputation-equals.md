@@ -3,7 +3,7 @@
 [← back to docs](../README.md)
 
 Matches when the connecting IP's reputation score — the worst (highest) score among the
-referenced `IP_CIDR` [reputation lists](../README.md#reputation-lists) that contain it — crosses
+referenced `IP_CIDR` [reputation lists](../reputation-lists.md) that contain it — crosses
 a threshold.
 
 ## Config fields
@@ -12,7 +12,7 @@ a threshold.
 |---|---|---|
 | `listIds` | yes | Set of `id`s from `reputationLists` to check against. Must all be of type `IP_CIDR`. |
 | `key` | yes | A comparison, not a value to match: an operator (`>`, `>=`, `<`, or `<=`) immediately followed by a number between 0 and 1, e.g. `">0.5"` or `"<=0.1"`. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## How the check works
 
@@ -63,6 +63,6 @@ per list, combined with `AND`/`OR`:
 ]
 ```
 
-The `AND` rule must come first (see [Rule evaluation order](../README.md#rule-evaluation-order)):
+The `AND` rule must come first (see [Rule evaluation order](../rules.md#rule-evaluation-order)):
 an IP in both lists goes to Spam marked read, an IP in only one of them goes to Spam unread, for
 review.

@@ -3,14 +3,14 @@
 [← back to docs](../README.md)
 
 Forwards the message to another address, as an attachment, through the account's
-[SMTP settings](../README.md#smtp-settings).
+[SMTP settings](../configuration.md#smtp-settings).
 
 ## Config fields
 
 | Field | Required | Description |
 |---|---|---|
 | `key` | yes | Recipient: a single email address. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 ## Behavior
 
@@ -24,7 +24,7 @@ Forwards the message to another address, as an attachment, through the account's
 
 ## Sending mail
 
-- The account needs [SMTP settings](../README.md#smtp-settings): without, the rule is refused
+- The account needs [SMTP settings](../configuration.md#smtp-settings): without, the rule is refused
   when saved, and the account doesn't start.
 - Each forwarded message carries an `X-MOM-Forwarded-By: <fromAddress>` header, one per hop. A
   message already carrying the account's own address isn't sent again, which breaks forwarding

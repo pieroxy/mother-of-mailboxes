@@ -3,7 +3,7 @@
 [← back to docs](../README.md)
 
 Matches when the message's `Subject:` is scored above or below a threshold by a locally-trained
-classifier — see [Classifier corpus collection](../README.md#classifier-corpus-collection) for
+classifier — see [Classifier corpus collection](../classifiers.md#classifier-corpus-collection) for
 how that model is built.
 
 ## Config fields
@@ -11,10 +11,10 @@ how that model is built.
 | Field | Required | Description |
 |---|---|---|
 | `key` | yes | A comparison, not a value to match: an operator (`>`, `>=`, `<`, or `<=`) immediately followed by a number between 0 and 1, e.g. `">0.9"` or `"<=0.05"`. |
-| `logLevel` | no | See [Logging](../README.md#logging). |
+| `logLevel` | no | See [Logging](../logs.md#application-log). |
 
 Not learnable by example: the models are trained from your folders, see
-[Classifier corpus collection](../README.md#classifier-corpus-collection).
+[Classifier corpus collection](../classifiers.md#classifier-corpus-collection).
 
 ## Confident vs. unsure: two rules, not one
 
@@ -34,13 +34,13 @@ To act differently depending on confidence, use two rules at two thresholds:
 ```
 
 List the stricter threshold first, since evaluation stops at the first match (see
-[Rule evaluation order](../README.md#rule-evaluation-order)). A threshold like `"<0.1"` matches
+[Rule evaluation order](../rules.md#rule-evaluation-order)). A threshold like `"<0.1"` matches
 the subjects the model is confident are *not* spam.
 
 ## Before a model exists
 
 Until the first model is trained (see the minimum number of examples in
-[Classifier corpus collection](../README.md#classifier-corpus-collection)), this matcher never
+[Classifier corpus collection](../classifiers.md#classifier-corpus-collection)), this matcher never
 matches. New models are picked up without a restart.
 
 ## Example
