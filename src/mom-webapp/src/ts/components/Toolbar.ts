@@ -4,6 +4,7 @@ import { RefreshIcon } from './atoms/icons/RefreshIcon';
 import { ProfileIcon } from './atoms/icons/ProfileIcon';
 import { SettingsIcon } from './atoms/icons/SettingsIcon';
 import { LogsIcon } from './atoms/icons/LogsIcon';
+import { HomeIcon } from './atoms/icons/HomeIcon';
 import { Endpoints } from '../utils/navigation/Endpoints';
 import { Routing } from '../utils/navigation/Routing';
 import { IconButton } from './IconButton';
@@ -29,6 +30,7 @@ export class Toolbar implements m.ClassComponent<ToolbarAttrs> {
         onclick: () => this.refresh(attrs.refreshData!),
       }) : null,
       m("", {style:{flex:1}}),
+      link(Endpoints.HOME, "Home", HomeIcon),
       link(Endpoints.APP_LOGS, "Logs", LogsIcon),
       link(Endpoints.GENERAL_SETTINGS, "General settings", SettingsIcon),
       link(Endpoints.PROFILE, "Profile", ProfileIcon),
