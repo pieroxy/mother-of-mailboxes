@@ -20,6 +20,7 @@ import { AccountCreatePage } from "./components/pages/AccountCreatePage";
 import { SetupWizardPage } from "./components/pages/SetupWizardPage";
 import { AccountHomePage } from "./components/pages/AccountHomePage";
 import { DeliveryCheckPage } from "./components/pages/DeliveryCheckPage";
+import { NotificationHost } from "./components/NotificationComponent";
 
 const routes: m.RouteDefs = {
   [Endpoints.LOGIN]: LoginPage,
@@ -43,3 +44,5 @@ const routes: m.RouteDefs = {
 };
 
 m.route(document.getElementById("app")!, Endpoints.LOGIN, routes);
+// Outside the routed tree, so a page change doesn't re-create the notification showing.
+m.mount(document.getElementById("notifications")!, NotificationHost);

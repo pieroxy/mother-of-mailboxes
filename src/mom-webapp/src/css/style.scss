@@ -103,88 +103,6 @@ body {
 
         }
 
-        .notificationO {
-            animation-iteration-count: 1;
-            text-align: center;
-            position:fixed;
-            // Just below the topbar, which is 3em tall.
-            top: calc(3em + 8px);
-            width: 100%;
-            box-sizing: border-box;
-            z-index: 1000;
-            justify-content: center;
-            display: flex;
-
-            &.appear {
-                animation: notification-appearance 0.3s linear;
-            }
-
-            &.closed {
-                animation: notification-removal 0.3s linear;
-                animation-iteration-count: 1;
-            }
-
-            .notification {
-                // The type's color: left strip and countdown bar.
-                --notification-color: #{$text-muted};
-                position: relative;
-                overflow: hidden;
-                background-color: $bg-color-l4;
-                border-radius: 8px;
-                border-left: 4px solid var(--notification-color);
-                padding: 12px 12px 12px 14px;
-                max-width: 480px;
-                box-sizing: border-box;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-size: 15px;
-                box-shadow: 0 8px 24px $shadow-floating;
-
-                @include media-max(768px) {
-                    width: 95%;
-                    max-width: 95%;
-                }
-
-                &.type-success { --notification-color: #{$status-ok}; }
-                &.type-info { --notification-color: #{$status-info}; }
-                &.type-warning { --notification-color: #{$status-warning}; }
-                &.type-error { --notification-color: #{$status-error}; }
-
-                .notification-countdown {
-                    position: absolute;
-                    left: 0;
-                    bottom: 0;
-                    width: 100%;
-                    height: 2px;
-                    background-color: var(--notification-color);
-                    transform-origin: left;
-                    animation-name: notification-countdown;
-                    animation-timing-function: linear;
-                    animation-fill-mode: forwards;
-                }
-
-                .typeicon {
-                    display: flex;
-
-                    svg.icon {
-                        width: 24px;
-                        height: 24px;
-                    }
-                }
-
-                .content {
-                    flex:1;
-                    color: $text-color;
-                    text-align: left;
-                }
-
-                .closebtn {
-                    align-self: flex-start;
-                }
-            }
-        }
-
         // Modal veil behind a Dialogs.confirm/prompt (see AbstractPage#renderDialog).
         .dialogveil {
             position: fixed;
@@ -2504,6 +2422,89 @@ button {
     font-size: 10px;
     white-space: nowrap;
   }
+}
+
+// See NotificationHost: mounted outside #app.
+.notificationO {
+    animation-iteration-count: 1;
+    text-align: center;
+    position:fixed;
+    // Just below the topbar, which is 3em tall.
+    top: calc(3em + 8px);
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 1000;
+    justify-content: center;
+    display: flex;
+
+    &.appear {
+        animation: notification-appearance 0.3s linear;
+    }
+
+    &.closed {
+        animation: notification-removal 0.3s linear;
+        animation-iteration-count: 1;
+    }
+
+    .notification {
+        // The type's color: left strip and countdown bar.
+        --notification-color: #{$text-muted};
+        position: relative;
+        overflow: hidden;
+        background-color: $bg-color-l4;
+        border-radius: 8px;
+        border-left: 4px solid var(--notification-color);
+        padding: 12px 12px 12px 14px;
+        max-width: 480px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 15px;
+        box-shadow: 0 8px 24px $shadow-floating;
+
+        @include media-max(768px) {
+            width: 95%;
+            max-width: 95%;
+        }
+
+        &.type-success { --notification-color: #{$status-ok}; }
+        &.type-info { --notification-color: #{$status-info}; }
+        &.type-warning { --notification-color: #{$status-warning}; }
+        &.type-error { --notification-color: #{$status-error}; }
+
+        .notification-countdown {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--notification-color);
+            transform-origin: left;
+            animation-name: notification-countdown;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+        }
+
+        .typeicon {
+            display: flex;
+
+            svg.icon {
+                width: 24px;
+                height: 24px;
+            }
+        }
+
+        .content {
+            flex:1;
+            color: $text-color;
+            text-align: left;
+        }
+
+        .closebtn {
+            align-self: flex-start;
+        }
+    }
 }
 
 // See AddCard: dashed until hovered, its icon following the text color.

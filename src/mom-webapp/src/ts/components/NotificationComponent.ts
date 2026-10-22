@@ -76,6 +76,14 @@ export class NotificationComponent implements m.ClassComponent<NotificationCompo
   }
 }
 
+/** Root of the notifications mount: shows the top notification, keyed so that a different one gets its own component (timer, countdown). */
+export class NotificationHost implements m.ClassComponent {
+  view(): Children {
+    const n = Notifications.getTopNotification();
+    return n ? [m(NotificationComponent, { key: n.id, notification: n })] : [];
+  }
+}
+
 export interface NotificationComponentAttrs {
   notification:Notification;
 }

@@ -31,7 +31,10 @@ export class Notifications {
   }
 }
 
+let nextNotificationId = 0;
+
 export class Notification {
+  public readonly id = ++nextNotificationId;
   public alreadyDisplayed = false;
   private _content: m.Children;
   public get content(): m.Children {
