@@ -237,8 +237,8 @@ export class AppLogsPage extends AbstractPage {
   }
 
   /** Restarts from the newest entry with the current filters; the current list stays until the results arrive. */
-  private search() {
-    this.fetch(null);
+  private search(): Promise<void> {
+    return this.fetch(null);
   }
 
   private loadMore() {
@@ -246,7 +246,7 @@ export class AppLogsPage extends AbstractPage {
   }
 
   /** cursor null: a new search, whose results replace the list instead of extending it. */
-  private fetch(cursor: string | null) {
+  private fetch(cursor: string | null): Promise<void> {
     const requestId = ++this.requestId;
     const source = this.source;
     this.loading = true;
@@ -259,7 +259,7 @@ export class AppLogsPage extends AbstractPage {
           file: this.file as string, minStatus: this.status.minStatus, maxStatus: this.status.maxStatus, query: this.query,
           cursor: cursor as string, limit: PAGE_SIZE,
         });
-    call
+    return call
       .then((output) => {
         if (requestId !== this.requestId) return;
         this.files = output.files;

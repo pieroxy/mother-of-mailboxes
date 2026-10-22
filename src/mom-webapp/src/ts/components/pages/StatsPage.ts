@@ -147,10 +147,10 @@ export class StatsPage extends AbstractPage<StatsPageAttrs> {
     this.load();
   }
 
-  private load() {
+  private load(): Promise<void> {
     this.loading = true;
     this.error = undefined;
-    ApiEndpoints.Stats.call({ accountName: this.accountName, from: this.from, to: this.to })
+    return ApiEndpoints.Stats.call({ accountName: this.accountName, from: this.from, to: this.to })
       .then((output) => {
         this.days = output.days;
         this.topMatchers = output.topMatchers;

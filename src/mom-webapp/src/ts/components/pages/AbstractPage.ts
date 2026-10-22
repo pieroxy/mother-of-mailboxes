@@ -11,7 +11,8 @@ export abstract class AbstractPage<A = {}> implements m.ClassComponent<A> {
   showToolbar():boolean {
     return true
   }
-  refreshData?:()=>void = undefined;
+  /** Backs the toolbar's refresh icon, which spins until the returned promise settles. */
+  refreshData?:()=>Promise<unknown> = undefined;
 
   view(vnode: m.Vnode<A, this>): m.Children {
     window.document.title = this.getPageTitle();

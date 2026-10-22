@@ -310,8 +310,8 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
   }
 
   /** Restarts from the newest entry with the current filters; the current list stays until the results arrive. */
-  private search() {
-    this.fetch(null);
+  private search(): Promise<void> {
+    return this.fetch(null);
   }
 
   private loadMore() {
@@ -319,11 +319,11 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
   }
 
   /** cursor null: a new search, whose results replace the list instead of extending it. */
-  private fetch(cursor: string | null) {
+  private fetch(cursor: string | null): Promise<void> {
     const requestId = ++this.requestId;
     this.loading = true;
     this.error = undefined;
-    ApiEndpoints.Decisions.call({
+    return ApiEndpoints.Decisions.call({
       accountName: this.accountName,
       from: this.from,
       to: this.to,

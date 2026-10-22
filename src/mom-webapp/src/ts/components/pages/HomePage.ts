@@ -57,10 +57,10 @@ export class HomePage extends AbstractPage {
     ]);
   }
 
-  private loadData() {
+  private loadData(): Promise<void> {
     // A transport-level failure (offline, server down, ...) already gets its own generic
     // notification from Api.call — this only needs to keep the page's own inline error in sync.
-    Promise.all([ApiEndpoints.Accounts.call({}), ApiEndpoints.ReputationLists.call({})])
+    return Promise.all([ApiEndpoints.Accounts.call({}), ApiEndpoints.ReputationLists.call({})])
       .then(([accountsOutput, reputationListsOutput]) => {
         this.error = undefined;
         this.accounts = accountsOutput.accounts;
