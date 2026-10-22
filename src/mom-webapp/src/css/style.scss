@@ -13,6 +13,7 @@ $text-on-accent: #000;
 
 // Accent & status
 $accent-color: #00abab;
+$icon-button-hover-bg: rgba(255, 255, 255, 0.08);
 $error-color: #F96E46;
 $status-ok: #0a0;
 $status-ok-faint: #0a08;
@@ -91,10 +92,6 @@ body {
                 }
             }
 
-            .general-settings-link, .app-logs-link {
-                display: flex;
-            }
-
         }
 
         .notificationO {
@@ -140,19 +137,9 @@ body {
                 }
 
                 .closebtn {
-                    opacity: 0.5;
-                    margin-top:-15px;
+                    align-self: flex-start;
+                    margin-top: -15px;
                     margin-right: -15px;
-
-                    &:hover {
-                        opacity: 0.8;
-                        cursor:pointer;
-                    }
-
-                    svg {
-                        width: 30px;
-                        height: 30px;
-                    }
                 }
             }
         }
@@ -228,22 +215,6 @@ body {
                   align-self: center;
                   gap: 12px;
                   margin-left: auto;
-
-                  .page-header-link {
-                      display: flex;
-                      cursor: pointer;
-                      opacity: 0.6;
-                      transition: opacity 0.15s linear;
-
-                      &:hover {
-                          opacity: 1;
-                      }
-
-                      svg.icon {
-                          width: 26px;
-                          height: 26px;
-                      }
-                  }
               }
           }
 
@@ -473,22 +444,6 @@ body {
                       align-items: center;
                       gap: 10px;
                       margin-left: auto;
-                  }
-
-                  .section-edit-link {
-                      cursor: pointer;
-                      opacity: 0.5;
-                      transition: opacity 0.15s linear;
-                      display: flex;
-
-                      &:hover {
-                          opacity: 1;
-                      }
-
-                      svg.icon {
-                          width: 18px;
-                          height: 18px;
-                      }
                   }
               }
           }
@@ -1449,20 +1404,6 @@ body {
                           text-overflow: ellipsis;
                           white-space: nowrap;
                       }
-
-                      .logs-filter-remove {
-                          display: flex;
-                          cursor: pointer;
-
-                          svg.icon {
-                              width: 16px;
-                              height: 16px;
-
-                              > * {
-                                  fill: $text-on-accent;
-                              }
-                          }
-                      }
                   }
               }
 
@@ -1914,31 +1855,6 @@ body {
                   gap: 10px;
               }
 
-              .rule-edit-link {
-                  cursor: pointer;
-                  opacity: 0.5;
-                  display: flex;
-                  transition: opacity 0.15s linear;
-                  margin-left: 8px;
-                  padding-left: 8px;
-                  border-left: 1px solid $bg-color-l3;
-
-                  &:hover {
-                      opacity: 1;
-                  }
-
-                  &.disabled {
-                      opacity: 0.2;
-                      cursor: default;
-                      pointer-events: none;
-                  }
-
-                  svg.icon {
-                      width: 18px;
-                      height: 18px;
-                  }
-              }
-
               .rule-index {
                   font-size: 12px;
                   color: $text-faint;
@@ -1971,67 +1887,24 @@ body {
                   gap: 4px;
                   flex-shrink: 0;
 
-                  .rule-move-button {
-                      cursor: pointer;
-                      opacity: 0.6;
-                      display: flex;
-                      transition: opacity 0.15s linear;
+                  // A thin vertical rule before the edit and delete icons.
+                  .rule-control-separator {
+                      margin-left: 9px;
+                      position: relative;
 
-                      &:hover {
-                          opacity: 1;
-                      }
-
-                      &.disabled {
-                          opacity: 0.2;
-                          cursor: default;
-                          pointer-events: none;
-                      }
-
-                      svg.icon {
-                          width: 18px;
-                          height: 18px;
-                      }
-                  }
-
-                  .rule-delete-button {
-                      cursor: pointer;
-                      opacity: 0.6;
-                      display: flex;
-                      margin-left: 8px;
-                      padding-left: 8px;
-                      border-left: 1px solid $bg-color-l3;
-                      transition: opacity 0.15s linear, color 0.15s linear;
-
-                      &:hover {
-                          opacity: 1;
-                          color: $error-color;
-
-                          svg.icon path.primaryfill {
-                              fill: $error-color;
-                          }
-                      }
-
-                      &.active {
-                          opacity: 1;
-
-                          svg.icon path.primaryfill {
-                              fill: $error-color;
-                          }
-                      }
-
-                      svg.icon {
-                          width: 18px;
-                          height: 18px;
+                      &::before {
+                          content: "";
+                          position: absolute;
+                          left: -7px;
+                          top: 4px;
+                          bottom: 4px;
+                          border-left: 1px solid $bg-color-l3;
                       }
                   }
               }
 
               &.rule-deleted {
                   opacity: 0.4;
-
-                  .rule-move-button {
-                      pointer-events: none;
-                  }
               }
 
               .shortcut-name {
@@ -2502,40 +2375,92 @@ button {
   }
 }
 
-@keyframes refresh-action-spin {
+@keyframes icon-button-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.refresh-action {
-  display: flex;
+// Every clickable icon (see IconButton). The icon's paths follow the button's text color.
+.icon-button {
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  padding: 3px;
+  border-radius: 6px;
+  color: $text-muted;
   cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.15s linear;
+  transition: color 0.15s linear, background-color 0.15s linear;
 
-  &:hover {
-    opacity: 1;
-  }
+  svg.icon > * {
+    &.primary {
+      stroke: currentColor;
+    }
 
-  &.busy {
-    opacity: 1;
-    cursor: default;
-
-    svg.icon {
-      animation: refresh-action-spin 1s linear infinite;
+    &.primaryfill, &.secondary {
+      fill: currentColor;
     }
   }
 
-  svg.icon {
+  &.size-small svg.icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  &.size-medium svg.icon {
     width: 22px;
     height: 22px;
   }
 
-  .refresh-action-label {
+  &.size-large svg.icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  &:hover {
+    color: $text-color;
+    background-color: $icon-button-hover-bg;
+  }
+
+  &.danger:hover, &.danger.active {
+    color: $error-color;
+  }
+
+  &.selected {
+    color: $accent-color;
+    cursor: default;
+    background-color: transparent;
+    border-radius: 0;
+    box-shadow: inset 0 -2px 0 $accent-color;
+  }
+
+  &.disabled {
+    opacity: 0.3;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  &.busy {
+    color: $text-color;
+    cursor: default;
+    background-color: transparent;
+
+    svg.icon {
+      animation: icon-button-spin 1s linear infinite;
+    }
+  }
+
+  &.on-accent {
+    color: rgba($text-on-accent, 0.6);
+
+    &:hover {
+      color: $text-on-accent;
+      background-color: rgba($text-on-accent, 0.12);
+    }
+  }
+
+  .icon-button-label {
     font-size: 10px;
     white-space: nowrap;
   }

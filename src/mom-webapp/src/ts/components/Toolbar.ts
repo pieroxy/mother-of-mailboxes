@@ -6,16 +6,23 @@ import { SettingsIcon } from './atoms/icons/SettingsIcon';
 import { LogsIcon } from './atoms/icons/LogsIcon';
 import { Endpoints } from '../utils/navigation/Endpoints';
 import { Routing } from '../utils/navigation/Routing';
+import { IconButton } from './IconButton';
 
 export class Toolbar implements m.ClassComponent<ToolbarAttrs> {
   view({attrs}:m.Vnode<ToolbarAttrs>): void | Children {
+    const current = m.route.get().split("?")[0];
+    const link = (target: Endpoints, title: string, icon: m.ComponentTypes) => m(IconButton, {
+      icon, size: "large", selected: current === target,
+      title: current === target ? title + " (current page)" : title,
+      onclick: () => Routing.goToScreen(target),
+    });
     return m(".topbar", [
       m("a.logo", {title: "Home", onclick:()=>{Routing.goToScreen(Endpoints.HOME)}}, m(Logo)),
-      attrs.refreshData ? m("span.refresh", { title: "Refresh", onclick: attrs.refreshData }, m(RefreshIcon)) : null,
+      attrs.refreshData ? m(IconButton, { icon: RefreshIcon, size: "large", title: "Refresh", onclick: attrs.refreshData }) : null,
       m("", {style:{flex:1}}),
-      m("a.app-logs-link", {title: "Logs", onclick:()=>{Routing.goToScreen(Endpoints.APP_LOGS)}}, m(LogsIcon)),
-      m("a.general-settings-link", {title: "General settings", onclick:()=>{Routing.goToScreen(Endpoints.GENERAL_SETTINGS)}}, m(SettingsIcon)),
-      m("a", {title: "Profile", onclick:()=>{Routing.goToScreen(Endpoints.PROFILE)}}, m(ProfileIcon))
+      link(Endpoints.APP_LOGS, "Logs", LogsIcon),
+      link(Endpoints.GENERAL_SETTINGS, "General settings", SettingsIcon),
+      link(Endpoints.PROFILE, "Profile", ProfileIcon),
     ])
   }
 }

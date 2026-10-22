@@ -5,7 +5,8 @@ import { AbstractPage } from "./AbstractPage";
 import { AccountPageHeader } from "../AccountPageHeader";
 import { StatusIcon, accountDisplayStatus, statusDescription, statusLabel } from "../AccountStatus";
 import { CycleProgressBar } from "../CycleProgressBar";
-import { RefreshAction } from "../RefreshAction";
+import { IconButton } from "../IconButton";
+import { RefreshIcon } from "../atoms/icons/RefreshIcon";
 import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 import { StatsIcon } from "../atoms/icons/StatsIcon";
 import { LogsIcon } from "../atoms/icons/LogsIcon";
@@ -153,9 +154,9 @@ export class AccountHomePage extends AbstractPage<AccountHomePageAttrs> {
         m(".page-card", [
           m(".page-card-header", [
             m("h2", "Cycles"),
-            account.active ? m(RefreshAction, {
-              label: "Run now",
-              busyLabel: "Running…",
+            account.active ? m(IconButton, {
+              icon: RefreshIcon,
+              label: this.runningCycle ? "Running…" : "Run now",
               title: this.runningCycle ? "Waiting for the cycle to finish" : "Run a cycle now",
               busy: this.runningCycle,
               onclick: () => this.runCycle(),

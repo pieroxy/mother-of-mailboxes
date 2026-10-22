@@ -9,6 +9,7 @@ import { Endpoints } from "../../utils/navigation/Endpoints";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
 import { WebServerControls } from "../WebServerControls";
 import { TestConnectionButton } from "../TestConnectionButton";
+import { IconButton } from "../IconButton";
 
 /** The SMTP sink run by MOM's author — offered, never preselected: see renderMailDiagnosticsSection. */
 const PUBLIC_SMTP_SINK_URL = "https://smtp-sink.mom.pieroxy.net";
@@ -195,8 +196,8 @@ export class GeneralSettingsPage extends AbstractPage {
         this.renderReputationListTags(pending),
       ]),
       m(".rule-move-controls", [
-        m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
-          { title: isDeleted ? "Restore this list" : "Delete this list", onclick: () => this.toggleDeleteReputationList(pending) }, m(DeleteIcon)),
+        m(IconButton, { icon: DeleteIcon, size: "small", danger: true, active: isDeleted, class: "rule-control-separator",
+          title: isDeleted ? "Restore this list" : "Delete this list", onclick: () => this.toggleDeleteReputationList(pending) }),
       ]),
     ]);
     const body = m(".edit-form", [

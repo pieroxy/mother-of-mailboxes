@@ -8,7 +8,8 @@ import { StatusIcon, accountDisplayStatus, statusDescription, statusLabel } from
 import { Routing } from "../../utils/navigation/Routing";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { formatBytes, formatCount } from "../../utils/format";
-import { RefreshAction } from "../RefreshAction";
+import { IconButton } from "../IconButton";
+import { RefreshIcon } from "../atoms/icons/RefreshIcon";
 import { Notification, Notifications, NotificationsClass, NotificationsType } from "../../utils/Notifications";
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -154,9 +155,9 @@ class ReputationListRow implements m.ClassComponent<ReputationListRowAttrs> {
         m(".reputationlist-meta", list.type + " · score " + list.score + " · " + formatCount(list.itemCount) + " entries · " + formatBytes(list.contentSizeBytes)),
         m(CycleProgressBar, { lastTimestamp: list.lastRefreshTimestamp, nextTimestamp }),
       ]),
-      m(RefreshAction, {
-        label: "Refresh",
-        busyLabel: "Refreshing…",
+      m(IconButton, {
+        icon: RefreshIcon,
+        label: this.refreshing ? "Refreshing…" : "Refresh",
         title: this.refreshing ? "Downloading…" : "Download this list again now",
         busy: this.refreshing,
         onclick: () => this.refresh(attrs),

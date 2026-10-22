@@ -8,6 +8,7 @@ import { toIsoDate, todayIsoDate } from "../../utils/format";
 import { StatusOkIcon } from "../atoms/icons/StatusOkIcon";
 import { StatusErrorIcon } from "../atoms/icons/StatusErrorIcon";
 import { CloseIcon } from "../atoms/icons/CloseIcon";
+import { IconButton } from "../IconButton";
 
 /** Route parameter plus optional query parameters (see Routing.goToLogs); Mithril parses "true" into a boolean. */
 interface LogsPageAttrs {
@@ -188,7 +189,7 @@ export class LogsPage extends AbstractPage<LogsPageAttrs> {
   private removableFilter(label: string, clear: () => void): m.Children {
     return m(".logs-active-filter", [
       m("span", { title: label }, label),
-      m("span.logs-filter-remove", { title: "Remove this filter", onclick: () => { clear(); this.search(); } }, m(CloseIcon)),
+      m(IconButton, { icon: CloseIcon, size: "small", onAccent: true, title: "Remove this filter", onclick: () => { clear(); this.search(); } }),
     ]);
   }
 

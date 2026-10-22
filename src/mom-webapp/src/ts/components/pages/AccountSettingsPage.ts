@@ -9,6 +9,7 @@ import { SettingsIcon } from "../atoms/icons/SettingsIcon";
 import { ArrowCircleUpIcon } from "../atoms/icons/ArrowCircleUpIcon";
 import { ArrowCircleDownIcon } from "../atoms/icons/ArrowCircleDownIcon";
 import { DeleteIcon } from "../atoms/icons/DeleteIcon";
+import { IconButton } from "../IconButton";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 import { defaultActionName } from "../../utils/actionNames";
 import { TokenListEditor } from "../TokenListEditor";
@@ -184,14 +185,14 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
     const isFirst = index === 0;
     const isLast = index === session.rules.length - 1;
     return m(".rule-move-controls", [
-      m("span.rule-move-button" + (isFirst || isDeleted ? ".disabled" : ""),
-        { title: "Move up", onclick: () => this.moveRule(session, index, -1) }, m(ArrowCircleUpIcon)),
-      m("span.rule-move-button" + (isLast || isDeleted ? ".disabled" : ""),
-        { title: "Move down", onclick: () => this.moveRule(session, index, 1) }, m(ArrowCircleDownIcon)),
-      m("span.rule-edit-link" + (isDeleted ? ".disabled" : ""),
-        { title: "Edit this rule", onclick: () => Routing.goToRuleEdit(this.accountName, index) }, m(SettingsIcon)),
-      m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
-        { title: isDeleted ? "Restore this rule" : "Delete this rule", onclick: () => this.toggleDeleteRule(pendingRule) }, m(DeleteIcon)),
+      m(IconButton, { icon: ArrowCircleUpIcon, size: "small", disabled: isFirst || isDeleted,
+        title: "Move up", onclick: () => this.moveRule(session, index, -1) }),
+      m(IconButton, { icon: ArrowCircleDownIcon, size: "small", disabled: isLast || isDeleted,
+        title: "Move down", onclick: () => this.moveRule(session, index, 1) }),
+      m(IconButton, { icon: SettingsIcon, size: "small", disabled: isDeleted, class: "rule-control-separator",
+        title: "Edit this rule", onclick: () => Routing.goToRuleEdit(this.accountName, index) }),
+      m(IconButton, { icon: DeleteIcon, size: "small", danger: true, active: isDeleted, class: "rule-control-separator",
+        title: isDeleted ? "Restore this rule" : "Delete this rule", onclick: () => this.toggleDeleteRule(pendingRule) }),
     ]);
   }
 
@@ -222,10 +223,10 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         this.renderShortcutTags(pendingShortcut),
       ]),
       m(".rule-move-controls", [
-        m("span.rule-edit-link" + (isDeleted ? ".disabled" : ""),
-          { title: "Edit this shortcut", onclick: () => Routing.goToShortcutEdit(this.accountName, index) }, m(SettingsIcon)),
-        m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
-          { title: isDeleted ? "Restore this shortcut" : "Delete this shortcut", onclick: () => this.toggleDeleteShortcut(pendingShortcut) }, m(DeleteIcon)),
+        m(IconButton, { icon: SettingsIcon, size: "small", disabled: isDeleted, class: "rule-control-separator",
+          title: "Edit this shortcut", onclick: () => Routing.goToShortcutEdit(this.accountName, index) }),
+        m(IconButton, { icon: DeleteIcon, size: "small", danger: true, active: isDeleted, class: "rule-control-separator",
+          title: isDeleted ? "Restore this shortcut" : "Delete this shortcut", onclick: () => this.toggleDeleteShortcut(pendingShortcut) }),
       ]),
     ]);
     const body = [
@@ -263,8 +264,8 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         this.renderLearnedRuleTags(pending),
       ]),
       m(".rule-move-controls", [
-        m("span.rule-delete-button" + (isDeleted ? ".active" : ""),
-          { title: isDeleted ? "Restore this learned rule" : "Delete this learned rule", onclick: () => this.toggleDeleteLearnedRule(pending) }, m(DeleteIcon)),
+        m(IconButton, { icon: DeleteIcon, size: "small", danger: true, active: isDeleted, class: "rule-control-separator",
+          title: isDeleted ? "Restore this learned rule" : "Delete this learned rule", onclick: () => this.toggleDeleteLearnedRule(pending) }),
       ]),
     ]);
     const body = [
@@ -451,7 +452,7 @@ function sectionHeader(title: string, onEdit?: () => void, extra?: m.Children): 
     m("h2", title),
     m(".section-header-right", [
       extra ?? null,
-      onEdit ? m("span.section-edit-link", { title: "Edit " + title.toLowerCase(), onclick: onEdit }, m(SettingsIcon)) : null,
+      onEdit ? m(IconButton, { icon: SettingsIcon, size: "small", title: "Edit " + title.toLowerCase(), onclick: onEdit }) : null,
     ]),
   ]);
 }

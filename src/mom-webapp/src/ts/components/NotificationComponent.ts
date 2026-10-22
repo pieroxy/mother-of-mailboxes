@@ -7,6 +7,7 @@ import { StatusWarningIcon } from './atoms/icons/StatusWarningIcon';
 import { StatusErrorIcon } from './atoms/icons/StatusErrorIcon';
 import { Notification, Notifications, NotificationsType } from '../utils/Notifications';
 import { CloseIcon } from './atoms/icons/CloseIcon';
+import { IconButton } from './IconButton';
 
 export class NotificationComponent implements m.ClassComponent<NotificationComponentAttrs> {
   private timeout?:number = undefined;
@@ -60,10 +61,7 @@ export class NotificationComponent implements m.ClassComponent<NotificationCompo
     return m(".notificationO" + (ad?"":".appear"), m(".notification." + n.type, [
       m(".typeicon", { title: iconTitle }, icon),
       m(".content", n.content),
-      m(".closebtn", {
-        title: "Dismiss",
-        onclick: () => Notifications.dismiss()
-      }, m(CloseIcon)),
+      m(IconButton, { icon: CloseIcon, size: "large", class: "closebtn", title: "Dismiss", onclick: () => Notifications.dismiss() }),
     ]))
   }
 }
