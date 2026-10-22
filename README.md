@@ -19,10 +19,13 @@ That's it.
 ## Features
 
 Brings to your IMAP account:
-* SPF, DKIM, DMARC and FCrDNS checks
-* Rules based on **from** and **subject**
-* ML-based spam detection ([`SUBJECT_CLASSIFIER_EQUALS`](docs/matchers/subject-classifier-equals.md)), trained locally on your own emails — no dataset, no third-party service, just a model built and kept from your own mailbox as it grows
-* IP/domain reputation scoring ([`IP_REPUTATION_EQUALS`](docs/matchers/ip-reputation-equals.md)/[`FROM_DOMAIN_REPUTATION_EQUALS`](docs/matchers/from-domain-reputation-equals.md)) against lists you download yourself — periodic bulk download, never a live per-message lookup, so nothing about a specific email is ever sent anywhere
+* SPF, DKIM, DMARC and FCrDNS checks, done by MOM itself
+* Rules on the sender (address, domain, regular expression) and the subject, combined with `AND`/`OR`/`NOT`
+* Phishing tells: a malformed `From:`, an address hidden in the sender's name, look-alike characters (`Pаypal` with a Cyrillic `а`)
+* Spam detection by three classifiers (subject, headers, body), trained locally on your own mail — no dataset, no third-party service
+* IP/domain reputation lists, downloaded periodically — never a live per-message lookup, so nothing about a specific email is ever sent anywhere
+* Actions: move, mark as read, forward, redirect
+* Rules learned by example: drop a message into a folder, and similar mail gets the same treatment
 
 Additionally:
 
@@ -40,7 +43,7 @@ A few things worth understanding before you dive in:
 * **INBOX doesn't count** — INBOX is never scanned for the corpus, so mail you leave sitting there teaches the classifier nothing. Filing/archiving read mail into folders (an "inbox zero" habit) is what actually feeds it examples of legitimate mail.
 * **Unread in Spam means "review me"** — by convention (see the [starter config](config.example.json)), strong verdicts (SPF/DKIM/DMARC `fail`) are moved to Spam pre-marked read, while weaker, corroborating-only signals are left unread — a manual-review flag.
 * **Always verified live** — SPF/DKIM/DMARC/FCrDNS are recomputed from scratch via DNS on every check; any `Authentication-Results`/`Received-SPF` header already on the message is never trusted, since anyone could have forged it before delivery.
-* **Reputation lists are the opposite: never live** — [`IP_REPUTATION_EQUALS`](docs/matchers/ip-reputation-equals.md)/[`FROM_DOMAIN_REPUTATION_EQUALS`](docs/matchers/from-domain-reputation-equals.md) check IPs/domains against lists downloaded in bulk ahead of time, for the whole process — never a query per message. Each source is called again once `refreshHours` has elapsed. See [Reputation lists](docs/README.md#reputation-lists).
+* **Reputation lists are the opposite: never live** — [`IP_REPUTATION_EQUALS`](docs/matchers/ip-reputation-equals.md)/[`FROM_DOMAIN_REPUTATION_EQUALS`](docs/matchers/from-domain-reputation-equals.md) check IPs/domains against lists downloaded in bulk ahead of time, for the whole process — never a query per message. Each list is downloaded again every `refreshHours`, and retried sooner if a download fails. See [Reputation lists](docs/README.md#reputation-lists).
 * **Manual reprocessing** — drop any message into `mom-rules/ToProcess` to run the current rule set against it (handy for reclassifying an old message after adding or fixing a rule); it ends up in `mom-rules/Done` once handled, whether or not a rule actually matched. See [Manually reprocessing a message](docs/README.md#manually-reprocessing-a-message).
 
 ## Documentation

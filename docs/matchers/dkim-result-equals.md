@@ -13,29 +13,14 @@ Matches when a **live-verified** DKIM (RFC 6376) result equals the configured va
 | `keys` | one of `key`/`keys` | Set of results, any of which matches. Takes priority over `key` if both are set. |
 | `logLevel` | no | See below — particularly useful here, set to `"DEBUG"` to see the per-signature trace. |
 
-## Why "live-verified"
-
-Same reasoning as [`SPF_RESULT_EQUALS`](spf-result-equals.md): MOM never reads or trusts a
-pre-existing `Authentication-Results` header for DKIM. It always re-verifies the signature
-itself, on the message's raw bytes.
-
 ## How the check works
 
-DKIM verification is real cryptographic signature checking (RSA or Ed25519) over
-headers and body canonicalized according to precise RFC 6376 rules — unlike SPF, there's no
-"just compare strings" shortcut, and a single implementation detail gotten wrong can silently
-fail signatures that are actually valid. MOM delegates this to
-[`org.apache.james.jdkim`](https://james.apache.org/jdkim/) rather than reimplementing it:
+MOM verifies the signatures itself, like [`SPF_RESULT_EQUALS`](spf-result-equals.md): headers
+reporting a result already on the message are ignored.
 
-1. The message's raw bytes (headers + body, exactly as received) are read.
-2. Every `DKIM-Signature` header on the message is parsed and verified independently: its
-   selector (`s=`) and signing domain (`d=`) are used to fetch the public key from
-   `<selector>._domainkey.<domain>` (DNS TXT record), and the signature is checked
-   cryptographically against the canonicalized headers/body.
-3. A message can carry more than one signature (multiple signers). **One valid signature is
-   enough** for an overall `pass` — mirroring how a single passing SPF `include` is enough.
-4. If no signature is valid, the most informative failure across all of them is reported, in
-   this priority order: `fail` > `permerror` > `temperror` > `policy` > `neutral` > `none`.
+Every `DKIM-Signature` on the message is checked. **One valid signature is enough** for `pass`.
+Otherwise the most significant failure is reported, in this order: `fail`, `permerror`,
+`temperror`, `policy`, `neutral`, `none`.
 
 ## Result values
 

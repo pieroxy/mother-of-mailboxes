@@ -13,43 +13,18 @@ Matches when a **live-verified** SPF (RFC 7208) result equals the configured val
 | `keys` | one of `key`/`keys` | Set of results, any of which matches. Takes priority over `key` if both are set. |
 | `logLevel` | no | See below — particularly useful here, set to `"DEBUG"` to see the full DNS trace. |
 
-## Why "live-verified"
-
-Most mail servers add an `Authentication-Results` (or `Received-SPF`) header once they've
-checked SPF themselves. MOM **never reads or trusts those headers** — it always redoes the
-check itself, for two reasons:
-
-1. Your own receiving server may not check SPF at all (the reason this matcher exists).
-2. Even when such a header is present, nothing stops a sender from forging one — it's just a
-   regular header. Unless the receiving infrastructure is known to strip untrusted incoming
-   copies of it before delivery, a forged `Authentication-Results: ...; spf=pass` would
-   otherwise be taken at face value.
-
 ## How the check works
 
-1. **Connecting IP**: read from the topmost (most recent) `Received:` header — the one added by
-   your own IMAP server when it accepted the message over SMTP, which reflects the real TCP
-   connection and can't be forged by the sender the way older `Received:` headers can.
-2. **Sender domain**: the domain of `Return-Path` (the actual envelope sender, written by the
-   final delivering MTA from the SMTP `MAIL FROM`), falling back to the domain of `From:` if no
-   `Return-Path` is present.
-3. The domain's `v=spf1` TXT record is fetched and evaluated against the connecting IP:
-   `ip4`, `ip6`, `a`, `mx`, `include` (recursive) and `all` mechanisms are supported, along with
-   the `redirect` modifier. A DNS lookup budget of 10 (RFC 7208 §4.6.4) prevents runaway
-   recursion through `include` chains.
+MOM checks SPF itself: `Authentication-Results` and `Received-SPF` headers already on the message
+are ignored, since a sender can forge them.
 
-If the connecting IP or sender domain can't be determined (e.g. no `Received:` header at all),
-the matcher simply doesn't match — it never throws.
+- **Connecting IP**: from the topmost `Received:` header, the one added by your own mail server.
+- **Sender domain**: the domain of `Return-Path`, or of `From:` if there's no `Return-Path`.
 
-## Known limitations
+If either can't be determined, the matcher doesn't match.
 
-- **Macros** (`%{...}`) in a mechanism's value aren't supported; a mechanism using one is
-  skipped rather than failing the whole record (macros are almost always used only in `exp=`,
-  which MOM never reads, so this rarely matters in practice).
-- **`ptr`** is deliberately never matched, as recommended by the RFC — it requires an
-  unreliable reverse-DNS lookup.
-- The evaluation trusts the topmost `Received:` header as having been added by your own,
-  trusted, receiving infrastructure.
+Not supported: macros (`%{...}`, almost only used in `exp=`, which MOM doesn't read) and the `ptr`
+mechanism, which the RFC advises against.
 
 ## Result values
 

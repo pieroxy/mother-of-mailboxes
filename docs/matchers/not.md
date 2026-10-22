@@ -13,13 +13,10 @@ Composite matcher: matches if its single child matcher does **not**.
 
 ## Behavior
 
-- Requires **exactly one** child. Zero children (negating nothing) or more than one (negating
-  which one?) both fail at startup rather than being silently misread.
-- Not learnable: reserved for manual `config.json` rules, same reasoning as `AND`/`OR`.
-- Many leaf matchers already support negation more directly — e.g. `SPF_RESULT_EQUALS` against
-  `"pass"` combined with `NOT` says "anything but a pass", which might read more naturally as
-  whichever specific failure statuses you actually care about. Reach for `NOT` when the condition
-  you want to exclude is itself a composite (`AND`/`OR`), or otherwise awkward to phrase directly.
+- Requires **exactly one** child: anything else is refused.
+- Not learnable by example.
+- For a single matcher, listing the values you want in `keys` is often clearer: `SPF_RESULT_EQUALS`
+  with `"keys": ["fail", "softfail"]` rather than `NOT` of `pass`.
 
 ## Example
 

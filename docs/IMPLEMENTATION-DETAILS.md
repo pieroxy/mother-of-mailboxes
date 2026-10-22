@@ -6,6 +6,12 @@ Internals that don't belong in [the main docs](README.md) (which document how to
 use MOM) but are worth writing down somewhere rather than only living in code comments — the
 "why" behind a design choice that isn't obvious from reading the code alone.
 
+## Unicode data refresh
+
+`src/mom-core/src/main/resources/unicode/confusables.txt` (used by `LOOKALIKE_TEXT_EQUALS`) is a
+copy of Unicode's security data: refresh it with `src/mom-core/updateUnicodeData.sh` before a
+release.
+
 ## Classifier corpus deduplication by Message-ID
 
 `ClassifierCorpusStore` tracks, per folder, a UID cursor — a message already recorded from a

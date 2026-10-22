@@ -14,8 +14,8 @@ first child that matches.
 
 ## Behavior
 
-- With zero children, `OR` never matches (vacuously false).
-- Not learnable: `AND`/`OR` are reserved for manual `config.json` rules.
+- With no children, `OR` never matches.
+- Not learnable by example.
 - If you just need "any of these values", most leaf matchers already support a `keys` field
   (e.g. `FROM_ADDRESS_EQUALS` with `"keys": ["a@x.com", "b@x.com"]`) — reach for `OR` only when
   combining **different matcher types**, or the same type with different `logLevel`s.

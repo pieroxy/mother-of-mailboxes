@@ -14,10 +14,8 @@ at the first child that doesn't match.
 
 ## Behavior
 
-- With zero children, `AND` matches vacuously (always true) — not a useful configuration in
-  practice, but not an error either.
-- Not learnable: `AND`/`OR` are reserved for manual `config.json` rules, since "teach me an AND
-  of several conditions from one example message" isn't a well-defined operation.
+- With no children, `AND` always matches.
+- Not learnable by example.
 
 ## Example
 

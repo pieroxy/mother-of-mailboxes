@@ -15,10 +15,9 @@ just `address` if there's no display name), equals the configured value. **Case-
 
 ## Behavior
 
-- Only matches messages with **exactly one** `From:` address. A message with zero or multiple
-  From addresses never matches (logged at `FINE`).
-- Comparison is a plain `String.equals` — no trimming, no case folding. If you're not sure of
-  the exact display name a sender uses, prefer [`FROM_ADDRESS_EQUALS`](from-address-equals.md).
+- Only matches messages with **exactly one** `From:` address.
+- The comparison is exact, case included. If you're not sure of the exact display name a sender
+  uses, prefer [`FROM_ADDRESS_EQUALS`](from-address-equals.md).
 - Learnable: dropping an example message into
   `mom-rules/FROM_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's exact `From:`
   string as the key. Fails to learn from a message with zero or multiple From addresses.

@@ -15,8 +15,7 @@ Matches when the message's `Subject:` starts with the configured value. **Case-i
 ## Behavior
 
 - A message with no `Subject:` header never matches.
-- The comparison is a plain prefix check (`subject.startsWith(key)`, case-insensitive) — no
-  wildcards, no regex.
+- A plain prefix: no wildcards, no regular expression.
 
 ## Learning by example — read this before using it
 

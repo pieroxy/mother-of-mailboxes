@@ -2,9 +2,9 @@
 
 [← back to docs](../README.md)
 
-Matches when the sender's email address (just `local@domain`, ignoring any display name) fully
-matches the configured regular expression (like [`String.matches`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html#matches(java.lang.String)) — the whole address must match, not just a
-part of it).
+Matches when the sender's email address (just `local@domain`, ignoring any display name) matches
+the configured [regular expression](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/regex/Pattern.html).
+The whole address must match, not just part of it.
 
 ## Config fields
 
@@ -16,16 +16,9 @@ part of it).
 
 ## Behavior
 
-- Only matches messages with **exactly one** `From:` address. A message with zero or multiple
-  From addresses never matches (logged at `FINE`).
-- Extracts the address part via `InternetAddress.getAddress()`, so display name and any quoting
-  are ignored — `"Jean Dupont <jdupont@example.com>"` and `jdupont@example.com` are tested the
-  same way.
-- Every configured regular expression is compiled once at startup — a typo'd regex fails loudly
-  right away (MOM refuses to start) rather than on the first message it's tested against.
-- Not learnable: dropping an example message into `mom-rules/` doesn't work for this matcher —
-  there's no sensible way to generalize a regular expression from one concrete address the way
-  `FROM_ADDRESS_EQUALS` learns a literal one. Write the regex by hand in `config.json`.
+- Only matches messages with **exactly one** `From:` address.
+- An invalid regular expression fails as soon as the account starts, not on the first message.
+- Not learnable by example.
 
 ## Example
 

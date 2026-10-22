@@ -9,6 +9,7 @@ configurable rules to new mail: move it, mark it read, or both. Rules can be wri
 - [Configuration file](#configuration-file)
   - [Top-level fields](#top-level-fields)
   - [Account fields](#account-fields)
+  - [SMTP settings](#smtp-settings)
   - [Example `config.json`](#example-configjson)
   - [Credentials file](#credentials-file)
 - [Matchers and actions](#matchers-and-actions)
@@ -17,7 +18,9 @@ configurable rules to new mail: move it, mark it read, or both. Rules can be wri
   - [Learning shortcuts](#learning-shortcuts)
 - [Manually reprocessing a message](#manually-reprocessing-a-message)
 - [Logging](#logging)
+  - [Access log](#access-log)
   - [Stats log](#stats-log)
+  - [Decision log](#decision-log)
 - [Data files](#data-files)
 - [Classifier corpus collection](#classifier-corpus-collection)
   - [Excluding a folder from the corpus](#excluding-a-folder-from-the-corpus)
@@ -28,31 +31,36 @@ configurable rules to new mail: move it, mark it read, or both. Rules can be wri
 - [Web server](#web-server)
 - [Delivery checks](#delivery-checks)
   - [SMTP sink](#smtp-sink)
+- [Third-party data](#third-party-data)
 
 ## Running MOM
 
-MOM requires Java 17. Build a runnable jar with Maven, then run it with the path to a
-**directory containing `config.json` and `credentials.json`**:
+MOM requires Java 17. Download the jar from the
+[latest release](https://github.com/pieroxy/mother-of-mailboxes/releases/latest) (see the
+[Quick start](quickstart.md)), then run it with the path to a **directory containing
+`config.json` and `credentials.json`**:
 
 ```sh
-mvn clean package
-java -jar target/mom-core-1.0-SNAPSHOT.jar /path/to/config-dir
+java -jar mom-core-<version>.jar /path/to/config-dir
 ```
 
-One thread is started per account declared in `configurations`. Each account is processed on
-its own schedule (`runEvery`, see below), backing off automatically (up to 30 minutes) if a
-cycle keeps failing (e.g. the IMAP server is unreachable).
+Each account declared in `configurations` is processed on its own:
 
-Between cycles, the account watches its INBOX via IMAP IDLE (RFC 2177), so new mail triggers the
-next cycle immediately instead of waiting out `runEvery`. Falls back to plain polling if the
-server doesn't support IDLE.
+- New mail in the INBOX is picked up right away (IMAP IDLE). Everything else runs every
+  `runEvery` seconds, as does INBOX on a server without IDLE support.
+- If a cycle fails, the next one waits longer each time, up to 30 minutes. When the server was
+  unreachable, MOM checks every minute whether it's back, and runs a cycle as soon as it is.
+- The account's page in the web UI shows its status and last error, and **Run now** starts a
+  cycle right away.
 
 ## Configuration file
 
-`config.json` (found in the directory passed on the command line) is a plain JSON file, parsed
-field-for-field into Java objects — the JSON keys match the Java field names exactly (camelCase).
+`config.json` (found in the directory passed on the command line) is a plain JSON file.
 Credentials (IMAP logins, web server login) live in a separate `credentials.json` file in the
 same directory — see [Credentials file](#credentials-file).
+
+Most of it can be edited from the web UI, where changes apply right away. After editing either
+file by hand, restart MOM.
 
 ### Top-level fields
 
@@ -187,21 +195,14 @@ that domain; marks mail from two trusted addresses as read (using `keys` to matc
 without moving it; and — once enough data has been collected, see
 [Classifier corpus collection](#classifier-corpus-collection) below — sends
 very-confidently-classified subjects to `SpamML` pre-marked read, and merely possibly-spammy
-ones to `SpamML` left unread for review. Two rules at two thresholds rather than
-one: [`SUBJECT_CLASSIFIER_EQUALS`](matchers/subject-classifier-equals.md) only ever
-matches/doesn't match, so "confident" vs "unsure" is expressed as two separately-configured
-rules, not a single rule with a confidence level.
+ones to `SpamML` left unread for review.
 
-Note the classifier's verdicts go to `SpamML`, a folder of its own, **not** straight into
-`Spam` — and `classifierExcludedFolders` excludes it from corpus collection. See
-[Excluding a folder from the corpus](#excluding-a-folder-from-the-corpus) for why: routing it
-into `Spam` unexcluded would let the classifier train on its own past verdicts.
+The classifier's verdicts go to `SpamML`, a folder of its own, listed in
+`classifierExcludedFolders` — see [Excluding a folder from the corpus](#excluding-a-folder-from-the-corpus).
 
-The `FCRDNS_RESULT_EQUALS: none` rule is here mainly to show the syntax — see
-[its own doc](matchers/fcrdns-result-equals.md) before using it standalone like this in
-production: it's a much weaker signal than SPF/DKIM/DMARC (plenty of legitimate small mail
-servers have no forward-confirmed reverse DNS), so it's usually better combined with another
-weak signal via `AND` than acted on alone.
+The `FCRDNS_RESULT_EQUALS: none` rule is here to show the syntax: on its own it's a weak signal
+(plenty of legitimate small mail servers have no reverse DNS), better combined with another one
+via `AND`.
 
 ### Credentials file
 
@@ -232,7 +233,7 @@ refused. Changing the password clears the flag.
 
 A rule is a `matcher` + an `action`. When a matcher matches a message, its action runs.
 
-**Matchers** (`net.pieroxy.mom.rules.matchers`):
+**Matchers**:
 
 | Type | Purpose |
 |---|---|
@@ -258,7 +259,7 @@ A rule is a `matcher` + an `action`. When a matcher matches a message, its actio
 | [`OR`](matchers/or.md) | Composite: any child matching is enough. |
 | [`NOT`](matchers/not.md) | Composite: matches if its single child does not. |
 
-**Actions** (`net.pieroxy.mom.rules.actions`):
+**Actions**:
 
 | Type | Purpose |
 |---|---|
@@ -273,8 +274,7 @@ A rule is a `matcher` + an `action`. When a matcher matches a message, its actio
 
 Every matcher and action config accepts an optional `logLevel` field (`"DEBUG"`, `"INFO"`,
 `"WARNING"`, or `"ERROR"`; default `"INFO"`) controlling **only that node's own** log verbosity
-— it never affects sibling or child nodes. `"DEBUG"` maps to `java.util.logging`'s `FINE` level
-(there is no native `DEBUG` level in `java.util.logging`). See [Logging](#logging).
+— it never affects sibling or child nodes. See [Logging](#logging).
 
 Composite matchers/actions (`AND`/`OR`/`NOT`) take a `children` array of nested matcher/action
 configs instead of `key`/`keys`.
@@ -299,8 +299,8 @@ make MOM try the next rule instead.
 
 Learned rules always get a chance to run too, but *where* depends on `config.json`:
 
-* By default (no `LEARNED_RULES` entry anywhere in `rules`), they run **implicitly, after every
-  manually-configured rule** — the original, and still simplest, behavior.
+* By default (no `LEARNED_RULES` entry anywhere in `rules`), they run **after every
+  manually-configured rule**.
 * Add an entry with `"type": "LEARNED_RULES"` (no `matcher`, no `action`) anywhere in `rules` to
   run them at that exact position instead — useful when some manual rules (e.g. SPF/DKIM/DMARC
   checks) should always take priority over anything learned, while others (e.g. a catch-all)
@@ -338,7 +338,7 @@ further down the list still gets a chance to move it:
 ]
 ```
 
-Defaults to `false` (existing behavior, unchanged) if absent.
+Defaults to `false`.
 
 ## Learning rules by example
 
@@ -374,13 +374,9 @@ places them elsewhere (see [Rule evaluation order](#rule-evaluation-order)).
 
 ### Learning shortcuts
 
-The full discovery tree above creates one `<MATCHER_TYPE>/<ACTION_TYPE>` folder pair for
-**every** learnable combination — useful to see what's possible, but in practice most accounts
-only ever use a handful of them, and subscribing an IMAP client to the rest just for them to sit
-there unused doesn't scale.
-
-`learningShortcuts` (per account) gives a specific (matcher type, action) pair its own flat
-folder directly under `mom-rules/`, instead of the two nested levels:
+The discovery tree above creates a folder pair for **every** learnable combination, while most
+accounts only use a handful. `learningShortcuts` (per account) gives a specific (matcher type,
+action) pair its own flat folder directly under `mom-rules/` instead:
 
 ```json
 {
@@ -395,25 +391,17 @@ folder directly under `mom-rules/`, instead of the two nested levels:
 ```
 
 Dropping a message into `mom-rules/MoveSameDomainToSpam` teaches exactly the same rule as
-`mom-rules/FROM_DOMAIN_EQUALS/MOVE_TO_AND_READ/Spam` would — same extraction, same persistence
-to `<displayName>-learned-rules.json`, same `Done` archival — just reached through one
-subscribable folder instead of two unsubscribed levels. The two mechanisms coexist freely: a
-shortcut doesn't remove its equivalent discovery-tree folder, so nothing stops using one to
-explore and the other day to day.
+`mom-rules/FROM_DOMAIN_EQUALS/MOVE_TO_AND_READ/Spam` would. Shortcuts and the discovery tree can
+be used side by side.
 
-The `action` is fully fixed in config, `key` included — a shortcut has no `<key>` folder level
-left to carry a destination, unlike the discovery tree. `matcher` only ever takes a `type`: its
-key is still extracted from each example, exactly as in the discovery tree, so setting `key` (or
-`keys`) on a shortcut's matcher is rejected. MOM validates every shortcut at startup — a
-non-learnable matcher/action type, a missing `action.key`, a matcher `key`/`keys`, a name reused
-by two shortcuts, or a name colliding with a discovery-tree folder (a `MATCHER_TYPE` name, or
-`Done`) all fail loudly rather than being silently ignored.
+- The `action` is fully set in the config, `key` included.
+- The `matcher` only takes a `type`: its key comes from each example, so a `key` or `keys` there
+  is refused.
+- A shortcut's name must be unique, and can't be `Done` or a matcher type name.
 
-Subscribing an IMAP client to just the shortcuts (and not the discovery tree) works for clients
-that respect the IMAP-standard subscribed/unsubscribed state — but some (notably Apple Mail, on
-both iOS and macOS) show every folder regardless of that state. For those, `discoveryTreeDisabled`
-(per account) skips creating the tree in the first place, once shortcuts cover what's actually
-used day to day.
+Most mail clients let you subscribe to just the shortcut folders. Some (notably Apple Mail, on
+iOS and macOS) show every folder anyway: for those, set `discoveryTreeDisabled` on the account
+so the discovery tree isn't created at all.
 
 ## Manually reprocessing a message
 
@@ -428,7 +416,7 @@ used by the learning system above, marked unread the same way) for manual review
 
 Console logging is always on. MOM also always writes to `<dataFolder>/logs/log.txt`, rotated at
 midnight into lz4-compressed archives (`log.txt.1.lz4` being the most recent), kept for
-`keepLogFiles` days. Browse them from the web UI: the document icon in the top bar.
+`keepLogFiles` days. Browse them from the web UI: the Logs icon in the top bar.
 
 Each matcher/action node in a rule has its own logger, independently leveled via that node's
 `logLevel` config field (default `INFO`). Setting `"logLevel": "DEBUG"` on an
@@ -457,8 +445,8 @@ as is — followed by the time spent answering:
   carry mail metadata (e.g. a decision log search).
 
 The first request of a day compresses the earlier days into `.lz4`; days older than
-`keepLogFiles` are deleted. Browse it from the web UI's Logs page (the document icon in the top bar), next to
-the application log.
+`keepLogFiles` are deleted. Browse it from the web UI's Logs page (the Logs icon in the top bar),
+next to the application log.
 
 ### Stats log
 
@@ -471,34 +459,21 @@ Besides the human-readable log above, MOM appends one JSON line per event to
 {"type":"PROCESSED","result":"PASS","processedMs":7,"date":"2026-09-18 10:36:01Z"}
 ```
 
-- **`MATCH`** — one per rule that actually matched (manual or learned), same moment as the
-  matching line in the console/`log.txt` (see [Rule evaluation order](#rule-evaluation-order)).
-  `matcher` is that same description, including any per-message detail a matcher reports (a
-  reputation score, a classifier score, which of several configured keys hit...). A message
-  processed by a `keepProcessing` rule followed by a blocking one produces two `MATCH` lines —
-  one for each rule that matched, in evaluation order.
-- **`PROCESSED`** — exactly one per message, once the whole rule chain (manual rules, then
-  learned rules) has finished running for it. `processedMs` is how long that took; `result` is
-  `MATCH` if some rule ultimately blocked the message — `matcher` then names that rule (same
-  description as its own separate `MATCH` line above; deliberately redundant so the common case,
-  a single non-`keepProcessing` rule blocking, is fully readable from this one line alone) — or
-  `PASS` if the chain ran to completion without ever blocking (no `matcher` field), even if a
-  `keepProcessing` rule matched somewhere along the way (that rule's own `MATCH` line is the only
-  record of it). This is the one to use for throughput/latency: count `PROCESSED` lines for
-  messages handled, average `processedMs` for how fast, and the `PASS`/`MATCH` split of `result`
-  for how much traffic gets filtered.
+- **`MATCH`** — one per rule that matched (manual or learned), with the matcher's description
+  and detail (a reputation score, a classifier score...). A `keepProcessing` rule followed by
+  another matching rule gives two `MATCH` lines.
+- **`PROCESSED`** — one per message, once all rules have run. `result` is `MATCH` if a rule
+  stopped evaluation (named in `matcher`), `PASS` otherwise. `processedMs` is how long it took.
 
-One JSON object per line (not one JSON array for the whole file), so recording an event is a
-plain append, never a rewrite of the whole day's file — safe with several accounts running
-concurrently. This file has no rotation or pruning of its own — clean up old `stats-*.json`
-files yourself if needed.
+The web UI's stats page is built from these files. They're never rotated or pruned: delete old
+`stats-*.json` files yourself if needed.
 
 ### Decision log
 
 Opt-in per account via `decisionLogRetentionDays`: one JSON line per message processed, in
 `<dataFolder>/logs/<displayName>/decisions-YYYY-MM-DD.json` (UTC day), explaining where it ended
-up and why. Browse it from the web UI (the document icon on an account card, or a matcher on the
-stats page).
+up and why. Browse it from the web UI: the Logs icon on the account's page, or a matcher on the
+stats page.
 
 ```json
 {"date":"2026-10-13 10:00:00Z","trigger":"INBOX","messageId":"<abc@example.com>","subject":"Hello","from":"Alice <alice@example.com>","processedMs":42,
@@ -541,48 +516,27 @@ Everything MOM persists lives under `dataFolder`, one file/folder per account (k
 
 When `classifierCorpusRetentionDays > 0`, MOM builds a labeled dataset per account under
 `dataFolder`, walking every folder except `INBOX` and `mom-rules/` and labeling messages `SPAM`
-(if in the `classifierSpamFolderName` folder) or `HAM` (everything else). Two different scan
-rhythms:
+(if in the `classifierSpamFolderName` folder) or `HAM` (everything else).
 
-- **The `classifierSpamFolderName` folder** is scanned **every cycle** (the same cadence as
-  normal INBOX processing). This is deliberate: it's the one folder a user might empty
-  themselves before the next daily scan would otherwise have seen it (e.g. purging Spam by hand
-  every evening) — scanning it every cycle means a message is captured for the corpus as soon as
-  it arrives, not whenever the next daily pass happens to fall.
-- **Every other folder** is scanned **once a day**, since none of them are at similar risk of
-  being emptied out from under the scanner, and walking the whole account tree every cycle would
-  be wasteful.
+- The Spam folder is scanned every cycle, so spam you delete by hand is still captured first.
+  Every other folder is scanned once a day.
+- Only mail received in the last `classifierCorpusRetentionDays` days is collected, and older
+  data is pruned once a day.
 
-Files older than `classifierCorpusRetentionDays` days are pruned once a day.
-
-A message received more than `classifierCorpusRetentionDays` days ago (per the server's own
-INTERNALDATE, not the sender's self-reported `Date:` header) is skipped during the scan itself,
-not just pruned afterward — it would just get pruned right away otherwise, so there's no point
-fetching and storing it in the first place. This matters most on a folder's very first scan (e.g.
-a years-old Archive or Sent folder): without it, the scan would spend its whole per-cycle budget
-walking through history that's already outside the retention window before ever reaching
-anything the corpus will actually keep.
+Filing read mail into folders is what feeds the classifiers examples of legitimate mail: mail
+left in `INBOX` teaches them nothing.
 
 ### Excluding a folder from the corpus
 
 `classifierExcludedFolders` skips a folder (matched by name, anywhere in the tree) entirely —
-neither `SPAM` nor `HAM`. This matters most if a
-[`SUBJECT_CLASSIFIER_EQUALS`](matchers/subject-classifier-equals.md),
-[`HEADER_CLASSIFIER_EQUALS`](matchers/header-classifier-equals.md), or
-[`BODY_CLASSIFIER_EQUALS`](matchers/body-classifier-equals.md) rule moves its own verdicts
-into a dedicated folder (e.g. `"SpamML"`, or a `"Spam/ML"` subfolder) rather than straight into
-`classifierSpamFolderName`:
+neither `SPAM` nor `HAM`.
 
-- **Without exclusion, that folder would be actively mislabeled**, not just ignored: since its
-  name doesn't match `classifierSpamFolderName`, the scanner would label everything in it `HAM`
-  — poisoning the corpus with spam classified as legitimate mail, worse than not learning from it
-  at all.
-- It also breaks a feedback loop: without exclusion, the classifier would eventually train on its
-  own past verdicts, letting an early mistake reinforce itself. A rule whose action moves mail
-  into `classifierSpamFolderName` directly doesn't have this problem — a human- or
-  protocol-verified rule (SPF/DKIM/DMARC/`FROM_*`) landing mail in Spam is still a genuine,
-  independent signal worth learning from; it's specifically the classifier grading its own
-  homework that's excluded here.
+**If a classifier rule** ([`SUBJECT_CLASSIFIER_EQUALS`](matchers/subject-classifier-equals.md),
+[`HEADER_CLASSIFIER_EQUALS`](matchers/header-classifier-equals.md),
+[`BODY_CLASSIFIER_EQUALS`](matchers/body-classifier-equals.md)) **moves mail to its own folder,
+add that folder here.** Otherwise its content is collected as legitimate mail, and the
+classifiers end up training on their own verdicts. Rules moving mail straight to the Spam folder
+don't need this.
 
 ```json
 { "classifierExcludedFolders": ["SpamML"] }
@@ -590,52 +544,26 @@ into a dedicated folder (e.g. `"SpamML"`, or a `"Spam/ML"` subfolder) rather tha
 
 ### Subject classifier training
 
-Once a day, right after a full scan completes, MOM (re)trains a subject-only spam classifier
-(Naive Bayes) on the entire retained corpus, and writes it to
-`classifier-corpus/<displayName>/subject-model.bin`. Training is
-skipped — logged, not an error — until there are **at least 50 examples of each class** (`SPAM`
-and `HAM`); a lopsided or too-small corpus produces a model that hasn't learned anything useful,
-so MOM doesn't bother writing one yet.
+Once a day, after the full scan, MOM retrains a subject classifier on the collected corpus. It
+needs **at least 50 examples of each class** (`SPAM` and `HAM`): until then, no model is written
+and the matching rules do nothing. The web UI shows each account's progress.
 
-Use [`SUBJECT_CLASSIFIER_EQUALS`](matchers/subject-classifier-equals.md) in a rule to actually
-act on this — see its doc for the config format (a probability threshold like `">0.9"`, not a
-value to match) and how it behaves before a model exists.
+Use [`SUBJECT_CLASSIFIER_EQUALS`](matchers/subject-classifier-equals.md) in a rule to act on it.
 
 ### Header classifier training
 
-Same rhythm as the subject classifier above, but a separate model over a different set of
-features — derived from headers and MIME structure (sender/recipient domains, `In-Reply-To`,
-`List-Id`, `Precedence`, `Return-Path`/`Reply-To` alignment with `From`, attachment count and
-filename extensions...) — written to `classifier-corpus/<displayName>/header-model.bin`. Same
-minimum (**at least 50 examples of each class**) before it bothers writing a model.
+Same as the subject classifier, but on what the headers tell (sender and recipient domains,
+mailing-list headers, `Reply-To`, attachments...). Same minimum: **50 examples of each class**.
 
-Use [`HEADER_CLASSIFIER_EQUALS`](matchers/header-classifier-equals.md) in a rule to act on this.
-Nothing ties the classifiers together — each can be used alone, together, or compared against
-the others (e.g. via `keepProcessing`, see [Rule evaluation order](#rule-evaluation-order)).
+Use [`HEADER_CLASSIFIER_EQUALS`](matchers/header-classifier-equals.md) in a rule to act on it.
+The classifiers are independent: use any of them, alone or together.
 
 ### Body classifier training
 
-Same rhythm as the other two, but trained on the message body's visible text — the HTML part
-stripped down to text (tags, scripts, and styles removed via [Jsoup](https://jsoup.org/)), or a
-`text/plain` part used as-is when no HTML part exists at all — written to
-`classifier-corpus/<displayName>/body-model.bin`. Bag-of-words like the subject classifier (free
-text, not structured facts), plus one extra feature for which kind of part the body came from
-(`html`, `plain`, or absent for a message with no body at all, e.g. image-only or
-attachment-only) — a signal a bag-of-words model can't otherwise recover, since stripping HTML
-down to text makes it indistinguishable from a plain-text part with the same wording.
+Same as the other two, but on the text of the message body, as shown when it's opened. It needs
+more data: **at least 150 examples of each class**.
 
-Two training parameters are more conservative here than for the subject/header classifiers,
-because body text's vocabulary is much larger than a subject line's: training is skipped until
-there are **at least 150 examples of each class** (not 50), and words occurring fewer than 3
-times across the whole corpus are dropped rather than kept (subject/header keep every word,
-however rare). Both guard against the same risk — a word seen once or twice (a name, a URL, a
-one-off phrase) getting memorized as if it generalized, rather than genuinely learning what
-distinguishes spam from ham.
-
-Body text isn't truncated: kept in full, on purpose, until real corpus volume shows what length
-is actually worth capping.
-
-Use [`BODY_CLASSIFIER_EQUALS`](matchers/body-classifier-equals.md) in a rule to act on this.
+Use [`BODY_CLASSIFIER_EQUALS`](matchers/body-classifier-equals.md) in a rule to act on it.
 
 ## Reputation lists
 
@@ -661,24 +589,26 @@ download, so no per-message data (sender, IP, subject...) ever leaves the box. E
 | `refreshHours` | How often to re-download (minimum enforced: 1 hour). |
 | `score` | 0 (ok) to 1 (spam): the value attributed to anything found in this list. |
 
-Every list present in `reputationLists` is downloaded and refreshed on this schedule, whether or
-not a matcher currently references it. A signal is available from the very first message: the
-last downloaded copy is cached locally and reloaded before any network activity happens.
+Every list in `reputationLists` is downloaded and kept up to date, whether or not a rule uses it:
 
-A list only actually re-downloads once `refreshHours` has genuinely elapsed since its last
-successful download. Every download attempt, success or failure, is logged.
+- The last downloaded copy is kept on disk and loaded at startup, so lists work from the first
+  message, even offline.
+- A list is downloaded again once `refreshHours` have passed since the last successful download,
+  including across restarts.
+- If a download fails (source down, no network), the last copy stays in use. MOM tries again 5
+  minutes later, then 10, 20... (never more than `refreshHours` apart) until it succeeds.
+- The home page shows each list's age and size. Its **Refresh** button downloads a list right
+  away.
 
-Blank lines are ignored; `#` or `;` start a comment, either as a whole line or trailing after an
-entry (e.g. Spamhaus DROP publishes `1.10.16.0/20 ; SBL256894` — the `; SBL256894` reference is
-stripped, not treated as part of the entry). A single malformed entry is skipped (logged) rather
-than failing the whole list. If a refresh fails (the source is down, network issue...), MOM keeps
-serving the last successfully downloaded copy indefinitely, rather than losing the signal.
+In a list file, blank lines are ignored, and `#` or `;` start a comment, on its own line or after
+an entry (`1.10.16.0/20 ; SBL256894`). A malformed entry is skipped, not the whole list.
 
-See [Starter configuration](../README.md#starter-configuration) for the five free sources wired
-up by default (two IP feeds combined via `AND`/`OR`, two domain feeds likewise, plus one
-disposable-email list) and why. See
-[Reputation list pairing rationale](IMPLEMENTATION-DETAILS.md#reputation-list-pairing-andor-rationale)
-for the design reasoning if you're adding your own.
+Lists are held in memory. Most are a few MB, but some are much bigger: HaGeZi's NRD7, in the
+starter configuration, has ~2.5M entries (~40MB to download). On a small machine, check MOM's
+memory use after adding one.
+
+See [Starter configuration](../README.md#starter-configuration) for the free sources wired up by
+default.
 
 See [`IP_REPUTATION_EQUALS`](matchers/ip-reputation-equals.md) and
 [`FROM_DOMAIN_REPUTATION_EQUALS`](matchers/from-domain-reputation-equals.md) for how a matcher
@@ -713,11 +643,7 @@ oldest failure is 5 minutes old, even with the right password. A successful logi
 and other addresses are never affected. Each failed or refused login is logged at `WARNING` with the
 address.
 
-The UI itself is a static single-page app, built from `src/mom-webapp` and embedded into the release
-jar — it's extracted fresh to `<dataFolder>/webapp-ui` on every startup, so an upgraded jar never
-serves a stale UI. Responses above 1KB are gzip-compressed automatically.
-
-"Add account" on the home page opens a wizard that creates an account and, optionally, the
+**Add account** on the home page opens a wizard that creates an account and, optionally, the
 [starter spam rules](../README.md#starter-configuration) — using the account's own spam folder,
 a separate classifier folder excluded from the corpus, and only the reputation rules whose lists
 are configured in `reputationLists`.
@@ -777,5 +703,4 @@ MOM. Only that makes the checks see what receivers see.
 - `src/mom-core/src/main/resources/unicode/confusables.txt`, from Unicode's
   [security data](https://www.unicode.org/Public/security/latest/) (UTS #39), © Unicode, Inc.,
   under the [Unicode License v3](https://www.unicode.org/license.txt) (copy alongside it). Used by
-  [`LOOKALIKE_TEXT_EQUALS`](matchers/lookalike-text-equals.md). Refresh it with
-  `src/mom-core/updateUnicodeData.sh` before a release.
+  [`LOOKALIKE_TEXT_EQUALS`](matchers/lookalike-text-equals.md).

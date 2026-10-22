@@ -13,38 +13,18 @@ Matches when a **live-evaluated** DMARC (RFC 7489) result equals the configured 
 | `keys` | one of `key`/`keys` | Set of results, any of which matches. Takes priority over `key` if both are set. |
 | `logLevel` | no | See [Logging](../README.md#logging). |
 
-## What DMARC actually checks
+## What DMARC checks
 
-DMARC doesn't verify anything new by itself — it **ties SPF and DKIM together**. A message can
-pass SPF and pass DKIM individually while still failing DMARC, if neither of the domains those
-checks actually verified matches the domain the recipient *sees* in `From:`. That's the gap
-DMARC closes: it recomputes [SPF](spf-result-equals.md) and [DKIM](dkim-result-equals.md) live
-(same policy as those matchers — never trusting a pre-existing header) and checks whether either
-one is **aligned** with the `From:` domain:
+DMARC ties [SPF](spf-result-equals.md) and [DKIM](dkim-result-equals.md) to the domain the
+recipient sees in `From:`. It passes if either one passed **and** is aligned with that domain:
 
-- **SPF alignment**: does the domain SPF actually verified (`Return-Path`, or `From` as a
-  fallback — see [`SPF_RESULT_EQUALS`](spf-result-equals.md)) match the `From:` domain?
-- **DKIM alignment**: does the signing domain (`d=`) of any *passing* DKIM signature match the
-  `From:` domain?
+- **SPF**: the domain SPF checked (`Return-Path`) matches the `From:` domain.
+- **DKIM**: the signing domain of a valid signature matches the `From:` domain.
 
-DMARC passes if **either** SPF passed-and-aligned, **or** DKIM passed-and-aligned — only one is
-required.
+"Matches" means the same organizational domain (`mail.example.co.uk` and `example.co.uk`), or
+the exact same domain if the sender's DMARC record asks for strict alignment.
 
-"Match" itself has two modes, set per-domain by the `adkim=`/`aspf=` tags in the domain's own
-DMARC record (default: relaxed for both):
-
-- **relaxed** (default): the two domains just need to share the same *organizational domain* —
-  computed properly via the [Public Suffix List](https://publicsuffix.org/) (e.g.
-  `mail.example.co.uk` and `example.co.uk` are aligned; a naive "last two labels" comparison
-  would get this wrong and wrongly treat unrelated domains sharing a public suffix like
-  `*.github.io` as aligned).
-- **strict**: the two domains must match exactly.
-
-## How the record is found
-
-The `_dmarc.<domain>` TXT record is looked up for the exact `From:` domain first; if absent,
-the organizational domain's `_dmarc.<org-domain>` record is tried as a fallback (RFC 7489
-§6.6.3) — so a subdomain without its own DMARC record still inherits its organization's policy.
+A subdomain without its own DMARC record uses its organizational domain's.
 
 ## Result values
 

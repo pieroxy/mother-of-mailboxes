@@ -22,14 +22,9 @@ value. **Case-insensitive.** No network access: it only reads the header.
 | `multiple` | Several `From:` headers, or one header listing several addresses. |
 | `invalid` | A single `From:` header from which no valid address can be extracted (e.g. `root`, `John Doe`, `a@@example.com`, `undisclosed-recipients:;`). |
 
-RFC 5322 requires exactly one `From:` header. Several `From:` headers are forbidden outright, and
-a known spoofing trick: DMARC and the mail client may not read the same one. Several addresses
-in one header are technically allowed (with a `Sender:` header), but no mainstream client
-produces them. And DMARC can't evaluate a message without a single usable `From:` domain, so
-none of these cases is covered by the DMARC rules.
-
-Internationalized addresses (`josé@exämple.com`, RFC 6531) are `valid`; non-ASCII characters
-before the `@` must be letters, digits or combining marks.
+Anything but `valid` is a sign of spoofing: DMARC can't evaluate such a message, and with several
+`From:` headers, DMARC and the mail client may not read the same one. Internationalized
+addresses (`josé@exämple.com`) are `valid`.
 
 False positives come from home-made senders: scripts, cron jobs, NAS or printers sending mail
 without a `From:` header or with a bare `root`. Hence `MOVE_TO` (left unread) rather than

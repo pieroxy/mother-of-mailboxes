@@ -15,8 +15,7 @@ Matches when the sender's domain (the part after `@`) equals the configured valu
 
 ## Behavior
 
-- Only matches messages with **exactly one** `From:` address. A message with zero or multiple
-  From addresses never matches (logged at `FINE`).
+- Only matches messages with **exactly one** `From:` address.
 - Note that a domain alone says nothing about whether the mail is actually authorized to be sent
   from that domain — a `From:` header is trivial to forge. Combine with
   [`SPF_RESULT_EQUALS`](spf-result-equals.md) or [`DKIM_RESULT_EQUALS`](dkim-result-equals.md)

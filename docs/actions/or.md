@@ -14,8 +14,8 @@ fallback chain.
 
 ## Behavior
 
-- With zero children, `OR` "fails" vacuously (does nothing, reports no success).
-- Not learnable: `AND`/`OR` are reserved for manual `config.json` rules.
+- With no children, `OR` does nothing and fails.
+- Not learnable by example.
 
 ## Example
 

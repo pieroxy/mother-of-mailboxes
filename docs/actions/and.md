@@ -13,11 +13,9 @@ Composite action: runs its children **in order**, stopping at the first one that
 
 ## Behavior
 
-- With zero children, `AND` "succeeds" vacuously (does nothing).
-- This is exactly how [`MOVE_TO_AND_READ`](move-to-and-read.md) is built internally
-  (`READ` then `MOVE_TO`) — reach for a manual `AND` when you need a sequence `MOVE_TO_AND_READ`
-  doesn't cover.
-- Not learnable: `AND`/`OR` are reserved for manual `config.json` rules.
+- With no children, `AND` does nothing and succeeds.
+- For read-then-move, [`MOVE_TO_AND_READ`](move-to-and-read.md) is shorter.
+- Not learnable by example.
 
 ## Example
 

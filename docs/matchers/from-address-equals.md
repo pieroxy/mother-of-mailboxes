@@ -15,11 +15,9 @@ the configured value. **Case-insensitive.**
 
 ## Behavior
 
-- Only matches messages with **exactly one** `From:` address. A message with zero or multiple
-  From addresses never matches (logged at `FINE`).
-- Extracts the address part via `InternetAddress.getAddress()`, so display name and any quoting
-  are ignored — `"Jean Dupont <jdupont@example.com>"` and `jdupont@example.com` match the same
-  key.
+- Only matches messages with **exactly one** `From:` address.
+- The display name is ignored: `"Jean Dupont <jdupont@example.com>"` and `jdupont@example.com`
+  match the same key.
 - Learnable: dropping an example message into
   `mom-rules/FROM_ADDRESS_EQUALS/<ACTION_TYPE>/<key>` teaches a rule using that message's
   sender address as the key. Fails to learn from a message with zero or multiple From addresses,
