@@ -64,6 +64,12 @@ $shadow-dark: rgba(0, 0, 0, .1);
     font-family: Ubuntu, 'Helvetica Neue', 'Helvetica', 'Arial';
 }
 
+// Always a scrollbar: pages start empty while their data loads, so the layout would otherwise
+// shift sideways on every navigation as the scrollbar comes and goes.
+html {
+    overflow-y: scroll;
+}
+
 body {
     background-color: $bg-color;
     color: $text-color;
