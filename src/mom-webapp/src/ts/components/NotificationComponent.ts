@@ -29,7 +29,10 @@ export class NotificationComponent implements m.ClassComponent<NotificationCompo
     }
     dom.classList.add("closed")
     return new Promise(function(resolve) {
-        dom.addEventListener("animationend", resolve)
+        // Only its own removal animation: the countdown bar's animationend bubbles up here too.
+        dom.addEventListener("animationend", (e) => {
+          if (e.target === dom) resolve(undefined);
+        })
     })
   }
   
@@ -37,31 +40,38 @@ export class NotificationComponent implements m.ClassComponent<NotificationCompo
     let n = attrs.notification;
     let icon:m.Children = "";
     let iconTitle = "";
+    let typeClass = "";
     switch (n.type) {
       case NotificationsType.SUCCESS:
         icon = m(StatusOkIcon);
         iconTitle = "Success";
+        typeClass = "type-success";
         break;
       case NotificationsType.INFO:
         icon = m(StatusInfoIcon);
         iconTitle = "Information";
+        typeClass = "type-info";
         break;
       case NotificationsType.WARNING:
         icon = m(StatusWarningIcon);
         iconTitle = "Warning";
+        typeClass = "type-warning";
         break;
       case NotificationsType.ERROR:
         icon = m(StatusErrorIcon);
         iconTitle = "Error";
+        typeClass = "type-error";
         break;
     }
     let ad = n.alreadyDisplayed;
     n.alreadyDisplayed = true; 
 
-    return m(".notificationO" + (ad?"":".appear"), m(".notification." + n.type, [
+    return m(".notificationO" + (ad?"":".appear"), m(".notification." + typeClass, [
       m(".typeicon", { title: iconTitle }, icon),
       m(".content", n.content),
-      m(IconButton, { icon: CloseIcon, size: "large", class: "closebtn", title: "Dismiss", onclick: () => Notifications.dismiss() }),
+      m(IconButton, { icon: CloseIcon, size: "small", class: "closebtn", title: "Dismiss", onclick: () => Notifications.dismiss() }),
+      // Shrinks over the same duration as the auto-dismiss timer set in oninit.
+      n.timeout > 0 ? m(".notification-countdown", { style: { animationDuration: n.timeout + "s" } }) : null,
     ]))
   }
 }

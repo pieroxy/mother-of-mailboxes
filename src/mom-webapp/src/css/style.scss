@@ -3,6 +3,8 @@ $bg-color: #300a24;
 $bg-color-l1: #360b29;
 $bg-color-l2: #3a112d;
 $bg-color-l3: #3f1933;
+// Only for what floats above the page (notifications), so it never reads as one of its cards.
+$bg-color-l4: #4e2442;
 $bg-color-d1: #200414;
 
 // Text
@@ -30,6 +32,7 @@ $white-glow: #fff8;
 $white-faint: #fff7;
 $shadow-light: rgba(255, 255, 255, .1);
 $shadow-dark: rgba(0, 0, 0, .1);
+$shadow-floating: rgba(0, 0, 0, .5);
 
 // A toggle button that's either on (accent) or off — the stats page's mode switches, the logs page's filter chips.
 @mixin toggle-chip {
@@ -104,7 +107,8 @@ body {
             animation-iteration-count: 1;
             text-align: center;
             position:fixed;
-            top:10px;
+            // Just below the topbar, which is 3em tall.
+            top: calc(3em + 8px);
             width: 100%;
             box-sizing: border-box;
             z-index: 1000;
@@ -121,31 +125,62 @@ body {
             }
 
             .notification {
-                background-color: $bg-color-l3;
-                border-radius: 5px;
-                padding: 20px 20px;
-                max-width: 50%;
+                // The type's color: left strip and countdown bar.
+                --notification-color: #{$text-muted};
+                position: relative;
+                overflow: hidden;
+                background-color: $bg-color-l4;
+                border-radius: 8px;
+                border-left: 4px solid var(--notification-color);
+                padding: 12px 12px 12px 14px;
+                max-width: 480px;
                 box-sizing: border-box;
                 display: flex;
-                font-size: 20px;
-                box-shadow: 2px 2px 15px $shadow-dark;
+                align-items: center;
+                gap: 12px;
+                font-size: 15px;
+                box-shadow: 0 8px 24px $shadow-floating;
 
                 @include media-max(768px) {
                     width: 95%;
                     max-width: 95%;
                 }
 
+                &.type-success { --notification-color: #{$status-ok}; }
+                &.type-info { --notification-color: #{$status-info}; }
+                &.type-warning { --notification-color: #{$status-warning}; }
+                &.type-error { --notification-color: #{$status-error}; }
+
+                .notification-countdown {
+                    position: absolute;
+                    left: 0;
+                    bottom: 0;
+                    width: 100%;
+                    height: 2px;
+                    background-color: var(--notification-color);
+                    transform-origin: left;
+                    animation-name: notification-countdown;
+                    animation-timing-function: linear;
+                    animation-fill-mode: forwards;
+                }
+
+                .typeicon {
+                    display: flex;
+
+                    svg.icon {
+                        width: 24px;
+                        height: 24px;
+                    }
+                }
+
                 .content {
                     flex:1;
-                    color: $text-muted;
+                    color: $text-color;
                     text-align: left;
-                    padding: 0 20px;
                 }
 
                 .closebtn {
                     align-self: flex-start;
-                    margin-top: -15px;
-                    margin-right: -15px;
                 }
             }
         }
@@ -2342,6 +2377,15 @@ button {
 	40% {
 		opacity: 1;
 	}
+}
+
+@keyframes notification-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 @keyframes notification-appearance {
