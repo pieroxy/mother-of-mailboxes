@@ -18,6 +18,9 @@ Where to look first:
   until the oldest failure is 5 minutes old, even with the right password. Wait, then try again.
   Behind a reverse proxy without `trustedProxies`, every visitor shares the proxy's address, and
   so the lock-out.
+- **"Too many requests" on every page**: the address was banned for 15 minutes, after 4 requests
+  for pages that don't exist within 10 seconds, without being logged in. MOM's log names the
+  address and the last path asked for. Typing URLs by hand can trigger it: wait for the ban to end.
 - **Lost the password**: see [First start](running.md#first-start).
 
 ## An account is in error

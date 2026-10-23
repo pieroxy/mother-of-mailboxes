@@ -114,4 +114,6 @@ status), one day at a time. See [Logs and data files](logs.md).
 Change the web UI password, or log out.
 
 After 5 failed logins within 5 minutes, an address is refused for a few minutes, even with the
-right password.
+right password. An address asking for 4 pages that don't exist within 10 seconds, without being
+logged in, is banned from the web UI for 15 minutes: that's how scanners probing for known paths
+behave.

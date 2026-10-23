@@ -125,8 +125,8 @@ To reach the web UI over HTTPS, put it behind your web server:
    (`example.com/mom/`).
 3. Have the proxy send the client's address in `X-Forwarded-For`, and list the proxy's address in
    `trustedProxies` (General settings → Server → Trusted proxies). Without it, every request seems
-   to come from the proxy: the [access log](logs.md#access-log) is useless, and the login
-   lock-out after failed attempts applies to everyone at once.
+   to come from the proxy: the [access log](logs.md#access-log) is useless, and the lock-out
+   after failed logins, like the ban after repeated 404s, applies to everyone at once.
 4. Turn on the secure cookie (General settings → Web Server), so the session cookie is only sent
    over HTTPS. Logging in over plain HTTP then no longer works.
 
