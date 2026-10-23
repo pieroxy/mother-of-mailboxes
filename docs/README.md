@@ -13,6 +13,7 @@ messages into special IMAP folders, or written in `config.json`.
 - [Spam classifiers](classifiers.md) — spam detection trained on your own mail.
 - [Reputation lists](reputation-lists.md) — IP and domain lists, downloaded periodically.
 - [Delivery checks](delivery-checks.md) — is your own outgoing mail set up to be delivered?
+- [Running an SMTP sink](smtp-sink.md) — your own server to receive the delivery checks' test message.
 - [Configuration](configuration.md) — `config.json` and `credentials.json` reference, and the
   starter configuration.
 - [Logs and data files](logs.md) — what MOM writes, and where.

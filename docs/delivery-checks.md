@@ -48,4 +48,4 @@ MOM. Only that makes the checks see what receivers see.
   **Use the public instance**, then **Test SMTP Sink** and save.
 - **Privacy**: whoever runs a sink sees your sending server's IP address and domain, as any recipient of
   your mail would. The message itself only carries a random ID, and is deleted after 5 minutes.
-- **Off by default**. Self-hosting a sink is possible, not documented yet.
+- **Off by default**. To run your own, see [Running an SMTP sink](smtp-sink.md).

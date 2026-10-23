@@ -27,32 +27,10 @@ material.
 - **HTTP:** `GET /messages/<uuid>` returns the stored message (`200`, `message/rfc822`), or `404`
   if there is none: never received, or older than `retentionSeconds` (default 5 minutes).
 
-## Build & run
+## Build
 
 ```
 mvn clean package
-java -jar target/smtp-sink-core-1.0.0.jar /path/to/config-dir
 ```
 
-Same convention as MOM: the argument is a directory holding `config.json` (start from
-`config.example.json`). Relative paths in it are resolved against that directory. Logs go to
-stderr.
-
-## Deployment notes
-
-- **Port 25 must reach the sink with the client's real IP.** Either bind it directly, or put it
-  behind a TCP proxy that speaks PROXY protocol v1 (nginx `stream { ... proxy_protocol on; }`,
-  HAProxy `send-proxy`) and set `smtpProxyProtocol` to `true`. An HTTP reverse proxy can't carry
-  SMTP.
-- **HTTP** is plain and bound to `127.0.0.1` by default: put your HTTPS reverse proxy in front.
-- **TLS:** PEM files, `certFile` holding the certificate (plus its chain, e.g. certbot's
-  `fullchain.pem`; otherwise add `chainFile`) and `keyFile` an unencrypted PKCS#8 key
-  (`BEGIN PRIVATE KEY`, which certbot writes). They are reloaded automatically when they change
-  on disk. The user running the sink must be able to read them: certbot's `privkey.pem` is
-  root-only by default.
-- **DNS:** one name can serve everything, e.g. `smtp-sink.mom.pieroxy.net`: the URL MOM instances
-  are given (`https://smtp-sink.mom.pieroxy.net`, through the reverse proxy), the `hostname`, the
-  accepted mail domain, and the certificate's name. It needs an A/AAAA record, an MX record
-  pointing to itself, and matching reverse DNS.
-- Binding port 25 as non-root: `setcap 'cap_net_bind_service=+ep'` on the java binary, or
-  `AmbientCapabilities=CAP_NET_BIND_SERVICE` in a systemd unit.
+Running it, DNS, TLS, configuration: see [Running an SMTP sink](../../docs/smtp-sink.md).
