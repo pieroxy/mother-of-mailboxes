@@ -6,6 +6,7 @@ export enum Endpoints {
   HOME = "/",
   GENERAL_SETTINGS = "/general-settings",
   APP_LOGS = "/app-logs",
+  CREDITS = "/credits",
   ACCOUNT_CREATE = "/new-account",
   ACCOUNT_HOME = "/account/:accountName",
   DELIVERY_CHECK = "/account/:accountName/delivery-check",

@@ -21,9 +21,11 @@ import { SetupWizardPage } from "./components/pages/SetupWizardPage";
 import { AccountHomePage } from "./components/pages/AccountHomePage";
 import { DeliveryCheckPage } from "./components/pages/DeliveryCheckPage";
 import { NotificationHost } from "./components/NotificationComponent";
+import { CreditsPage } from "./components/pages/CreditsPage";
 
 const routes: m.RouteDefs = {
   [Endpoints.LOGIN]: LoginPage,
+  [Endpoints.CREDITS]: CreditsPage,
   [Endpoints.CHANGE_PASSWORD]: new AuthenticatedPageResolver(ChangePasswordPage, "passwordChange"),
   [Endpoints.SETUP]: new AuthenticatedPageResolver(SetupWizardPage, "setup"),
   [Endpoints.HOME]: new AuthenticatedPageResolver(HomePage),

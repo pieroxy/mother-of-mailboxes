@@ -9,6 +9,7 @@ import net.pieroxy.mom.services.SettingsService;
 import net.pieroxy.mom.services.WebServerService;
 import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
+import net.pieroxy.mom.utils.BuildInfo;
 import net.pieroxy.mom.utils.logging.LogRetention;
 import net.pieroxy.mom.utils.logging.LoggingBootstrap;
 import net.pieroxy.mom.detection.reputation.ReputationRegistry;
@@ -17,31 +18,13 @@ import net.pieroxy.mom.detection.reputation.ReputationRegistryHolder;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Runner {
   private final static Logger LOGGER = Logger.getLogger(Runner.class.getName());
-  private final static String GIT_REV;
-  private final static String MVN_VER;
   private static Configuration config;
   private static ServiceProvider serviceProvider;
   private static ReputationRegistry reputationRegistry;
-
-  static {
-    GIT_REV = readResourceFileAsString("GIT_REV");
-    MVN_VER = readResourceFileAsString("MVN_VER");
-  }
-
-  private static String readResourceFileAsString(String filename) {
-    try {
-      InputStream is = Runner.class.getClassLoader().getResourceAsStream(filename);
-      return new BufferedReader(new InputStreamReader(is)).lines().findFirst().get();
-    } catch (Exception e) {
-      LOGGER.log(Level.SEVERE, "Could not read " + filename, e);
-      return filename + "_" + Math.random();
-    }
-  }
 
   public static void main(String[] args) throws Exception {
     if (args.length < 1) {
@@ -80,7 +63,7 @@ public class Runner {
     serviceProvider.init();
 
     Runtime.getRuntime().addShutdownHook(new Thread(Runner::shutdown, "shutdown-hook"));
-    LOGGER.info("Started MOM (Mother Of Mailboxes) version " + MVN_VER + " rev " + GIT_REV);
+    LOGGER.info("Started MOM (Mother Of Mailboxes) version " + BuildInfo.VERSION + " rev " + BuildInfo.REVISION);
     // Console only: the temporary password must not end up in log.txt.
     if (firstStartMessage != null) System.out.println(firstStartMessage);
   }
