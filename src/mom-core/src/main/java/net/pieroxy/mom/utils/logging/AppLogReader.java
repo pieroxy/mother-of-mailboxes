@@ -31,7 +31,8 @@ import java.util.regex.Pattern;
  */
 public final class AppLogReader {
   public static final String CURRENT = "current";
-  private static final Pattern HEADER = Pattern.compile("^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (\\d{4}) +([A-Z]+) +(\\S+) ?(.*)$");
+  // The run ID: 4 base62 characters — older logs have 4 digits, which this still reads.
+  private static final Pattern HEADER = Pattern.compile("^(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) ([0-9A-Za-z]{4}) +([A-Z]+) +(\\S+) ?(.*)$");
   private static final Pattern ARCHIVE_INDEX = Pattern.compile("\\.(\\d+)\\.lz4$");
   /** Caps a single entry's continuation lines, against a runaway stack trace or dump. */
   private static final int MAX_DETAILS_CHARS = 50_000;

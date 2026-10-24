@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 public class OneLineLogFormatterTest {
 
   private static final Pattern LINE_PATTERN = Pattern.compile(
-      "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} (\\d{4}) ([A-Z ]{7}) (.{30}) (.*)\n$");
+      "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} ([0-9A-Za-z]{4}) ([A-Z ]{7}) (.{30}) (.*)\n$");
 
   @Test
   public void padsShortLevelAndSourceOnTheLeft() {

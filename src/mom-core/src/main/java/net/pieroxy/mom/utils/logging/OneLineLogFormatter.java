@@ -10,9 +10,9 @@ import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
 /**
- * Formats each log entry on a single line: timestamp, random instance ID (generated once at
- * process startup, to immediately spot in the logs if two instances are running at the same
- * time), level and origin (class/method) aligned to a fixed width (truncated from the left if
+ * Formats each log entry on a single line: timestamp, random instance ID (4 base62 characters,
+ * generated once at process startup, to immediately spot in the logs if two instances are running
+ * at the same time, and to tell one run from the next), level and origin (class/method) aligned to a fixed width (truncated from the left if
  * they overflow, to always keep the most significant part), then the message.
  */
 public final class OneLineLogFormatter extends Formatter {
@@ -20,7 +20,15 @@ public final class OneLineLogFormatter extends Formatter {
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
   private static final int LEVEL_WIDTH = 7;
   private static final int SOURCE_WIDTH = 30;
-  private static final String RUN_ID = String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
+  // Base62, not base64: letters and digits only, so the ID stays one word for grep and double-click.
+  private static final String BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  private static final String RUN_ID = randomRunId();
+
+  private static String randomRunId() {
+    StringBuilder id = new StringBuilder(4);
+    for (int i = 0; i < 4; i++) id.append(BASE62.charAt(ThreadLocalRandom.current().nextInt(BASE62.length())));
+    return id.toString();
+  }
 
   @Override
   public String format(LogRecord record) {

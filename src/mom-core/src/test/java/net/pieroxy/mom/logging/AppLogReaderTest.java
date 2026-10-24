@@ -43,6 +43,18 @@ public class AppLogReaderTest {
   }
 
   @Test
+  public void readsBase62RunIdsAndOldDigitOnes() throws IOException {
+    File file = logFile(line(1, "INFO", "old run")
+        + String.format("2026-10-16 10:00:02 a7Kq %7s %30s %s%n", "INFO", "net.pieroxy.Foo/bar", "new run"));
+
+    AppLogReader.Page page = AppLogReader.read(current(file), AppLogReader.Filter.NONE, null, 10);
+
+    assertEquals(List.of("new run", "old run"), messages(page));
+    assertEquals("a7Kq", page.entries().get(0).runId());
+    assertEquals("1234", page.entries().get(1).runId());
+  }
+
+  @Test
   public void parsesHeadersAndFoldsContinuationLinesIntoDetails() throws IOException {
     File file = logFile(line(1, "INFO", "started")
         + line(2, "SEVERE", "boom")
