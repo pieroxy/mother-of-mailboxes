@@ -1,6 +1,5 @@
 import m from "mithril";
 import {
-  ActionType,
   MailFilterRuleActionConfiguration,
   MailFilterRuleConfiguration,
   MailFilterRuleMatcherConfiguration,
@@ -10,11 +9,16 @@ import {
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
-import { renderActionNode } from "../RuleTree";
 import { defaultActionName } from "../../utils/actionNames";
-import { LogLevelSelect } from "../LogLevelSelect";
 import { AccountEditSession, PendingRule, accountEditSessions } from "../../utils/AccountEditSession";
 import { MatcherNodeEditor, defaultMatcherNode, finalizeMatcherNode, validateMatcherNode } from "../MatcherNodeEditor";
+import {
+  ActionNodeEditor,
+  FOLDER_DATALIST_ID,
+  defaultActionNode,
+  finalizeActionNode,
+  validateActionNode,
+} from "../ActionNodeEditor";
 
 interface RuleEditPageAttrs {
   accountName: string;
@@ -22,49 +26,11 @@ interface RuleEditPageAttrs {
   ruleIndex: string;
 }
 
-interface ActionTypeOption {
-  value: ActionType;
-  label: string;
-  needsKey: boolean;
-  /** What the key field means for this action — shown as its label, since "key" means something different per type (a folder vs. a log message). */
-  keyLabel?: string;
-  keyPlaceholder?: string;
-  /** The key is an existing (or not-yet-created) IMAP folder name — offered as an editable dropdown (a text input backed by a datalist of the account's real folders, see AccountFoldersApi) instead of plain free text. */
-  isFolderName?: boolean;
-  /** Sends mail through the account's SMTP settings; the key is the recipient address. */
-  sendsMail?: boolean;
-}
-
-// AND/OR excluded: editing a composite action isn't supported here yet (see COMPOSITE_ACTION_TYPES
-// below) — only matchers can be composites now, see MatcherNodeEditor.
-const ACTION_TYPE_OPTIONS: ActionTypeOption[] = [
-  { value: ActionType.MOVE_TO, label: "Move to folder", needsKey: true, keyLabel: "Destination folder", isFolderName: true },
-  { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read", needsKey: true, keyLabel: "Destination folder", isFolderName: true },
-  { value: ActionType.READ, label: "Mark as read", needsKey: false },
-  {
-    value: ActionType.NOOP, label: "Do nothing (log only)", needsKey: true,
-    keyLabel: "Log message", keyPlaceholder: "What to log when this rule matches",
-  },
-  {
-    value: ActionType.FORWARD, label: "Forward (as attachment)", needsKey: true,
-    keyLabel: "Recipient address", keyPlaceholder: "someone@example.com", sendsMail: true,
-  },
-  {
-    value: ActionType.REDIRECT, label: "Redirect (resend unchanged)", needsKey: true,
-    keyLabel: "Recipient address", keyPlaceholder: "someone@example.com", sendsMail: true,
-  },
-];
-
-const FOLDER_DATALIST_ID = "destination-folder-options";
-
-const COMPOSITE_ACTION_TYPES: Set<string> = new Set([ActionType.AND, ActionType.OR]);
-
 /**
  * Creates or edits one rule — reused for both, per its own route: "new" appends a rule to the
  * account's list, an index edits the rule already there. The matcher side ("When") is a fully
- * editable tree, including AND/OR/NOT composites — see MatcherNodeEditor. The action side
- * ("Then") is still leaf-only; a rule whose action is a composite (AND/OR) shows read-only (see
- * RuleTree) and OK leaves that side untouched, except for its name and spam flag. Nothing is sent to the backend here: "OK" just
+ * editable tree, including AND/OR/NOT composites — see MatcherNodeEditor — and so is the action
+ * side ("Then"), including AND/OR composites — see ActionNodeEditor. Nothing is sent to the backend here: "OK" just
  * writes the edited rule into the account's AccountEditSession and returns to the settings page,
  * where it shows tagged "New"/"Edited" until "Save Changes" persists the whole batch in one call
  * (see AccountSettingsPage/UpdateAccountApi).
@@ -81,13 +47,10 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
   private matcherRoot: MailFilterRuleMatcherConfiguration = defaultMatcherNode();
   private reputationLists: ReputationListDto[] = [];
 
-  private actionType: ActionType = ActionType.MOVE_TO;
-  private actionKey = "";
-  private actionIsComposite = false;
+  /** The action tree, without the rule-level name and spam flag (actionName/actionSpam), which only live on its root. */
+  private actionRoot: MailFilterRuleActionConfiguration = defaultActionNode();
   private actionName = "";
   private actionSpam = false;
-  private actionLogLevel: string | undefined;
-  private originalAction: MailFilterRuleActionConfiguration | undefined;
   private accountFolders: string[] = [];
 
   private loading = true;
@@ -139,7 +102,14 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
         reputationLists: this.reputationLists,
       }),
       m("h2", "Then"),
-      this.actionIsComposite ? this.renderCompositeActionNotice() : this.renderActionFields(),
+      m(ActionNodeEditor, {
+        node: this.actionRoot,
+        onChange: (updated) => (this.actionRoot = updated),
+        hasSmtp: !!this.session?.workingSmtp,
+      }),
+      // One for every folder field of the tree: an "editable dropdown" of the account's real
+      // folders (see AccountFoldersApi) — still free text, so a new name just creates a folder.
+      m("datalist#" + FOLDER_DATALIST_ID, this.accountFolders.map((folder) => m("option", { key: folder, value: folder }))),
       this.renderActionLabelFields(),
       this.renderActions(),
     ]);
@@ -171,35 +141,11 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     ]);
   }
 
-  private renderCompositeActionNotice(): m.Children {
-    return m(".composite-notice", [
-      m("p", "This rule's action is a composite (AND/OR) — editing composite actions isn't supported here yet, so it's shown as-is and OK leaves it untouched."),
-      m("ul.tree-root", renderActionNode(this.originalAction!)),
-    ]);
-  }
-
-  private renderActionFields(): m.Children {
-    const option = ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType)!;
-    return [
-      this.field("Action", m("select", {
-        value: this.actionType,
-        onchange: (e: Event) => (this.actionType = (e.target as HTMLSelectElement).value as ActionType),
-      }, ACTION_TYPE_OPTIONS.map((o) => m("option", { value: o.value }, o.label)))),
-      option.needsKey ? this.field(option.keyLabel || "Value", option.isFolderName ? this.renderFolderField() : m("input", {
-        type: option.sendsMail ? "email" : "text", value: this.actionKey, placeholder: option.keyPlaceholder,
-        oninput: (e: Event) => (this.actionKey = (e.target as HTMLInputElement).value),
-      })) : null,
-      option.sendsMail && !this.session?.workingSmtp
-        ? m("p.field-hint", "This account has no SMTP settings yet: add them on the settings page before saving this rule.")
-        : null,
-    ];
-  }
-
-  /** How the decision log shows this action (see MailFilterRuleActionConfiguration#name/spam), and its own log level. */
+  /** How the decision log shows this action (see MailFilterRuleActionConfiguration#name/spam). */
   private renderActionLabelFields(): m.Children {
     return [
       this.field("Action name", m("input", {
-        type: "text", value: this.actionName, placeholder: defaultActionName(this.buildActionWithoutLabel()),
+        type: "text", value: this.actionName, placeholder: defaultActionName(this.actionRoot),
         title: "Shown in the decision log; leave empty for the generated name",
         oninput: (e: Event) => (this.actionName = (e.target as HTMLInputElement).value),
       })),
@@ -210,21 +156,6 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
         }),
         "This action filters spam (display only: highlights it in the decision log)",
       ])),
-      this.field("Log level", m(LogLevelSelect, {
-        value: this.actionLogLevel,
-        onChange: (logLevel) => (this.actionLogLevel = logLevel),
-      })),
-    ];
-  }
-
-  /** A text input backed by a datalist (an "editable dropdown"): pick an existing folder from the account's real IMAP tree, or type one that doesn't exist yet — either way it's still free text underneath, so a typo just becomes a new folder name rather than a validation error. */
-  private renderFolderField(): m.Children {
-    return [
-      m("input", {
-        type: "text", value: this.actionKey, list: FOLDER_DATALIST_ID, placeholder: "Folder name",
-        oninput: (e: Event) => (this.actionKey = (e.target as HTMLInputElement).value),
-      }),
-      m("datalist#" + FOLDER_DATALIST_ID, this.accountFolders.map((folder) => m("option", { key: folder, value: folder }))),
     ];
   }
 
@@ -286,35 +217,19 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
 
     this.matcherRoot = rule.matcher;
 
-    const action = rule.action;
-    this.originalAction = action;
+    const action = { ...rule.action } as Partial<MailFilterRuleActionConfiguration>;
     this.actionName = action.name || "";
     this.actionSpam = action.spam === true;
-    this.actionLogLevel = action.logLevel || undefined;
-    this.actionIsComposite = COMPOSITE_ACTION_TYPES.has(action.type);
-    if (!this.actionIsComposite) {
-      this.actionType = action.type;
-      this.actionKey = action.key || "";
-    }
+    delete action.name;
+    delete action.spam;
+    this.actionRoot = action as MailFilterRuleActionConfiguration;
   }
 
   private buildAction(): MailFilterRuleActionConfiguration {
-    const action = this.buildActionWithoutLabel();
+    const action = finalizeActionNode(this.actionRoot);
     // Unset rather than empty/false, so config.json stays free of default values.
-    delete (action as Partial<MailFilterRuleActionConfiguration>).name;
-    delete (action as Partial<MailFilterRuleActionConfiguration>).spam;
-    delete (action as Partial<MailFilterRuleActionConfiguration>).logLevel;
     if (this.actionName.trim()) action.name = this.actionName.trim();
     if (this.actionSpam) action.spam = true;
-    if (this.actionLogLevel) action.logLevel = this.actionLogLevel;
-    return action;
-  }
-
-  private buildActionWithoutLabel(): MailFilterRuleActionConfiguration {
-    if (this.actionIsComposite && this.originalAction) return { ...this.originalAction };
-    const option = ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType)!;
-    const action = { type: this.actionType } as MailFilterRuleActionConfiguration;
-    if (option.needsKey) action.key = this.actionKey.trim();
     return action;
   }
 
@@ -331,17 +246,7 @@ export class RuleEditPage extends AbstractPage<RuleEditPageAttrs> {
     const matcherError = validateMatcherNode(this.matcherRoot);
     if (matcherError) return matcherError;
 
-    if (!this.actionIsComposite) {
-      const option = ACTION_TYPE_OPTIONS.find((o) => o.value === this.actionType)!;
-      if (option.needsKey && this.actionKey.trim().length === 0) {
-        return "The action needs a " + (option.keyLabel || "value").toLowerCase() + ".";
-      }
-      if (option.sendsMail) {
-        if (!/^[^@\s,]+@[^@\s,]+$/.test(this.actionKey.trim())) return "The recipient must be a single valid email address.";
-        if (!this.session!.workingSmtp) return "Set up this account's SMTP settings first: this action sends mail through them.";
-      }
-    }
-    return undefined;
+    return validateActionNode(this.actionRoot, !!this.session!.workingSmtp);
   }
 
   private apply() {

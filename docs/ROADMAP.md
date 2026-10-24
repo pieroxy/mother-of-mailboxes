@@ -1,6 +1,5 @@
 # Roadmap
 
-* Ability to edit complex actions in the UI
 * More matchers:
   * Recipient-based: TO_EQUALS/CC_EQUALS/recipient-domain matching
   * Subject: CONTAINS, MATCHES (regex)
