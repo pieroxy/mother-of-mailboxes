@@ -26,7 +26,7 @@ export class Footer implements m.ClassComponent {
         .catch(() => undefined);
     }
     return m("footer.app-footer", [
-      loggedIn && version ? m("span", { title: "Revision " + version.revision }, "MOM " + version.version) : null,
+      loggedIn && version ? m("span", "MOM " + version.version + " (" + version.revision + ")") : null,
       m("a", { href: SOURCE_URL, target: "_blank", rel: "noopener" }, "Source on GitHub"),
       m("a", { onclick: () => Routing.goToScreen(Endpoints.CREDITS) }, "Credits"),
     ]);
