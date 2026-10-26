@@ -33,6 +33,7 @@ public class LoginApiTest {
   private static ApiContext from(String remoteAddr) {
     return new ApiContext() {
       @Override public String getRemoteAddr() { return remoteAddr; }
+      @Override public String getUserAgent() { return "test-agent"; }
       @Override public String getSessionId() { return null; }
       @Override public void setSessionCookie(String id, boolean secure) { }
       @Override public void clearSessionCookie(boolean secure) { throw new UnsupportedOperationException(); }

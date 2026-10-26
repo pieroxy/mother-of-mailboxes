@@ -65,6 +65,7 @@ public class AbstractAuthenticatedEndpointTest {
   private static ApiContext contextWith(String sessionId) {
     return new ApiContext() {
       @Override public String getRemoteAddr() { return "127.0.0.1"; }
+      @Override public String getUserAgent() { return "test-agent"; }
       @Override public String getSessionId() { return sessionId; }
       @Override public void setSessionCookie(String id, boolean secure) { throw new UnsupportedOperationException(); }
       @Override public void clearSessionCookie(boolean secure) { throw new UnsupportedOperationException(); }
@@ -110,7 +111,7 @@ public class AbstractAuthenticatedEndpointTest {
   @Test
   public void callsProcessAuthenticatedWhenTheSessionIsValid() throws Exception {
     SessionService sessionService = new SessionService();
-    String sessionId = sessionService.create();
+    String sessionId = sessionService.create("127.0.0.1", "test-agent");
     StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(sessionService));
 
     assertEquals("ok", endpoint.process(new StubInput(), contextWith(sessionId)));
@@ -153,7 +154,7 @@ public class AbstractAuthenticatedEndpointTest {
     StubEndpoint endpoint = new StubEndpoint(serviceProviderWith(sessionService, settingsServiceWithWebPassword(true)));
 
     try {
-      endpoint.process(new StubInput(), contextWith(sessionService.create()));
+      endpoint.process(new StubInput(), contextWith(sessionService.create("127.0.0.1", "test-agent")));
       fail("expected PasswordChangeRequiredException");
     } catch (PasswordChangeRequiredException expected) {
       // expected
@@ -169,6 +170,6 @@ public class AbstractAuthenticatedEndpointTest {
     StubPasswordChangeEndpoint endpoint =
         new StubPasswordChangeEndpoint(serviceProviderWith(sessionService, settingsServiceWithWebPassword(true)));
 
-    assertEquals("ok", endpoint.process(new StubInput(), contextWith(sessionService.create())));
+    assertEquals("ok", endpoint.process(new StubInput(), contextWith(sessionService.create("127.0.0.1", "test-agent"))));
   }
 }

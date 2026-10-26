@@ -113,6 +113,11 @@ status), one day at a time. See [Logs and data files](logs.md).
 
 Change the web UI password, or log out.
 
+The open sessions are listed with when they started, the address of their last request (the
+login's, if different, on hover), how many API calls they made, how long ago the last one was,
+and the browser's User-Agent. Any session but the current one can be revoked, one by one or all
+at once. Sessions live in memory: restarting MOM logs everyone out.
+
 After 5 failed logins within 5 minutes, an address is refused for a few minutes, even with the
 right password. An address asking for 4 pages that don't exist within 10 seconds, without being
 logged in, is banned from the web UI for 15 minutes: that's how scanners probing for known paths

@@ -26,6 +26,11 @@ public class ServletApiContext implements ApiContext {
   }
 
   @Override
+  public String getUserAgent() {
+    return req.getHeader("User-Agent");
+  }
+
+  @Override
   public String getSessionId() {
     Cookie[] cookies = req.getCookies();
     if (cookies == null) return null;

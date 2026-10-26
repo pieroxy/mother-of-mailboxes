@@ -5,6 +5,9 @@ public interface ApiContext {
   /** The client's address: the real one behind a trusted proxy (see {@code AccessValve}). */
   String getRemoteAddr();
 
+  /** @return the User-Agent header, or null if the request carries none. */
+  String getUserAgent();
+
   /** @return the session cookie's value, or null if the request carries none. */
   String getSessionId();
 

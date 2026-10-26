@@ -24,6 +24,7 @@ public abstract class AbstractAuthenticatedEndpoint<I extends AuthenticatedApiIn
     if (!serviceProvider.getSessionService().isValid(sessionId)) {
       throw new NotAuthenticatedException("Session expired.");
     }
+    serviceProvider.getSessionService().recordRequest(sessionId, context.getRemoteAddr(), context.getUserAgent());
     if (!allowedWithTemporaryPassword() && serviceProvider.getSettingsService().isWebServerPasswordTemporary()) {
       throw new PasswordChangeRequiredException();
     }

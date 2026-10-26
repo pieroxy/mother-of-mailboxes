@@ -50,7 +50,7 @@ public class LoginApi extends AbstractApiEndpoint<LoginApiInput, LoginApiOutput>
       return new LoginApiOutput(false, false);
     }
     guard.loginSucceeded(client);
-    context.setSessionCookie(serviceProvider.getSessionService().create(), serviceProvider.getSettingsService().isSessionCookieSecure());
+    context.setSessionCookie(serviceProvider.getSessionService().create(client, context.getUserAgent()), serviceProvider.getSettingsService().isSessionCookieSecure());
     LoginApiOutput output = new LoginApiOutput(true, expected.isTemporary());
     output.setSetupInProgress(serviceProvider.getSettingsService().isSetupInProgress());
     return output;
