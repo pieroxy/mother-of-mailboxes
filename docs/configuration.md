@@ -211,8 +211,9 @@ address.
 Requests answered "404 Not Found" without a valid session are counted the same way, typically from
 a scanner probing for known paths: after 4 within 10 seconds, the address is banned from the whole
 web server (HTTP 429, with `Retry-After`) for 15 minutes, and the ban is logged at `WARNING`.
-`/favicon.ico`, `/apple-touch-icon.png` and `/apple-touch-icon-precomposed.png`, which browsers
-request on their own, don't count. Neither do the addresses in `trustedProxies`: a proxy as the
+`/favicon.ico`, `/apple-touch-icon.png`, `/apple-touch-icon-precomposed.png` and `/robots.txt`,
+which browsers and crawlers request on their own, don't count. Neither do `/bundle-*.js` and
+`/bundle-*.css`, which a page loaded before an upgrade still asks for. Neither do the addresses in `trustedProxies`: a proxy as the
 client means its `X-Forwarded-For` header was missing.
 
 

@@ -32,8 +32,16 @@ public class ClientGuardServiceTest {
       for (String path : ClientGuardService.IGNORED_NOT_FOUND_PATHS) {
         assertFalse(guard.notFound(VISITOR, path));
       }
+      assertFalse(guard.notFound(VISITOR, "/bundle-4d2a47.js"));
+      assertFalse(guard.notFound(VISITOR, "/bundle-4d2a47.css"));
     }
     guard.checkBanned(VISITOR);
+  }
+
+  @Test
+  public void bundlePatternOnlyMatchesRootBundles() {
+    assertFalse(ClientGuardService.IGNORED_NOT_FOUND_PATTERN.matcher("/x/bundle-4d2a47.js").matches());
+    assertFalse(ClientGuardService.IGNORED_NOT_FOUND_PATTERN.matcher("/bundle-4d2a47.php").matches());
   }
 
   @Test
