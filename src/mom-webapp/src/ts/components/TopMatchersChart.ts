@@ -15,6 +15,7 @@ interface TopMatchersChartAttrs {
 }
 
 type Mode = "all" | "blocking";
+const COLLAPSED_LIMIT = 8;
 type Grouping = "detailed" | "byType";
 
 /**
@@ -30,12 +31,15 @@ type Grouping = "detailed" | "byType";
 export class TopMatchersChart implements m.ClassComponent<TopMatchersChartAttrs> {
   private mode: Mode = "all";
   private grouping: Grouping = "detailed";
+  private showAll = false;
 
   view({ attrs }: m.Vnode<TopMatchersChartAttrs>): m.Children {
     const byMode = this.mode === "all"
       ? (this.grouping === "detailed" ? attrs.allMatchers : attrs.allMatchersByType)
       : (this.grouping === "detailed" ? attrs.blockingMatchers : attrs.blockingMatchersByType);
-    const maxCount = byMode.length > 0 ? Math.max(...byMode.map((entry) => entry.count)) : 0;
+    // Sorted most-fired first, so the first entry is the max and truncating keeps the top ones.
+    const maxCount = byMode.length > 0 ? byMode[0].count : 0;
+    const shown = this.showAll ? byMode : byMode.slice(0, COLLAPSED_LIMIT);
 
     return m(".top-matchers-container", [
       m(".matcher-mode-switch", [
@@ -54,7 +58,7 @@ export class TopMatchersChart implements m.ClassComponent<TopMatchersChartAttrs>
         ? m(".top-matchers.top-matchers-empty", this.mode === "all"
             ? "No matcher fired in this range."
             : "No matcher ended processing in this range.")
-        : m(".top-matchers", byMode.map((entry) => m(".matcher-row", { key: entry.matcher }, [
+        : m(".top-matchers", shown.map((entry) => m(".matcher-row", { key: entry.matcher }, [
             m("a.matcher-label", {
               title: "Show messages matched by " + entry.matcher + " in the decision log",
               onclick: () => attrs.onSelect(entry.matcher, this.grouping === "byType", this.mode === "blocking"),
@@ -62,6 +66,10 @@ export class TopMatchersChart implements m.ClassComponent<TopMatchersChartAttrs>
             m(".matcher-bar-track", m(".matcher-bar-fill", { style: { width: (entry.count / maxCount) * 100 + "%" } })),
             m(".matcher-count", entry.count),
           ]))),
+      byMode.length > COLLAPSED_LIMIT
+        ? m("button.stats-table-toggle", { onclick: () => (this.showAll = !this.showAll) },
+            this.showAll ? "Show less" : "Show all " + byMode.length + " matchers")
+        : null,
     ]);
   }
 }

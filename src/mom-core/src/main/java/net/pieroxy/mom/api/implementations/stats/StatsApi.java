@@ -22,7 +22,6 @@ public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, Stats
   // Generous for any real use (over a year), tight enough that a malformed request can't trigger
   // scanning thousands of day files.
   private final static int MAX_RANGE_DAYS = 400;
-  private final static int TOP_MATCHERS_LIMIT = 8;
 
   public StatsApi(IServiceProvider serviceProvider) {
     super(serviceProvider);
@@ -50,18 +49,17 @@ public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, Stats
         .map(d -> new DailyStatsDto(d.date().toString(), d.messagesProcessed(), d.messagesMatched(), d.avgProcessingMs()))
         .collect(Collectors.toList());
 
-    List<MatcherCountDto> topMatchers = topN(range.matcherCounts());
-    List<MatcherCountDto> topBlockingMatchers = topN(range.blockingMatcherCounts());
-    List<MatcherCountDto> topMatchersByType = topN(byType(range.matcherCounts()));
-    List<MatcherCountDto> topBlockingMatchersByType = topN(byType(range.blockingMatcherCounts()));
+    List<MatcherCountDto> topMatchers = ranked(range.matcherCounts());
+    List<MatcherCountDto> topBlockingMatchers = ranked(range.blockingMatcherCounts());
+    List<MatcherCountDto> topMatchersByType = ranked(byType(range.matcherCounts()));
+    List<MatcherCountDto> topBlockingMatchersByType = ranked(byType(range.blockingMatcherCounts()));
 
     return new StatsApiOutput(days, topMatchers, topBlockingMatchers, topMatchersByType, topBlockingMatchersByType);
   }
 
-  private static List<MatcherCountDto> topN(Map<String, Long> counts) {
+  private static List<MatcherCountDto> ranked(Map<String, Long> counts) {
     return counts.entrySet().stream()
         .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-        .limit(TOP_MATCHERS_LIMIT)
         .map(e -> new MatcherCountDto(e.getKey(), e.getValue()))
         .collect(Collectors.toList());
   }
@@ -69,7 +67,7 @@ public class StatsApi extends AbstractAuthenticatedEndpoint<StatsApiInput, Stats
   /**
    * Re-aggregates {@code counts} by matcher type alone, merging every distinct-by-detail entry
    * (e.g. one {@code FromAddressMatcher} per sender address it ever matched) back into one. Must
-   * run on the *full* counts map before {@link #topN}, not after: truncating to the top few
+   * run on the *full* counts map, not on a truncated top list: truncating to the top few
    * detailed entries first and only then stripping their names would miss however many other
    * addresses/domains/etc. of the same type fired but individually didn't rank. Package-visible
    * for testing.
@@ -119,7 +117,7 @@ class StatsApiInput extends AuthenticatedApiInput {
 @TypeScriptType
 class StatsApiOutput {
   private List<DailyStatsDto> days;
-  /** Every matcher that fired at least once in the range, most-fired first, capped at {@link StatsApi#TOP_MATCHERS_LIMIT}. */
+  /** Every matcher that fired at least once in the range, most-fired first, uncapped (the UI truncates). */
   private List<MatcherCountDto> topMatchers;
   /** Of those, only the ones that actually ended processing for a message at least once (see {@code StatsReader#StatsRange}). */
   private List<MatcherCountDto> topBlockingMatchers;
