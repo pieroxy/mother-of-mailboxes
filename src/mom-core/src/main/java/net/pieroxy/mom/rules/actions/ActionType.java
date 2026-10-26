@@ -8,6 +8,7 @@ import net.pieroxy.mom.rules.actions.implementations.MoveToAction;
 import net.pieroxy.mom.rules.actions.implementations.NoopAction;
 import net.pieroxy.mom.rules.actions.implementations.OrAction;
 import net.pieroxy.mom.rules.actions.implementations.ReadAction;
+import net.pieroxy.mom.rules.actions.implementations.ReplyAction;
 
 import java.util.Arrays;
 import java.util.List;
@@ -50,7 +51,9 @@ public enum ActionType {
   // Not learnable: the recipient has to be configured, and sending mail isn't something to set up
   // by dropping an example message in a folder.
   FORWARD(() -> new ForwardAction(false), false),
-  REDIRECT(() -> new ForwardAction(true), false);
+  REDIRECT(() -> new ForwardAction(true), false),
+  // Not learnable, same reasoning as FORWARD: the reply's text has to be written.
+  REPLY(ReplyAction::new, false);
 
   private final ActionProvider provider;
   private final boolean learnable;

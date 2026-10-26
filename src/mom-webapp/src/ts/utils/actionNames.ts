@@ -10,6 +10,7 @@ export function defaultActionName(action: MailFilterRuleActionConfiguration): st
     case ActionType.NOOP: return "No action";
     case ActionType.FORWARD: return "Forward to " + key;
     case ActionType.REDIRECT: return "Redirect to " + key;
+    case ActionType.REPLY: return key && key.trim() ? "Reply: " + key.trim() : "Reply";
     case ActionType.AND: return (action.children || []).map(defaultActionName).join(" + ") || "?";
     case ActionType.OR: return (action.children || []).map(defaultActionName).join(" / ") || "?";
     default: return "?";

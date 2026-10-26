@@ -48,6 +48,7 @@ the message, since a sender can forge those.
 | [`NOOP`](actions/noop.md) | Does nothing, always succeeds — for observing a match without acting on it, or allow-listing (it still stops evaluation). |
 | [`FORWARD`](actions/forward.md) | Forward the message, as an attachment, through the account's SMTP settings. |
 | [`REDIRECT`](actions/redirect.md) | Re-send the message unchanged through the account's SMTP settings. |
+| [`REPLY`](actions/reply.md) | Reply to the sender with a fixed text, through the account's SMTP settings. |
 
 Every matcher and action config accepts an optional `logLevel` field (`"DEBUG"`, `"INFO"`,
 `"WARNING"`, or `"ERROR"`; default `"INFO"`) controlling **only that node's own** log verbosity

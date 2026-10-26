@@ -22,6 +22,8 @@ public class ActionNamesTest {
     assertEquals("Mark read", ActionNames.nameOf(action(ActionType.READ, null)));
     assertEquals("No action", ActionNames.nameOf(action(ActionType.NOOP, "log this")));
     assertEquals("Forward to a@b.c", ActionNames.nameOf(action(ActionType.FORWARD, "a@b.c")));
+    assertEquals("Reply", ActionNames.nameOf(action(ActionType.REPLY, null)));
+    assertEquals("Reply: Away", ActionNames.nameOf(action(ActionType.REPLY, " Away ")));
   }
 
   @Test

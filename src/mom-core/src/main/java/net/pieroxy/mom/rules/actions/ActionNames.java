@@ -25,6 +25,7 @@ public final class ActionNames {
       case NOOP -> "No action";
       case FORWARD -> "Forward to " + key;
       case REDIRECT -> "Redirect to " + key;
+      case REPLY -> key != null && !key.isBlank() ? "Reply: " + key.trim() : "Reply";
       case AND -> joinChildren(action.getChildren(), " + ");
       case OR -> joinChildren(action.getChildren(), " / ");
     };

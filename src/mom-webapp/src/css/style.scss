@@ -213,10 +213,15 @@ body {
                   letter-spacing: 0.03em;
               }
 
-              input[type="text"], input[type="number"], input[type="password"] {
+              input[type="text"], input[type="number"], input[type="password"], textarea {
                   width: 100%;
                   box-sizing: border-box;
                   font-size: 14px;
+              }
+
+              textarea {
+                  font-family: inherit;
+                  resize: vertical;
               }
 
               .field-hint {
@@ -2283,7 +2288,7 @@ svg.icon {
 }
 
 
-input, select {
+input, select, textarea {
     padding: 5px;
     background-color: $input-bg;
     font-size: 18px;

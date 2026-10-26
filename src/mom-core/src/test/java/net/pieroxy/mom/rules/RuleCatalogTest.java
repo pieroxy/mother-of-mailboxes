@@ -175,4 +175,28 @@ public class RuleCatalogTest {
 
     RuleCatalog.validateSendingActions(List.of(rule), true);
   }
+
+  private static MailFilterRuleConfiguration replyRule(String body) {
+    MailFilterRuleConfiguration rule = rule("example.com");
+    MailFilterRuleActionConfiguration action = new MailFilterRuleActionConfiguration();
+    action.setType(ActionType.REPLY);
+    action.setBody(body);
+    rule.setAction(action);
+    return rule;
+  }
+
+  @Test
+  public void replyPassesWithSmtpAndABody() {
+    RuleCatalog.validateSendingActions(List.of(replyRule("Away.")), true);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void replyNeedsSmtp() {
+    RuleCatalog.validateSendingActions(List.of(replyRule("Away.")), false);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void replyNeedsABody() {
+    RuleCatalog.validateSendingActions(List.of(replyRule(" ")), true);
+  }
 }

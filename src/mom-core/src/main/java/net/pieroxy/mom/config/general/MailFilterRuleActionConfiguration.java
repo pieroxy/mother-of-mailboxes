@@ -10,6 +10,8 @@ import java.util.List;
 public class MailFilterRuleActionConfiguration {
   private ActionType type;
   private String key;
+  /** Only for REPLY: the reply's plain-text body. */
+  private String body;
   /**
    * Only set for composite actions (AND / OR).
    */
@@ -43,6 +45,14 @@ public class MailFilterRuleActionConfiguration {
 
   public void setKey(String key) {
     this.key = key;
+  }
+
+  public String getBody() {
+    return body;
+  }
+
+  public void setBody(String body) {
+    this.body = body;
   }
 
   public List<MailFilterRuleActionConfiguration> getChildren() {

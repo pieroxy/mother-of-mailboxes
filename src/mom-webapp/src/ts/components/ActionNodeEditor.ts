@@ -3,7 +3,7 @@ import { ActionType, MailFilterRuleActionConfiguration } from "../auto/pieroxy-m
 import { AddCard } from "./AddCard";
 import { LogLevelSelect } from "./LogLevelSelect";
 
-type ActionKeyKind = "folder" | "recipient" | "text";
+type ActionKeyKind = "folder" | "recipient" | "text" | "subject";
 
 interface LeafActionTypeOption {
   value: ActionType;
@@ -13,6 +13,12 @@ interface LeafActionTypeOption {
   /** What the key field means for this action — shown as its label, since "key" means something different per type. */
   keyLabel?: string;
   keyPlaceholder?: string;
+  /** The key may be left blank. */
+  keyOptional?: boolean;
+  /** Takes a multi-line body as well (see MailFilterRuleActionConfiguration#body). */
+  hasBody?: boolean;
+  /** Sends mail, so needs the account's SMTP settings. */
+  sends?: boolean;
 }
 
 const LEAF_ACTION_TYPE_OPTIONS: LeafActionTypeOption[] = [
@@ -20,8 +26,10 @@ const LEAF_ACTION_TYPE_OPTIONS: LeafActionTypeOption[] = [
   { value: ActionType.MOVE_TO_AND_READ, label: "Move to folder and mark as read", keyKind: "folder", keyLabel: "Destination folder", keyPlaceholder: "Folder name" },
   { value: ActionType.READ, label: "Mark as read" },
   { value: ActionType.NOOP, label: "Do nothing (log only)", keyKind: "text", keyLabel: "Log message", keyPlaceholder: "What to log when this rule matches" },
-  { value: ActionType.FORWARD, label: "Forward (as attachment)", keyKind: "recipient", keyLabel: "Recipient address", keyPlaceholder: "someone@example.com" },
-  { value: ActionType.REDIRECT, label: "Redirect (resend unchanged)", keyKind: "recipient", keyLabel: "Recipient address", keyPlaceholder: "someone@example.com" },
+  { value: ActionType.FORWARD, label: "Forward (as attachment)", keyKind: "recipient", keyLabel: "Recipient address", keyPlaceholder: "someone@example.com", sends: true },
+  { value: ActionType.REDIRECT, label: "Redirect (resend unchanged)", keyKind: "recipient", keyLabel: "Recipient address", keyPlaceholder: "someone@example.com", sends: true },
+  { value: ActionType.REPLY, label: "Reply to the sender", keyKind: "subject", keyLabel: "Subject", keyPlaceholder: "Blank: \"Re: \" + the original subject",
+    keyOptional: true, hasBody: true, sends: true },
 ];
 
 /** The id of the folder datalist the page renders once, which every folder field points to. */
@@ -45,7 +53,7 @@ export function defaultActionNode(): MailFilterRuleActionConfiguration {
  * same idea as convertMatcherNode:
  *  - leaf -> AND/OR: the leaf becomes action #1, a fresh empty leaf becomes #2.
  *  - AND <-> OR: same children, just retagged.
- *  - leaf -> a leaf with the same kind of key (folder, recipient…): keeps the typed value.
+ *  - leaf -> a leaf with the same kind of key (folder, recipient…): keeps the typed value, and the body.
  *  - anything else: starts fresh.
  */
 export function convertActionNode(previous: MailFilterRuleActionConfiguration, newType: ActionType): MailFilterRuleActionConfiguration {
@@ -61,6 +69,7 @@ export function convertActionNode(previous: MailFilterRuleActionConfiguration, n
     converted = prev?.keyKind && prev.keyKind === next?.keyKind
       ? { type: newType, key: previous.key } as MailFilterRuleActionConfiguration
       : { type: newType } as MailFilterRuleActionConfiguration;
+    if (prev?.hasBody && next?.hasBody && previous.body !== undefined) converted.body = previous.body;
   }
   // The log level belongs to the node, whatever its type — unless the node was wrapped as a child, which keeps its own.
   const wrapped = (converted.children || []).includes(previous);
@@ -82,24 +91,28 @@ export function validateActionNode(node: MailFilterRuleActionConfiguration, hasS
   const option = leafOption(node.type);
   if (!option) return "Unknown action type " + node.type + ".";
   const key = (node.key || "").trim();
-  if (option.keyKind && key.length === 0) return "The action needs a " + (option.keyLabel || "value").toLowerCase() + ".";
-  if (option.keyKind === "recipient") {
-    if (!/^[^@\s,]+@[^@\s,]+$/.test(key)) return "The recipient must be a single valid email address.";
-    if (!hasSmtp) return "Set up this account's SMTP settings first: forwarding sends mail through them.";
-  }
+  if (option.keyKind && !option.keyOptional && key.length === 0) return "The action needs a " + (option.keyLabel || "value").toLowerCase() + ".";
+  if (option.keyKind === "recipient" && !/^[^@\s,]+@[^@\s,]+$/.test(key)) return "The recipient must be a single valid email address.";
+  if (option.hasBody && !(node.body || "").trim()) return "The reply needs a text.";
+  if (option.sends && !hasSmtp) return "Set up this account's SMTP settings first: this action sends mail through them.";
   return undefined;
 }
 
 /**
- * The tree as it's saved: trimmed keys, no field a node's type doesn't use (except logLevel).
+ * The tree as it's saved: trimmed keys (blank optional ones dropped), no field a node's type doesn't use (except logLevel).
  * The rule-level name and spam flag aren't part of the tree: the page sets them on the root.
  */
 export function finalizeActionNode(node: MailFilterRuleActionConfiguration): MailFilterRuleActionConfiguration {
-  const finalized = isComposite(node.type)
-    ? { type: node.type, children: (node.children || []).map(finalizeActionNode) } as MailFilterRuleActionConfiguration
-    : leafOption(node.type)?.keyKind
-      ? { type: node.type, key: (node.key || "").trim() } as MailFilterRuleActionConfiguration
-      : { type: node.type } as MailFilterRuleActionConfiguration;
+  if (isComposite(node.type)) {
+    const composite = { type: node.type, children: (node.children || []).map(finalizeActionNode) } as MailFilterRuleActionConfiguration;
+    if (node.logLevel) composite.logLevel = node.logLevel;
+    return composite;
+  }
+  const option = leafOption(node.type);
+  const finalized = { type: node.type } as MailFilterRuleActionConfiguration;
+  const key = (node.key || "").trim();
+  if (option?.keyKind && (key || !option.keyOptional)) finalized.key = key;
+  if (option?.hasBody) finalized.body = node.body || "";
   if (node.logLevel) finalized.logLevel = node.logLevel;
   return finalized;
 }
@@ -187,7 +200,17 @@ export class ActionNodeEditor implements m.ClassComponent<ActionNodeEditorAttrs>
           oninput: (e: Event) => onChange({ ...node, key: (e.target as HTMLInputElement).value } as MailFilterRuleActionConfiguration),
         }),
       ]),
-      option.keyKind === "recipient" && !hasSmtp
+      option.hasBody ? m(".edit-field", [
+        m("label", "Text"),
+        m("textarea", {
+          rows: 6,
+          value: node.body || "",
+          placeholder: "Plain text",
+          oninput: (e: Event) => onChange({ ...node, body: (e.target as HTMLTextAreaElement).value } as MailFilterRuleActionConfiguration),
+        }),
+        m("p.field-hint", "Never sent to automated messages, mailing lists, bounces, no-reply addresses or this account's own messages."),
+      ]) : null,
+      option.sends && !hasSmtp
         ? m("p.field-hint", "This account has no SMTP settings yet: add them on the settings page before saving this rule.")
         : null,
     ]);
