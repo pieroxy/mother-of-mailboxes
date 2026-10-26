@@ -58,7 +58,8 @@ Connections are always made over IMAPS (implicit TLS) — there is no plain-IMAP
   "host": "smtp.example.com",
   "port": 587,
   "security": "STARTTLS",
-  "fromAddress": "me@example.com"
+  "fromAddress": "me@example.com",
+  "aliases": ["contact@example.com", "@example.org"]
 }
 ```
 
@@ -68,6 +69,7 @@ Connections are always made over IMAPS (implicit TLS) — there is no plain-IMAP
 | `port` | yes | SMTP server port. |
 | `security` | yes | `TLS` (encrypted from the start, usually port 465) or `STARTTLS` (upgraded before logging in, usually port 587; refused if the server doesn't offer it). There is no plain-SMTP option. |
 | `fromAddress` | yes | Sender address of the mail MOM sends for this account. |
+| `aliases` | no | The account's other addresses: `name@domain`, or `@domain` for every address of a domain (not its subdomains). Used by [`REPLY`](actions/reply.md). |
 | `credentials` | no | Key into `credentials.json`'s `credentials` map for the SMTP login. Absent: the account's IMAP login is used. |
 
 The server's certificate is checked against `host`, and the account's `connectTimeout`/`readTimeout` apply.

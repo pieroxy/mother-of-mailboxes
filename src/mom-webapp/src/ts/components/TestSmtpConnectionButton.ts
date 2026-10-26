@@ -1,36 +1,40 @@
 import m from "mithril";
 import { ApiEndpoints } from "../auto/ApiEndpoints";
 import { SmtpSettingsDto } from "../auto/pieroxy-mom";
-import { AccountEditSession } from "../utils/AccountEditSession";
 import { TestConnectionButton } from "./TestConnectionButton";
 
 interface TestSmtpConnectionButtonAttrs {
-  session: AccountEditSession;
+  /** Lets a blank password fall back to the saved one — see TestSmtpConnectionApi. Empty for an account not created yet. */
+  accountName: string;
   smtp: SmtpSettingsDto;
-  /** The SMTP password being edited, used with ownCredentials; blank falls back to a saved one — see TestSmtpConnectionApi. */
+  /** The SMTP password being edited, used with ownCredentials. */
   password: string;
+  /** Used without ownCredentials. */
+  imapUsername: string;
+  imapPassword: string;
+  connectTimeout: number;
+  readTimeout: number;
+  onResult?: (connected: boolean) => void;
 }
 
-/**
- * Shared by AccountSettingsPage's SMTP card and AccountSmtpSettingsEditPage. Without own
- * credentials, tests with the IMAP login as currently staged.
- */
+/** Shared by AccountSettingsPage's SMTP card, AccountSmtpSettingsEditPage and the account creation wizard. */
 export class TestSmtpConnectionButton implements m.ClassComponent<TestSmtpConnectionButtonAttrs> {
   view({ attrs }: m.Vnode<TestSmtpConnectionButtonAttrs>): m.Children {
-    const { session, smtp } = attrs;
+    const { smtp } = attrs;
     return m(TestConnectionButton, {
       label: "Test SMTP Connection",
       run: () => ApiEndpoints.TestSmtpConnection.call({
-        accountName: session.accountName,
+        accountName: attrs.accountName,
         host: smtp.host,
         port: smtp.port,
         security: smtp.security,
-        connectTimeout: session.workingConfig.connectTimeout,
-        readTimeout: session.workingConfig.readTimeout,
+        connectTimeout: attrs.connectTimeout,
+        readTimeout: attrs.readTimeout,
         ownCredentials: smtp.ownCredentials,
-        username: smtp.ownCredentials ? smtp.username : session.workingUsername,
-        password: smtp.ownCredentials ? attrs.password : session.workingPassword,
+        username: smtp.ownCredentials ? smtp.username : attrs.imapUsername,
+        password: smtp.ownCredentials ? attrs.password : attrs.imapPassword,
       }),
+      onResult: attrs.onResult,
     });
   }
 }

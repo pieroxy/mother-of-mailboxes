@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
 /**
@@ -366,7 +367,7 @@ public class SettingsServiceTest {
     MailAccountConfiguration account = new MailAccountConfiguration();
     account.setDisplayName("work");
 
-    settingsService.addAccountConfig(account, "me@example.com", "secret");
+    settingsService.addAccountConfig(account, "me@example.com", "secret", null, false, null, null);
 
     assertEquals("an existing key must never be overwritten", "work-2", account.getCredentials());
     CredentialsFile reloadedCredentials = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
@@ -375,5 +376,42 @@ public class SettingsServiceTest {
     Configuration reloadedConfig = new Gson().fromJson(new FileReader(new File(tmp.getRoot(), "config.json")), Configuration.class);
     assertEquals(2, reloadedConfig.getConfigurations().size());
     assertEquals("work-2", reloadedConfig.getConfigurations().get(1).getCredentials());
+  }
+
+  @Test
+  public void addAccountConfigSavesItsSmtpSettingsWithTheirOwnLogin() throws Exception {
+    File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
+    SettingsService settingsService = buildSettingsServiceWithAccounts(new HashMap<>(Map.of("web-cred", credential("admin"))),
+        List.of(), "web-cred", credentialsFilePath);
+    MailAccountConfiguration account = new MailAccountConfiguration();
+    account.setDisplayName("home");
+    SmtpConfiguration smtp = new SmtpConfiguration();
+    smtp.setHost("smtp.example.com");
+    smtp.setFromAddress("me@example.com");
+    smtp.setAliases(List.of("@example.org"));
+
+    settingsService.addAccountConfig(account, "me@example.com", "secret", smtp, true, "smtp-user", "smtp-secret");
+
+    CredentialsFile reloadedCredentials = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
+    assertEquals("smtp-user", reloadedCredentials.getCredentials().get("home-smtp").getUsername());
+    Configuration reloadedConfig = new Gson().fromJson(new FileReader(new File(tmp.getRoot(), "config.json")), Configuration.class);
+    SmtpConfiguration savedSmtp = reloadedConfig.getConfigurations().get(0).getSmtp();
+    assertEquals("home-smtp", savedSmtp.getCredentials());
+    assertEquals(List.of("@example.org"), savedSmtp.getAliases());
+  }
+
+  @Test
+  public void addAccountConfigRefusesAnSmtpLoginWithoutPasswordAndChangesNothing() {
+    SettingsService settingsService = buildSettingsServiceWithAccounts(new HashMap<>(Map.of("web-cred", credential("admin"))),
+        List.of(), "web-cred", new File(tmp.getRoot(), "credentials.json"));
+    MailAccountConfiguration account = new MailAccountConfiguration();
+    account.setDisplayName("home");
+    SmtpConfiguration smtp = new SmtpConfiguration();
+    smtp.setFromAddress("me@example.com");
+
+    assertThrows(IllegalArgumentException.class,
+        () -> settingsService.addAccountConfig(account, "me@example.com", "secret", smtp, true, "smtp-user", " "));
+    assertTrue(settingsService.getConfiguration().getConfigurations() == null
+        || settingsService.getConfiguration().getConfigurations().isEmpty());
   }
 }

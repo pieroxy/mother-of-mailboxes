@@ -14,15 +14,26 @@ public class RecordingMailSender implements MailSender {
 
   public final List<Sent> sent = new ArrayList<>();
   private final String fromAddress;
+  private final List<String> aliases;
   private final Session session = Session.getInstance(new Properties());
 
   public RecordingMailSender(String fromAddress) {
+    this(fromAddress, List.of());
+  }
+
+  public RecordingMailSender(String fromAddress, List<String> aliases) {
     this.fromAddress = fromAddress;
+    this.aliases = aliases;
   }
 
   @Override
   public String getFromAddress() {
     return fromAddress;
+  }
+
+  @Override
+  public List<String> getAliases() {
+    return aliases;
   }
 
   @Override

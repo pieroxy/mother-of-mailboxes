@@ -7,6 +7,7 @@ import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.ReputationListConfig;
+import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.rules.DefaultSpamRules;
 import net.pieroxy.mom.services.IServiceProvider;
 
@@ -41,6 +42,8 @@ public class CreateAccountApi extends AbstractAuthenticatedEndpoint<CreateAccoun
       throw new IllegalArgumentException("Timeouts must not be negative.");
     }
 
+    SmtpConfiguration smtp = input.getSmtp() != null ? input.getSmtp().toConfiguration() : null;
+
     String spamFolder = spamFolderOrDefault(input.getClassifierSpamFolderName());
     MailAccountConfiguration config = new MailAccountConfiguration();
     config.setDisplayName(input.getDisplayName() != null ? input.getDisplayName().trim() : null);
@@ -69,7 +72,9 @@ public class CreateAccountApi extends AbstractAuthenticatedEndpoint<CreateAccoun
       config.setRules(DefaultSpamRules.build(spamFolder, classifierFolder, configuredListIds(serviceProvider)));
     }
 
-    serviceProvider.getAccountService().createAccount(config, input.getUsername().trim(), input.getPassword());
+    serviceProvider.getAccountService().createAccount(config, input.getUsername().trim(), input.getPassword(),
+        smtp, smtp != null && input.getSmtp().isOwnCredentials(), smtp != null ? input.getSmtp().getUsername() : null,
+        input.getSmtpPassword());
     return new CreateAccountApiOutput();
   }
 
@@ -103,6 +108,26 @@ class CreateAccountApiInput extends AuthenticatedApiInput {
   /** Only used with {@link #handleSpam}: receives the subject classifier's verdicts, excluded from the classifier corpus. */
   private String classifierFolderName;
   private int classifierCorpusRetentionDays;
+  /** Absent: the account can't send mail. */
+  private SmtpSettingsDto smtp;
+  /** Only used with {@code smtp.ownCredentials}. */
+  private String smtpPassword;
+
+  public SmtpSettingsDto getSmtp() {
+    return smtp;
+  }
+
+  public void setSmtp(SmtpSettingsDto smtp) {
+    this.smtp = smtp;
+  }
+
+  public String getSmtpPassword() {
+    return smtpPassword;
+  }
+
+  public void setSmtpPassword(String smtpPassword) {
+    this.smtpPassword = smtpPassword;
+  }
 
   public String getDisplayName() {
     return displayName;

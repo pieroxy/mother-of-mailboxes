@@ -12,8 +12,6 @@ import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.learning.RuleLearner;
 import net.pieroxy.mom.rules.RuleCatalog;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
 import java.util.List;
 
 /**
@@ -53,7 +51,7 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
     if (input.getRules() == null) {
       throw new IllegalArgumentException("rules must not be null.");
     }
-    SmtpConfiguration smtp = toSmtpConfiguration(input.getSmtp());
+    SmtpConfiguration smtp = input.getSmtp() != null ? input.getSmtp().toConfiguration() : null;
     RuleCatalog.validateRules(input.getRules());
     RuleCatalog.validateSendingActions(input.getRules(), smtp != null);
     List<LearningShortcutConfiguration> shortcuts = input.getShortcuts() != null ? input.getShortcuts() : List.of();
@@ -69,34 +67,6 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
         smtp != null ? input.getSmtp().getUsername() : null, input.getSmtpPassword());
 
     return new UpdateAccountApiOutput();
-  }
-
-  /** Validates the SMTP settings; null stays null (no SMTP). */
-  private static SmtpConfiguration toSmtpConfiguration(SmtpSettingsDto dto) {
-    if (dto == null) return null;
-    if (dto.getHost() == null || dto.getHost().isBlank()) {
-      throw new IllegalArgumentException("SMTP host must not be blank.");
-    }
-    if (dto.getPort() <= 0 || dto.getPort() > 65535) {
-      throw new IllegalArgumentException("SMTP port must be between 1 and 65535.");
-    }
-    if (dto.getSecurity() == null) {
-      throw new IllegalArgumentException("SMTP security must be set.");
-    }
-    try {
-      new InternetAddress(dto.getFromAddress(), true).validate();
-    } catch (AddressException | NullPointerException e) {
-      throw new IllegalArgumentException("SMTP sender address \"" + dto.getFromAddress() + "\" is not a valid email address.");
-    }
-    if (dto.isOwnCredentials() && (dto.getUsername() == null || dto.getUsername().isBlank())) {
-      throw new IllegalArgumentException("SMTP username must not be blank.");
-    }
-    SmtpConfiguration smtp = new SmtpConfiguration();
-    smtp.setHost(dto.getHost().trim());
-    smtp.setPort(dto.getPort());
-    smtp.setSecurity(dto.getSecurity());
-    smtp.setFromAddress(dto.getFromAddress().trim());
-    return smtp;
   }
 
   private static String blankToNull(String s) {

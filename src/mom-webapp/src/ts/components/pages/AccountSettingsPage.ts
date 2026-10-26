@@ -97,7 +97,11 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       ]),
       m(".page-card", { key: "smtp-settings" }, [
         sectionHeader("SMTP settings", () => Routing.goToAccountSmtpSettingsEdit(this.accountName),
-          session.workingSmtp ? m(TestSmtpConnectionButton, { session, smtp: session.workingSmtp, password: session.workingSmtpPassword }) : null),
+          session.workingSmtp ? m(TestSmtpConnectionButton, {
+            accountName: this.accountName, smtp: session.workingSmtp, password: session.workingSmtpPassword,
+            imapUsername: session.workingUsername, imapPassword: session.workingPassword,
+            connectTimeout: session.workingConfig.connectTimeout, readTimeout: session.workingConfig.readTimeout,
+          }) : null),
         renderSmtpSettingsSection(session),
       ]),
       m(".page-card", { key: "rules" }, [
@@ -514,12 +518,13 @@ function renderSmtpSettingsSection(session: AccountEditSession): m.Children {
   if (!smtp) {
     return m(".config-grid", configRow("Status", m("span.config-row-hint", "Not configured: this account can't send mail."), baseline !== null));
   }
-  const changed = (field: keyof SmtpSettingsDto) => baseline === null || baseline[field] !== smtp[field];
+  const changed = (field: keyof SmtpSettingsDto) => baseline === null || JSON.stringify(baseline[field]) !== JSON.stringify(smtp[field]);
   return m(".config-grid", [
     configRow("Host", smtp.host, changed("host")),
     configRow("Port", String(smtp.port), changed("port")),
     configRow("Security", smtp.security === SmtpSecurity.TLS ? "TLS" : "STARTTLS", changed("security")),
     configRow("Sender address", smtp.fromAddress, changed("fromAddress")),
+    configRow("Aliases", renderTokenList(smtp.aliases), changed("aliases")),
     configRow("Login", smtp.ownCredentials ? smtp.username : m("span.config-row-hint", "Same as the IMAP login"),
       changed("ownCredentials") || changed("username")),
     smtp.ownCredentials

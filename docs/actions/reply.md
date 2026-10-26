@@ -26,7 +26,10 @@ Replies to the sender with a fixed plain-text message, through the account's
   - bounces: an empty `Return-Path`;
   - automated senders: `noreply`, `no-reply`, `do-not-reply`, `mailer-daemon`, `postmaster`,
     `owner-…` and `…-request` addresses;
-  - the account's own messages, by `From` or `Reply-To`.
+  - the account's own messages, by `From` or `Reply-To`;
+  - messages that have neither the `fromAddress` nor one of the `aliases` of the
+    [SMTP settings](../configuration.md#smtp-settings) in `To` or `Cc`: mail received through a
+    mailing list or as Bcc. Mail sent to an alias missing from the list gets no reply either.
 - Replies carry `Auto-Submitted: auto-replied`, so other auto-responders don't answer them.
 - Replies to every message the rule matches: put it after the spam rules, so spam (often with a
   forged sender) never gets one.

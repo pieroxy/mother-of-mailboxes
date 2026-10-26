@@ -10,6 +10,7 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.MimeMessage;
 import java.time.Clock;
+import java.util.List;
 
 /**
  * One SMTP connection per message: sends are rare, so nothing is kept open between them. Refuses
@@ -39,6 +40,11 @@ public class SmtpMailSender implements MailSender {
   @Override
   public String getFromAddress() {
     return smtp.getFromAddress();
+  }
+
+  @Override
+  public List<String> getAliases() {
+    return smtp.getAliases() != null ? smtp.getAliases() : List.of();
   }
 
   @Override

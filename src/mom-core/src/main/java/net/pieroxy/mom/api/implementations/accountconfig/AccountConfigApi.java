@@ -12,6 +12,7 @@ import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -57,6 +58,7 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
     dto.setPort(smtp.getPort());
     dto.setSecurity(smtp.getSecurity());
     dto.setFromAddress(smtp.getFromAddress() != null ? smtp.getFromAddress() : "");
+    dto.setAliases(smtp.getAliases() != null ? new ArrayList<>(smtp.getAliases()) : new ArrayList<>());
     dto.setOwnCredentials(smtp.getCredentials() != null);
     if (smtp.getCredentials() != null) {
       dto.setUsername(serviceProvider.getSettingsService().resolveSmtpCredential(config).getUsername());

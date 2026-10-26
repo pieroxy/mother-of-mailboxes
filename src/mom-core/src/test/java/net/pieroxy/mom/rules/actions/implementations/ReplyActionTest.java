@@ -13,6 +13,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -28,7 +29,7 @@ public class ReplyActionTest {
       + "Message-ID: <original@example.org>\r\n";
   private static final String BODY = "\r\nOriginal body\r\n";
 
-  private final RecordingMailSender sender = new RecordingMailSender("me@example.com");
+  private final RecordingMailSender sender = new RecordingMailSender("me@example.com", List.of("contact@example.com", "@example.net"));
   private final Session session = Session.getInstance(new Properties());
 
   private Action action(String subject, String body) {
@@ -145,6 +146,30 @@ public class ReplyActionTest {
   public void skipsTheAccountsOwnMessages() throws Exception {
     assertFalse(action().run(message(HEADERS.replace("alice@example.org", "ME@example.com"))));
     assertFalse(action().run(original("Reply-To: me@example.com\r\n")));
+    assertTrue(sender.sent.isEmpty());
+  }
+
+  @Test
+  public void repliesWhenAnAliasIsInToOrCc() throws Exception {
+    assertTrue(action().run(message(HEADERS.replace("To: me@example.com", "To: Contact@Example.com"))));
+    assertTrue(action().run(message(HEADERS.replace("To: me@example.com", "To: anyone@example.net"))));
+    assertTrue(action().run(message(HEADERS.replace("To: me@example.com", "To: list@example.org\r\nCc: me@example.com"))));
+    assertEquals(3, sender.sent.size());
+  }
+
+  @Test
+  public void skipsMessagesNotAddressedToTheAccount() throws Exception {
+    assertFalse(action().run(message(HEADERS.replace("To: me@example.com", "To: list@example.org"))));
+    assertFalse("a domain alias doesn't cover its subdomains",
+        action().run(message(HEADERS.replace("To: me@example.com", "To: me@sub.example.net"))));
+    assertFalse(action().run(message(HEADERS.replace("To: me@example.com\r\n", ""))));
+    assertTrue(sender.sent.isEmpty());
+  }
+
+  @Test
+  public void skipsMessagesFromAnAlias() throws Exception {
+    assertFalse(action().run(message(HEADERS.replace("alice@example.org", "contact@example.com"))));
+    assertFalse(action().run(message(HEADERS.replace("alice@example.org", "someone@example.net"))));
     assertTrue(sender.sent.isEmpty());
   }
 

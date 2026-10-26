@@ -165,18 +165,21 @@ public class AccountService implements Service {
   }
 
   /**
-   * Persists a brand-new account (see {@link SettingsService#addAccountConfig}) and starts it.
+   * Persists a brand-new account, with its SMTP settings if {@code smtp} isn't null (see
+   * {@link SettingsService#addAccountConfig}), and starts it.
    *
    * @throws IllegalArgumentException if the displayName is not a valid file name (it names the
    *     account's on-disk files) or is already used by another account.
    */
-  public synchronized void createAccount(MailAccountConfiguration config, String username, String password) {
+  public synchronized void createAccount(MailAccountConfiguration config, String username, String password,
+                                        SmtpConfiguration smtp, boolean smtpOwnCredentials,
+                                        String smtpUsername, String smtpPassword) {
     FileNameValidator.validate(config.getDisplayName(), "Account name");
     boolean taken = accounts.stream().anyMatch(a -> a.getAccountLabel().equalsIgnoreCase(config.getDisplayName()));
     if (taken) {
       throw new IllegalArgumentException("An account named \"" + config.getDisplayName() + "\" already exists.");
     }
-    settingsService.addAccountConfig(config, username, password);
+    settingsService.addAccountConfig(config, username, password, smtp, smtpOwnCredentials, smtpUsername, smtpPassword);
     MailAccount account = newMailAccount(config);
     accounts.add(account);
     if (config.isActive()) account.start();

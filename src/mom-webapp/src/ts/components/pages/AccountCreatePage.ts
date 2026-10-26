@@ -1,13 +1,15 @@
 import m from "mithril";
 import { AbstractPage } from "./AbstractPage";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { MailFilterRuleConfiguration } from "../../auto/pieroxy-mom";
+import { MailFilterRuleConfiguration, SmtpSettingsDto } from "../../auto/pieroxy-mom";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { Routing } from "../../utils/navigation/Routing";
 import { TestImapConnectionButton } from "../TestImapConnectionButton";
+import { TestSmtpConnectionButton } from "../TestSmtpConnectionButton";
+import { SmtpSettingsForm, defaultSmtp, finalizeSmtp, validateSmtp } from "../SmtpSettingsForm";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 
-const STEPS = ["Name", "IMAP connection", "Spam folder", "Spam handling", "Schedule", "Review"];
+const STEPS = ["Name", "IMAP connection", "Sending mail", "Spam folder", "Spam handling", "Schedule", "Review"];
 const FOLDER_DATALIST_ID = "account-create-folders";
 // Same subset of FileNameValidator's rules as can be checked without a round trip; the server
 // re-validates the name in full.
@@ -34,6 +36,11 @@ export class AccountCreatePage extends AbstractPage {
   private password = "";
   // The connection settings last tested successfully — any edit to them requires a new test.
   private testedConnection: string | undefined;
+  private sendMail = false;
+  private smtp: SmtpSettingsDto = defaultSmtp("");
+  private smtpPassword = "";
+  // Same as testedConnection, for SMTP.
+  private testedSmtp: string | undefined;
   private spamFolder = "";
   private handleSpam = true;
   private classifierFolder = "SpamML";
@@ -79,9 +86,10 @@ export class AccountCreatePage extends AbstractPage {
     switch (this.step) {
       case 0: return this.renderNameStep();
       case 1: return this.renderConnectionStep();
-      case 2: return this.renderSpamFolderStep();
-      case 3: return this.renderSpamHandlingStep();
-      case 4: return this.renderScheduleStep();
+      case 2: return this.renderSmtpStep();
+      case 3: return this.renderSpamFolderStep();
+      case 4: return this.renderSpamHandlingStep();
+      case 5: return this.renderScheduleStep();
       default: return this.renderReviewStep();
     }
   }
@@ -117,6 +125,40 @@ export class AccountCreatePage extends AbstractPage {
         onResult: (connected) => (this.testedConnection = connected ? this.connectionKey() : undefined),
       }),
     ];
+  }
+
+  private renderSmtpStep(): m.Children {
+    return [
+      this.field("Does MOM send mail from this account?", m(".radio-group", [
+        m("label.checkbox-field", [
+          m("input", { type: "radio", name: "send-mail", checked: !this.sendMail, onchange: () => (this.sendMail = false) }),
+          "No, not for now",
+        ]),
+        m("label.checkbox-field", [
+          m("input", { type: "radio", name: "send-mail", checked: this.sendMail, onchange: () => this.enableSendMail() }),
+          "Yes, set up SMTP",
+        ]),
+      ]), "Needed to forward, redirect or automatically reply to mail. Can be set up later in the account's settings."),
+      this.sendMail ? [
+        m(SmtpSettingsForm, {
+          smtp: this.smtp,
+          password: this.smtpPassword,
+          onPasswordChange: (password) => (this.smtpPassword = password),
+        }),
+        m(TestSmtpConnectionButton, {
+          accountName: "", smtp: this.smtp, password: this.smtpPassword,
+          imapUsername: this.username.trim(), imapPassword: this.password,
+          connectTimeout: this.connectTimeout, readTimeout: this.readTimeout,
+          onResult: (connected) => (this.testedSmtp = connected ? this.smtpKey() : undefined),
+        }),
+      ] : null,
+    ];
+  }
+
+  /** The sender address defaults to the IMAP username when it's an address, until one is typed. */
+  private enableSendMail() {
+    this.sendMail = true;
+    if (!this.smtp.fromAddress && this.username.includes("@")) this.smtp.fromAddress = this.username.trim();
   }
 
   private renderSpamFolderStep(): m.Children {
@@ -179,6 +221,10 @@ export class AccountCreatePage extends AbstractPage {
         this.reviewRow("Name", this.displayName.trim()),
         this.reviewRow("Server", this.host.trim() + ":" + this.port),
         this.reviewRow("Username", this.username.trim()),
+        this.reviewRow("Sending mail", this.sendMail
+          ? this.smtp.host.trim() + ":" + this.smtp.port + ", from " + this.smtp.fromAddress.trim()
+            + (this.smtp.aliases.length > 0 ? " (aliases: " + this.smtp.aliases.join(", ") + ")" : "")
+          : "No"),
         this.reviewRow("Spam folder", this.spamFolder.trim() || "Spam"),
         this.reviewRow("Spam handling", this.handleSpam
           ? "Yes — classifier folder " + this.classifierFolder.trim() + ", corpus kept " + this.classifierCorpusRetentionDays + " day(s)"
@@ -226,6 +272,12 @@ export class AccountCreatePage extends AbstractPage {
     return JSON.stringify([this.host.trim(), this.port, this.username.trim(), this.password]);
   }
 
+  /** Includes the IMAP login, used without own SMTP credentials. Not the sender address and aliases: they don't affect the connection. */
+  private smtpKey(): string {
+    return JSON.stringify([this.smtp.host.trim(), this.smtp.port, this.smtp.security, this.smtp.ownCredentials,
+      this.smtp.username.trim(), this.smtpPassword, this.username.trim(), this.password]);
+  }
+
   /** Mirrors CreateAccountApi's checks, per step, so mistakes surface where they're made. */
   private validateStep(): string | undefined {
     switch (this.step) {
@@ -242,13 +294,20 @@ export class AccountCreatePage extends AbstractPage {
         if (!this.username.trim() || !this.password) return "Username and password must not be blank.";
         if (this.testedConnection !== this.connectionKey()) return "Test the connection successfully before going further.";
         return undefined;
-      case 3:
+      case 2: {
+        if (!this.sendMail) return undefined;
+        const error = validateSmtp(this.smtp, this.smtpPassword === "");
+        if (error) return error;
+        if (this.testedSmtp !== this.smtpKey()) return "Test the SMTP connection successfully before going further.";
+        return undefined;
+      }
+      case 4:
         if (!this.handleSpam) return undefined;
         if (!this.classifierFolder.trim()) return "The classifier folder must not be blank.";
         if (this.classifierFolder.trim() === (this.spamFolder.trim() || "Spam")) return "The classifier folder must differ from the spam folder.";
         if (this.classifierCorpusRetentionDays <= 0) return "The classifier corpus retention must be a positive number of days.";
         return undefined;
-      case 4:
+      case 5:
         if (this.runEvery <= 0) return "\"Run every\" must be a positive number of seconds.";
         if (this.connectTimeout < 0 || this.readTimeout < 0) return "Timeouts must not be negative.";
         return undefined;
@@ -316,6 +375,9 @@ export class AccountCreatePage extends AbstractPage {
       handleSpam: this.handleSpam,
       classifierFolderName: this.classifierFolder.trim(),
       classifierCorpusRetentionDays: this.classifierCorpusRetentionDays,
+      // Null: no SMTP, same convention as UpdateAccountApi.
+      smtp: (this.sendMail ? finalizeSmtp(this.smtp) : null) as SmtpSettingsDto,
+      smtpPassword: this.sendMail && this.smtp.ownCredentials ? this.smtpPassword : "",
     })
       .then(() => Routing.goToAccountSettings(displayName))
       .catch((err: Error) => {

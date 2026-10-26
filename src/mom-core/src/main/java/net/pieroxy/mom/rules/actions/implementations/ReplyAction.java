@@ -22,7 +22,8 @@ import java.util.stream.Collectors;
  * Sends a plain-text reply ({@code body}) to the message's {@code Reply-To}, or {@code From}
  * without one, through the account's SMTP settings. Subject: {@code key}, or {@code Re: <original
  * subject>} when blank. Skips (returns false) what must never get an automatic reply (RFC 3834):
- * automated messages, mailing lists, bounces, no-reply senders and the account's own messages. Its
+ * automated messages, mailing lists, bounces, no-reply senders, the account's own messages, and
+ * messages none of the account's addresses (sender address and aliases) is in To or Cc of. Its
  * replies carry {@code Auto-Submitted: auto-replied}, so other responders skip them in turn.
  */
 public class ReplyAction extends Action {
@@ -99,9 +100,13 @@ public class ReplyAction extends Action {
     }
     if (recipient == null) return "no address to reply to";
     String recipientAddress = recipient.getAddress().toLowerCase(Locale.ROOT);
-    String ownAddress = sender.getFromAddress().toLowerCase(Locale.ROOT);
-    if (recipientAddress.equals(ownAddress) || fromAddresses(message).contains(ownAddress)) {
+    if (isOwnAddress(recipientAddress) || addressesOf(message.getFrom()).stream().anyMatch(this::isOwnAddress)) {
       return "sent by this account";
+    }
+    boolean addressedToAccount = addressesOf(message.getRecipients(Message.RecipientType.TO)).stream().anyMatch(this::isOwnAddress)
+        || addressesOf(message.getRecipients(Message.RecipientType.CC)).stream().anyMatch(this::isOwnAddress);
+    if (!addressedToAccount) {
+      return "none of the account's addresses is in To or Cc (list or Bcc; an alias missing from the account's SMTP settings?)";
     }
     String localPart = recipientAddress.contains("@") ? recipientAddress.substring(0, recipientAddress.lastIndexOf('@')) : recipientAddress;
     String compactLocalPart = localPart.replaceAll("[._-]", "");
@@ -137,10 +142,20 @@ public class ReplyAction extends Action {
     return subject.regionMatches(true, 0, "Re:", 0, 3) ? subject : "Re: " + subject;
   }
 
-  private static Set<String> fromAddresses(Message message) throws MessagingException {
-    Address[] from = message.getFrom();
-    if (from == null) return Set.of();
-    return Arrays.stream(from)
+  /** {@code address} (lower-cased) is the sender address, an alias, or at an aliased {@code @domain}. */
+  private boolean isOwnAddress(String address) {
+    if (address.equals(sender.getFromAddress().toLowerCase(Locale.ROOT))) return true;
+    for (String alias : sender.getAliases()) {
+      String lowerAlias = alias.toLowerCase(Locale.ROOT);
+      if (lowerAlias.startsWith("@") ? address.endsWith(lowerAlias) : address.equals(lowerAlias)) return true;
+    }
+    return false;
+  }
+
+  /** Lower-cased. */
+  private static Set<String> addressesOf(Address[] addresses) {
+    if (addresses == null) return Set.of();
+    return Arrays.stream(addresses)
         .filter(InternetAddress.class::isInstance)
         .map(a -> ((InternetAddress) a).getAddress())
         .filter(Objects::nonNull)

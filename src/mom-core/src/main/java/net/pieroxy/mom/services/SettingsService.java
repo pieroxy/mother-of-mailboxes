@@ -248,9 +248,17 @@ public class SettingsService implements Service {
 
   /**
    * Adds a new account to config.json and its IMAP login to credentials.json, under a fresh
-   * credentials key derived from the account's displayName, and persists both files.
+   * credentials key derived from the account's displayName, and persists both files. The SMTP
+   * parameters are those of {@link #setSmtp}; a null {@code smtp} means none.
+   *
+   * @throws IllegalArgumentException if a new SMTP login has a blank password; nothing has changed then.
    */
-  public synchronized void addAccountConfig(MailAccountConfiguration accountConfig, String username, String password) {
+  public synchronized void addAccountConfig(MailAccountConfiguration accountConfig, String username, String password,
+                                            SmtpConfiguration smtp, boolean smtpOwnCredentials,
+                                            String smtpUsername, String smtpPassword) {
+    if (smtp != null && smtpOwnCredentials && (smtpPassword == null || smtpPassword.isBlank())) {
+      throw new IllegalArgumentException("The SMTP password must not be blank.");
+    }
     Map<String, Credential> credentials = credentialsFile.getCredentials() != null
         ? new HashMap<>(credentialsFile.getCredentials()) : new HashMap<>();
     String key = accountConfig.getDisplayName();
@@ -263,6 +271,7 @@ public class SettingsService implements Service {
     credentials.put(key, credential);
     credentialsFile.setCredentials(credentials);
     accountConfig.setCredentials(key);
+    if (smtp != null) setSmtp(accountConfig, smtp, smtpOwnCredentials, smtpUsername, smtpPassword);
 
     List<MailAccountConfiguration> accounts = config.getConfigurations() != null
         ? new ArrayList<>(config.getConfigurations()) : new ArrayList<>();
