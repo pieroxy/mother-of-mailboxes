@@ -1,12 +1,13 @@
 import m from "mithril";
 import { AbstractPage } from "./AbstractPage";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { MailFilterRuleConfiguration, SmtpSettingsDto } from "../../auto/pieroxy-mom";
+import { MailFilterRuleConfiguration, SmtpSecurity, SmtpSettingsDto } from "../../auto/pieroxy-mom";
 import { Endpoints } from "../../utils/navigation/Endpoints";
 import { Routing } from "../../utils/navigation/Routing";
 import { TestImapConnectionButton } from "../TestImapConnectionButton";
 import { TestSmtpConnectionButton } from "../TestSmtpConnectionButton";
 import { SmtpSettingsForm, defaultSmtp, finalizeSmtp, validateSmtp } from "../SmtpSettingsForm";
+import { MICROSOFT_IMAP_HOST, MICROSOFT_SMTP_HOST, MicrosoftSignIn } from "../MicrosoftSignIn";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 
 const STEPS = ["Name", "IMAP connection", "Sending mail", "Spam folder", "Spam handling", "Schedule", "Review"];
@@ -34,6 +35,9 @@ export class AccountCreatePage extends AbstractPage {
   private port = 993;
   private username = "";
   private password = "";
+  private microsoft = false;
+  private clientId = "";
+  private oauthSignInId = "";
   // The connection settings last tested successfully — any edit to them requires a new test.
   private testedConnection: string | undefined;
   private sendMail = false;
@@ -103,6 +107,24 @@ export class AccountCreatePage extends AbstractPage {
 
   private renderConnectionStep(): m.Children {
     return [
+      this.field("How does MOM log in to this mailbox?", m(".radio-group", [
+        m("label.checkbox-field", [
+          m("input", { type: "radio", name: "login", checked: !this.microsoft, onchange: () => (this.microsoft = false) }),
+          "With a username and password",
+        ]),
+        m("label.checkbox-field", [
+          m("input", { type: "radio", name: "login", checked: this.microsoft, onchange: () => this.chooseMicrosoft() }),
+          "By signing in with Microsoft (Outlook.com, Hotmail, Live, Microsoft 365)",
+        ]),
+      ])),
+      this.microsoft ? m(MicrosoftSignIn, {
+        clientId: this.clientId,
+        onClientIdChange: (clientId) => (this.clientId = clientId),
+        onSignedIn: (signInId, username) => {
+          this.oauthSignInId = signInId;
+          if (username && !this.username.trim()) this.username = username;
+        },
+      }) : null,
       this.field("Host", m("input", {
         type: "text", value: this.host,
         oninput: (e: Event) => (this.host = (e.target as HTMLInputElement).value),
@@ -111,20 +133,31 @@ export class AccountCreatePage extends AbstractPage {
         type: "number", value: this.port,
         oninput: (e: Event) => (this.port = Number((e.target as HTMLInputElement).value)),
       }), "IMAPS (implicit TLS) only, usually 993."),
-      this.field("Username", m("input", {
+      this.field(this.microsoft ? "Email address" : "Username", m("input", {
         type: "text", value: this.username, autocomplete: "off",
         oninput: (e: Event) => (this.username = (e.target as HTMLInputElement).value),
-      })),
-      this.field("Password", m("input", {
+      }), this.microsoft ? "The mailbox's address: the account you signed in with, unless it has access to another mailbox." : undefined),
+      this.microsoft ? null : this.field("Password", m("input", {
         type: "password", autocomplete: "new-password", value: this.password,
         oninput: (e: Event) => (this.password = (e.target as HTMLInputElement).value),
       })),
       m(TestImapConnectionButton, {
         accountName: "", host: this.host, port: this.port, connectTimeout: this.connectTimeout, readTimeout: this.readTimeout,
-        username: this.username, password: this.password,
+        username: this.username, password: this.microsoft ? "" : this.password, oauthSignInId: this.microsoft ? this.oauthSignInId : "",
         onResult: (connected) => (this.testedConnection = connected ? this.connectionKey() : undefined),
       }),
+      this.microsoft ? m("p.field-hint", "Outlook.com: if the authentication fails, check that IMAP is enabled in Outlook.com's settings "
+        + "(Mail › Forwarding and IMAP).") : null,
     ];
+  }
+
+  /** Fills in Microsoft's IMAP server, unless one was typed. */
+  private chooseMicrosoft() {
+    this.microsoft = true;
+    if (!this.host.trim()) {
+      this.host = MICROSOFT_IMAP_HOST;
+      this.port = 993;
+    }
   }
 
   private renderSmtpStep(): m.Children {
@@ -147,7 +180,8 @@ export class AccountCreatePage extends AbstractPage {
         }),
         m(TestSmtpConnectionButton, {
           accountName: "", smtp: this.smtp, password: this.smtpPassword,
-          imapUsername: this.username.trim(), imapPassword: this.password,
+          imapUsername: this.username.trim(), imapPassword: this.microsoft ? "" : this.password,
+          imapOauthSignInId: this.microsoft ? this.oauthSignInId : "",
           connectTimeout: this.connectTimeout, readTimeout: this.readTimeout,
           onResult: (connected) => (this.testedSmtp = connected ? this.smtpKey() : undefined),
         }),
@@ -155,10 +189,19 @@ export class AccountCreatePage extends AbstractPage {
     ];
   }
 
-  /** The sender address defaults to the IMAP username when it's an address, until one is typed. */
+  /**
+   * The sender address defaults to the IMAP username when it's an address, until one is typed.
+   * With a Microsoft sign-in, so does Microsoft's SMTP server: the sign-in covers sending too.
+   */
   private enableSendMail() {
     this.sendMail = true;
     if (!this.smtp.fromAddress && this.username.includes("@")) this.smtp.fromAddress = this.username.trim();
+    if (this.microsoft && !this.smtp.host.trim()) {
+      this.smtp.host = MICROSOFT_SMTP_HOST;
+      this.smtp.security = SmtpSecurity.STARTTLS;
+      this.smtp.port = 587;
+      this.smtp.ownCredentials = false;
+    }
   }
 
   private renderSpamFolderStep(): m.Children {
@@ -221,6 +264,7 @@ export class AccountCreatePage extends AbstractPage {
         this.reviewRow("Name", this.displayName.trim()),
         this.reviewRow("Server", this.host.trim() + ":" + this.port),
         this.reviewRow("Username", this.username.trim()),
+        this.reviewRow("Login", this.microsoft ? "Microsoft sign-in" : "Password"),
         this.reviewRow("Sending mail", this.sendMail
           ? this.smtp.host.trim() + ":" + this.smtp.port + ", from " + this.smtp.fromAddress.trim()
             + (this.smtp.aliases.length > 0 ? " (aliases: " + this.smtp.aliases.join(", ") + ")" : "")
@@ -269,13 +313,13 @@ export class AccountCreatePage extends AbstractPage {
   }
 
   private connectionKey(): string {
-    return JSON.stringify([this.host.trim(), this.port, this.username.trim(), this.password]);
+    return JSON.stringify([this.host.trim(), this.port, this.username.trim(), this.microsoft, this.microsoft ? this.oauthSignInId : this.password]);
   }
 
   /** Includes the IMAP login, used without own SMTP credentials. Not the sender address and aliases: they don't affect the connection. */
   private smtpKey(): string {
     return JSON.stringify([this.smtp.host.trim(), this.smtp.port, this.smtp.security, this.smtp.ownCredentials,
-      this.smtp.username.trim(), this.smtpPassword, this.username.trim(), this.password]);
+      this.smtp.username.trim(), this.smtpPassword, this.username.trim(), this.microsoft, this.microsoft ? this.oauthSignInId : this.password]);
   }
 
   /** Mirrors CreateAccountApi's checks, per step, so mistakes surface where they're made. */
@@ -291,7 +335,12 @@ export class AccountCreatePage extends AbstractPage {
       case 1:
         if (!this.host.trim()) return "Host must not be blank.";
         if (this.port <= 0 || this.port > 65535) return "Port must be between 1 and 65535.";
-        if (!this.username.trim() || !this.password) return "Username and password must not be blank.";
+        if (this.microsoft) {
+          if (!this.oauthSignInId) return "Sign in with Microsoft first.";
+          if (!this.username.trim()) return "The email address must not be blank.";
+        } else if (!this.username.trim() || !this.password) {
+          return "Username and password must not be blank.";
+        }
         if (this.testedConnection !== this.connectionKey()) return "Test the connection successfully before going further.";
         return undefined;
       case 2: {
@@ -336,7 +385,7 @@ export class AccountCreatePage extends AbstractPage {
   private loadFolders() {
     ApiEndpoints.ImapFolders.call({
       host: this.host.trim(), port: this.port, connectTimeout: this.connectTimeout, readTimeout: this.readTimeout,
-      username: this.username.trim(), password: this.password,
+      username: this.username.trim(), password: this.microsoft ? "" : this.password, oauthSignInId: this.microsoft ? this.oauthSignInId : "",
     })
       .then((output) => {
         this.folders = output.folders;
@@ -367,7 +416,8 @@ export class AccountCreatePage extends AbstractPage {
       host: this.host.trim(),
       port: this.port,
       username: this.username.trim(),
-      password: this.password,
+      password: this.microsoft ? "" : this.password,
+      oauthSignInId: this.microsoft ? this.oauthSignInId : "",
       runEvery: this.runEvery,
       connectTimeout: this.connectTimeout,
       readTimeout: this.readTimeout,

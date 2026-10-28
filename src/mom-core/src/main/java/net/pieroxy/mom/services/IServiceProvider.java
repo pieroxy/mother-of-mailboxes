@@ -15,4 +15,6 @@ public interface IServiceProvider {
 
   WebServerService getWebServerService();
   ClientGuardService getClientGuardService();
+
+  OAuthSignInService getOAuthSignInService();
 }

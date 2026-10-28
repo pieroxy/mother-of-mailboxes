@@ -5,6 +5,7 @@ import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
+import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.ReputationListConfig;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
@@ -32,8 +33,9 @@ public class CreateAccountApi extends AbstractAuthenticatedEndpoint<CreateAccoun
     if (input.getPort() <= 0 || input.getPort() > 65535) {
       throw new IllegalArgumentException("Port must be between 1 and 65535.");
     }
-    if (isBlank(input.getUsername()) || isBlank(input.getPassword())) {
-      throw new IllegalArgumentException("Username and password must not be blank.");
+    boolean signedIn = !isBlank(input.getOauthSignInId());
+    if (isBlank(input.getUsername()) || (!signedIn && isBlank(input.getPassword()))) {
+      throw new IllegalArgumentException(signedIn ? "Username must not be blank." : "Username and password must not be blank.");
     }
     if (input.getRunEvery() <= 0) {
       throw new IllegalArgumentException("\"Run every\" must be a positive number of seconds.");
@@ -72,9 +74,17 @@ public class CreateAccountApi extends AbstractAuthenticatedEndpoint<CreateAccoun
       config.setRules(DefaultSpamRules.build(spamFolder, classifierFolder, configuredListIds(serviceProvider)));
     }
 
-    serviceProvider.getAccountService().createAccount(config, input.getUsername().trim(), input.getPassword(),
+    Credential credential = new Credential();
+    credential.setUsername(input.getUsername().trim());
+    if (signedIn) {
+      credential.setOauth(serviceProvider.getOAuthSignInService().grant(input.getOauthSignInId()));
+    } else {
+      credential.setPassword(input.getPassword());
+    }
+    serviceProvider.getAccountService().createAccount(config, credential,
         smtp, smtp != null && input.getSmtp().isOwnCredentials(), smtp != null ? input.getSmtp().getUsername() : null,
         input.getSmtpPassword());
+    if (signedIn) serviceProvider.getOAuthSignInService().forget(input.getOauthSignInId());
     return new CreateAccountApiOutput();
   }
 
@@ -98,7 +108,10 @@ class CreateAccountApiInput extends AuthenticatedApiInput {
   private String host;
   private int port;
   private String username;
+  /** Unused with {@link #oauthSignInId}. */
   private String password;
+  /** A completed Microsoft sign-in (see StartMicrosoftSignInApi): the IMAP login authenticates with it. */
+  private String oauthSignInId;
   private int runEvery;
   private int connectTimeout;
   private int readTimeout;
@@ -112,6 +125,14 @@ class CreateAccountApiInput extends AuthenticatedApiInput {
   private SmtpSettingsDto smtp;
   /** Only used with {@code smtp.ownCredentials}. */
   private String smtpPassword;
+
+  public String getOauthSignInId() {
+    return oauthSignInId;
+  }
+
+  public void setOauthSignInId(String oauthSignInId) {
+    this.oauthSignInId = oauthSignInId;
+  }
 
   public SmtpSettingsDto getSmtp() {
     return smtp;

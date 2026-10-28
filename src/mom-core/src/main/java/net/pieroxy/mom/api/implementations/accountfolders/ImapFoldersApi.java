@@ -1,5 +1,6 @@
 package net.pieroxy.mom.api.implementations.accountfolders;
 
+import net.pieroxy.mom.api.implementations.accountconfig.EditedImapLogin;
 import net.pieroxy.mom.api.metadata.AbstractAuthenticatedEndpoint;
 import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
@@ -29,9 +30,7 @@ public class ImapFoldersApi extends AbstractAuthenticatedEndpoint<ImapFoldersApi
     config.setPort(input.getPort());
     config.setConnectTimeout(input.getConnectTimeout());
     config.setReadTimeout(input.getReadTimeout());
-    Credential credential = new Credential();
-    credential.setUsername(input.getUsername());
-    credential.setPassword(input.getPassword());
+    Credential credential = EditedImapLogin.resolve(serviceProvider, null, input.getUsername(), input.getPassword(), input.getOauthSignInId());
 
     try (ImapMailboxConnection mailbox = ImapMailboxConnection.connect(config, credential)) {
       return new AccountFoldersApiOutput(AccountFoldersApi.listFolders(mailbox));
@@ -47,6 +46,16 @@ class ImapFoldersApiInput extends AuthenticatedApiInput {
   private int readTimeout;
   private String username;
   private String password;
+  /** A completed Microsoft sign-in, used instead of {@link #password}. */
+  private String oauthSignInId;
+
+  public String getOauthSignInId() {
+    return oauthSignInId;
+  }
+
+  public void setOauthSignInId(String oauthSignInId) {
+    this.oauthSignInId = oauthSignInId;
+  }
 
   public String getHost() {
     return host;

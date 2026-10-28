@@ -7,7 +7,7 @@ import java.util.Set;
 
 /**
  * Hosts the running {@link SettingsService}, {@link AccountService}, {@link SessionService},
- * {@link WebServerService} and {@link ClientGuardService}, and manages their startup/shutdown lifecycle.
+ * {@link WebServerService}, {@link ClientGuardService} and {@link OAuthSignInService}, and manages their startup/shutdown lifecycle.
  * <p>
  * {@link #init()} topologically sorts them by declared {@link Service#getDependencies()}, then for
  * each in turn calls {@link Service#init(IServiceProvider)} (scoped to what it declared — see
@@ -20,17 +20,20 @@ public class ServiceProvider implements IServiceProvider {
   private final SessionService sessionService;
   private final WebServerService webServerService;
   private final ClientGuardService clientGuardService;
+  private final OAuthSignInService oauthSignInService;
   private final List<Service> services;
   private final List<Service> startedInOrder = new ArrayList<>();
 
   public ServiceProvider(SettingsService settingsService, AccountService accountService,
-                          SessionService sessionService, WebServerService webServerService, ClientGuardService clientGuardService) {
+                          SessionService sessionService, WebServerService webServerService, ClientGuardService clientGuardService,
+                          OAuthSignInService oauthSignInService) {
     this.settingsService = settingsService;
     this.accountService = accountService;
     this.sessionService = sessionService;
     this.webServerService = webServerService;
     this.clientGuardService = clientGuardService;
-    this.services = List.of(settingsService, accountService, sessionService, webServerService, clientGuardService);
+    this.oauthSignInService = oauthSignInService;
+    this.services = List.of(settingsService, accountService, sessionService, webServerService, clientGuardService, oauthSignInService);
   }
 
   @Override
@@ -56,6 +59,11 @@ public class ServiceProvider implements IServiceProvider {
   @Override
   public ClientGuardService getClientGuardService() {
     return clientGuardService;
+  }
+
+  @Override
+  public OAuthSignInService getOAuthSignInService() {
+    return oauthSignInService;
   }
 
   public void init() {

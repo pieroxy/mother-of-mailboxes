@@ -60,7 +60,7 @@ public class WebServerService implements Service {
 
   @Override
   public List<Class<? extends Service>> getDependencies() {
-    return List.of(SettingsService.class, AccountService.class, SessionService.class, ClientGuardService.class);
+    return List.of(SettingsService.class, AccountService.class, SessionService.class, ClientGuardService.class, OAuthSignInService.class);
   }
 
   @Override
@@ -143,6 +143,11 @@ public class WebServerService implements Service {
       @Override
       public ClientGuardService getClientGuardService() {
         return scoped.getClientGuardService();
+      }
+
+      @Override
+      public OAuthSignInService getOAuthSignInService() {
+        return scoped.getOAuthSignInService();
       }
     };
   }

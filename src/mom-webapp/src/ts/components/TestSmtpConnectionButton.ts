@@ -12,6 +12,8 @@ interface TestSmtpConnectionButtonAttrs {
   /** Used without ownCredentials. */
   imapUsername: string;
   imapPassword: string;
+  /** Used without ownCredentials: the IMAP login's completed Microsoft sign-in. Empty: none. */
+  imapOauthSignInId: string;
   connectTimeout: number;
   readTimeout: number;
   onResult?: (connected: boolean) => void;
@@ -33,6 +35,7 @@ export class TestSmtpConnectionButton implements m.ClassComponent<TestSmtpConnec
         ownCredentials: smtp.ownCredentials,
         username: smtp.ownCredentials ? smtp.username : attrs.imapUsername,
         password: smtp.ownCredentials ? attrs.password : attrs.imapPassword,
+        oauthSignInId: smtp.ownCredentials ? "" : attrs.imapOauthSignInId,
       }),
       onResult: attrs.onResult,
     });

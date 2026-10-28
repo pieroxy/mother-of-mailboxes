@@ -45,8 +45,9 @@ public final class ImapSessions {
     props.setProperty("mail.imaps.connectiontimeout", String.valueOf(connectTimeoutSeconds(config) * 1000L));
     props.setProperty("mail.imaps.timeout", String.valueOf(readTimeoutMs));
     props.setProperty("mail.imaps.writetimeout", String.valueOf(readTimeoutMs));
+    MailLogins.configure(props, "imaps", credential);
     Store store = Session.getInstance(props).getStore("imaps");
-    store.connect(config.getHost(), config.getPort(), credential.getUsername(), credential.getPassword());
+    store.connect(config.getHost(), config.getPort(), credential.getUsername(), MailLogins.secret(credential));
     return store;
   }
 }

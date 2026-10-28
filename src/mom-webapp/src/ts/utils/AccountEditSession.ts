@@ -1,5 +1,5 @@
 import { ApiEndpoints } from "../auto/ApiEndpoints";
-import { AccountBasicConfigDto, LearningShortcutConfiguration, MailFilterRuleConfiguration, MailFilterRuleMatcherConfiguration, SmtpSettingsDto } from "../auto/pieroxy-mom";
+import { AccountBasicConfigDto, LearningShortcutConfiguration, MailFilterRuleConfiguration, MailFilterRuleMatcherConfiguration, OAuthProvider, SmtpSettingsDto } from "../auto/pieroxy-mom";
 
 /** One rule in a session's working list, tracking enough to render "Moved"/"Deleted"/"New" tags and to rebuild the final rules array on save. */
 export interface PendingRule {
@@ -45,6 +45,12 @@ export interface AccountEditSession {
   workingUsername: string;
   /** Empty means "no new password staged" — the same "blank = unchanged" convention the backend uses. */
   workingPassword: string;
+  /** Null: the saved login uses a password. */
+  baselineOauthProvider: OAuthProvider | null;
+  /** The saved Microsoft sign-in's app registration, if the user's own; empty otherwise. */
+  baselineOauthClientId: string;
+  /** A completed Microsoft sign-in replacing the saved login; empty: none. Exclusive with workingPassword. */
+  workingOauthSignInId: string;
   /** Null: no SMTP configured. */
   baselineSmtp: SmtpSettingsDto | null;
   workingSmtp: SmtpSettingsDto | null;
@@ -75,7 +81,14 @@ export function isConfigChanged(session: AccountEditSession): boolean {
 }
 
 export function isCredentialsChanged(session: AccountEditSession): boolean {
-  return session.workingUsername !== session.baselineUsername || session.workingPassword !== "";
+  return session.workingUsername !== session.baselineUsername || session.workingPassword !== "" || session.workingOauthSignInId !== "";
+}
+
+/** Whether the IMAP login, as staged, signs in with Microsoft rather than with a password. */
+export function usesMicrosoftSignIn(session: AccountEditSession): boolean {
+  if (session.workingOauthSignInId !== "") return true;
+  if (session.workingPassword !== "") return false;
+  return session.baselineOauthProvider === OAuthProvider.MICROSOFT;
 }
 
 export function isSmtpChanged(session: AccountEditSession): boolean {
@@ -143,6 +156,9 @@ class AccountEditSessionStore {
         baselineUsername: output.credentials.username,
         workingUsername: output.credentials.username,
         workingPassword: "",
+        baselineOauthProvider: output.credentials.oauthProvider ?? null,
+        baselineOauthClientId: output.credentials.oauthClientId ?? "",
+        workingOauthSignInId: "",
         baselineSmtp: output.smtp ?? null,
         workingSmtp: output.smtp ? { ...output.smtp } : null,
         workingSmtpPassword: "",

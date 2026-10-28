@@ -7,12 +7,14 @@ package net.pieroxy.mom.config.credentials;
  * is cleared, so the web login's password never sits in credentials.json in plaintext.
  * {@code temporary} is also web-login only: while set, every authenticated API call except
  * {@code ChangePasswordApi} is refused, so the first thing a login can do is pick a new password.
+ * {@code oauth} is mail accounts only: the login authenticates with it instead of {@code password}.
  */
 public class Credential {
   private String username;
   private String password;
   private PasswordHash passwordHash;
   private boolean temporary;
+  private OAuthGrant oauth;
 
   public String getUsername() {
     return username;
@@ -44,5 +46,13 @@ public class Credential {
 
   public void setTemporary(boolean temporary) {
     this.temporary = temporary;
+  }
+
+  public OAuthGrant getOauth() {
+    return oauth;
+  }
+
+  public void setOauth(OAuthGrant oauth) {
+    this.oauth = oauth;
   }
 }

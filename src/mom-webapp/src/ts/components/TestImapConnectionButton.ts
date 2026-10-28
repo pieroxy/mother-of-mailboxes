@@ -9,8 +9,10 @@ interface TestImapConnectionButtonAttrs {
   connectTimeout: number;
   readTimeout: number;
   username: string;
-  /** Blank falls back to the account's already-saved password server-side — see TestImapConnectionApi. */
+  /** Blank, without oauthSignInId, falls back to the account's saved login server-side — see TestImapConnectionApi. */
   password: string;
+  /** A completed Microsoft sign-in, used instead of the password. Empty: none. */
+  oauthSignInId: string;
   onResult?: (connected: boolean) => void;
 }
 
@@ -33,6 +35,7 @@ export class TestImapConnectionButton implements m.ClassComponent<TestImapConnec
         readTimeout: attrs.readTimeout,
         username: attrs.username,
         password: attrs.password,
+        oauthSignInId: attrs.oauthSignInId,
       }),
     });
   }

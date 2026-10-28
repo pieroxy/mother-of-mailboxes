@@ -8,7 +8,6 @@ import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
 import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
-import net.pieroxy.mom.rules.MailAccount;
 import net.pieroxy.mom.utils.mail.ConnectionFailures;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.utils.mail.ImapMailboxConnection;
@@ -17,14 +16,13 @@ import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
 
 /**
- * Attempts a live IMAPS connection with whatever host/port/username/password the caller is
- * currently editing — not necessarily saved yet (the whole point: catching a typo before "Save
- * Changes" restarts the account against it). A blank password falls back to the named account's
- * already-saved one, same "blank means unchanged" rule {@code UpdateAccountApi} uses, so testing
- * right after opening Edit — without retyping a password you're not changing — tests the real
- * thing. Never throws on a failed connection: that's the expected, common result of testing, not
- * a server error, so the outcome travels in the output ({@link TestImapConnectionApiOutput}) for
- * the caller to show inline, rather than as a generic API-failure notification.
+ * Attempts a live IMAPS connection with whatever host/port/login the caller is currently editing —
+ * not necessarily saved yet (the whole point: catching a typo before "Save Changes" restarts the
+ * account against it). The login is resolved by {@link EditedImapLogin}: a blank password falls
+ * back to the named account's saved login, same "blank means unchanged" rule
+ * {@code UpdateAccountApi} uses. Never throws on a failed connection: that's the expected, common
+ * result of testing, not a server error, so the outcome travels in the output
+ * ({@link TestImapConnectionApiOutput}) for the caller to show inline.
  */
 @Endpoint(method = ApiMethod.POST)
 public class TestImapConnectionApi extends AbstractAuthenticatedEndpoint<TestImapConnectionApiInput, TestImapConnectionApiOutput> {
@@ -34,40 +32,27 @@ public class TestImapConnectionApi extends AbstractAuthenticatedEndpoint<TestIma
 
   @Override
   public TestImapConnectionApiOutput processAuthenticated(TestImapConnectionApiInput input) {
-    String password = resolvePassword(input);
-
     MailAccountConfiguration config = new MailAccountConfiguration();
     config.setHost(input.getHost());
     config.setPort(input.getPort());
     config.setConnectTimeout(input.getConnectTimeout());
     config.setReadTimeout(input.getReadTimeout());
-    Credential credential = new Credential();
-    credential.setUsername(input.getUsername());
-    credential.setPassword(password);
+    Credential credential = EditedImapLogin.resolve(serviceProvider, input.getAccountName(), input.getUsername(), input.getPassword(),
+        input.getOauthSignInId());
 
     try (ImapMailbox ignored = ImapMailboxConnection.connect(config, credential)) {
       return new TestImapConnectionApiOutput(true, "Connected successfully.");
     } catch (AuthenticationFailedException e) {
-      return new TestImapConnectionApiOutput(false, "Authentication failed — check the username and password.");
+      return new TestImapConnectionApiOutput(false, ConnectionFailures.describeAuthenticationFailure(e, credential, "IMAP"));
     } catch (MessagingException e) {
       return new TestImapConnectionApiOutput(false, ConnectionFailures.describe(e, config));
     }
-  }
-
-  private String resolvePassword(TestImapConnectionApiInput input) {
-    if (input.getPassword() != null && !input.getPassword().isBlank()) return input.getPassword();
-    if (input.getAccountName() == null || input.getAccountName().isBlank()) return input.getPassword();
-    return serviceProvider.getAccountService().getAccounts().stream()
-        .filter(a -> a.getAccountLabel().equals(input.getAccountName()))
-        .findFirst()
-        .map(a -> a.getCredential().getPassword())
-        .orElse(input.getPassword());
   }
 }
 
 @TypeScriptType
 class TestImapConnectionApiInput extends AuthenticatedApiInput {
-  /** Only used to fall back to the saved password when {@link #password} is blank — see the class doc comment. */
+  /** Only used to fall back to the saved login when {@link #password} is blank — see the class doc comment. */
   private String accountName;
   private String host;
   private int port;
@@ -75,6 +60,16 @@ class TestImapConnectionApiInput extends AuthenticatedApiInput {
   private int readTimeout;
   private String username;
   private String password;
+  /** A completed Microsoft sign-in (see StartMicrosoftSignInApi), used instead of {@link #password}. */
+  private String oauthSignInId;
+
+  public String getOauthSignInId() {
+    return oauthSignInId;
+  }
+
+  public void setOauthSignInId(String oauthSignInId) {
+    this.oauthSignInId = oauthSignInId;
+  }
 
   public String getAccountName() {
     return accountName;

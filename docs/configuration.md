@@ -179,6 +179,23 @@ file's `credentials` map:
 Every `credentials` key referenced from `config.json` must exist in this map — MOM fails fast
 at startup otherwise.
 
+A mailbox that signs in with Microsoft (see [Adding an account](web-ui.md#adding-an-account)) has
+an `oauth` entry instead of a password. MOM replaces `refreshToken` as Microsoft renews it:
+
+```json
+"outlook": {
+  "username": "me@outlook.com",
+  "oauth": {
+    "provider": "MICROSOFT",
+    "clientId": "00000000-0000-0000-0000-000000000000",
+    "refreshToken": "..."
+  }
+}
+```
+
+The SMTP settings of such an account log in with the same sign-in, unless they have their own
+`credentials`.
+
 On the web server's credential only, `"temporary": true` forces a password change right after
 login. See [First start](running.md#first-start) to reset a lost web UI password.
 

@@ -167,6 +167,7 @@ Everything is in the config directory (`/var/lib/mom` above):
 | `data/logs/` | Stats and the decision log history are gone. Optional. |
 | `data/webapp-ui/` | Nothing: recreated on every start. |
 
-`credentials.json` holds your IMAP passwords in plain text: keep backups as private as the file.
+`credentials.json` holds your IMAP passwords and Microsoft sign-ins in plain text: keep backups as
+private as the file.
 
 To move MOM to another machine, stop it, copy the config directory over, and start it there.

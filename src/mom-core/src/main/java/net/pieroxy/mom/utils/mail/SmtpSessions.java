@@ -23,7 +23,7 @@ public final class SmtpSessions {
    * Bounces go to the sender address, which also gives generated Message-IDs their domain
    * (javax.mail derives both from {@code mail.from}).
    */
-  public static Session session(MailAccountConfiguration account, SmtpConfiguration smtp) {
+  public static Session session(MailAccountConfiguration account, SmtpConfiguration smtp, Credential credential) {
     String prefix = "mail." + protocol(smtp) + ".";
     Properties props = new Properties();
     props.setProperty(prefix + "auth", "true");
@@ -36,6 +36,7 @@ public final class SmtpSessions {
     props.setProperty(prefix + "connectiontimeout", String.valueOf(ImapSessions.connectTimeoutSeconds(account) * 1000L));
     props.setProperty(prefix + "timeout", String.valueOf(readTimeoutMs));
     props.setProperty(prefix + "writetimeout", String.valueOf(readTimeoutMs));
+    MailLogins.configure(props, protocol(smtp), credential);
     if (smtp.getFromAddress() != null) {
       props.setProperty(prefix + "from", smtp.getFromAddress());
       props.setProperty("mail.from", smtp.getFromAddress());
@@ -43,10 +44,10 @@ public final class SmtpSessions {
     return Session.getInstance(props);
   }
 
-  /** Opens and authenticates an SMTP connection for the account; the caller closes it. */
+  /** Opens and authenticates an SMTP connection for the account; the caller closes it. {@code session}: built with the same credential. */
   public static Transport connect(Session session, SmtpConfiguration smtp, Credential credential) throws MessagingException {
     Transport transport = session.getTransport(protocol(smtp));
-    transport.connect(smtp.getHost(), smtp.getPort(), credential.getUsername(), credential.getPassword());
+    transport.connect(smtp.getHost(), smtp.getPort(), credential.getUsername(), MailLogins.secret(credential));
     return transport;
   }
 

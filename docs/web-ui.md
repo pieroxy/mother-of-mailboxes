@@ -36,7 +36,8 @@ Its refresh icon downloads it again right away.
 The wizard asks for:
 
 1. **Name**: shown everywhere, and used to name the account's files.
-2. **IMAP connection**: server, port, username and password, with a button to test them.
+2. **IMAP connection**: server, port, username and password, or a Microsoft sign-in (see
+   below), with a button to test them.
 3. **Sending mail** (optional): the [SMTP settings](configuration.md#smtp-settings), needed to
    forward, redirect or reply. Also tested before going further.
 4. **Spam folder**: where spam goes, created if missing. Everything outside it (and `INBOX`) is
@@ -48,6 +49,20 @@ The wizard asks for:
 7. **Review**: everything above, and the rules that will be created.
 
 Nothing is saved before **Create account**.
+
+### Signing in with Microsoft
+
+Outlook.com, Hotmail, Live and Microsoft 365 mailboxes don't accept passwords over IMAP: MOM signs
+in with Microsoft instead. **Sign in with Microsoft** shows a code to enter at Microsoft's sign-in
+page, where you sign in to the mailbox and let MOM read and send its mail.
+
+MOM signs in as its own app, registered with Microsoft. A work account's administrator may only
+allow approved apps: then register MOM in your organization's directory (the steps are under
+**Use your own app registration**) and give its **Application (client) ID**.
+
+The sign-in also covers sending mail, through `smtp-mail.outlook.com`. If Microsoft revokes it
+(e.g. after a password change), the account stops with an error: sign in again from its IMAP
+settings.
 
 ## Account page
 

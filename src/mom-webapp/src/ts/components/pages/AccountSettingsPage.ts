@@ -1,6 +1,6 @@
 import m from "mithril";
 import { ApiEndpoints } from "../../auto/ApiEndpoints";
-import { AccountBasicConfigDto, MailFilterRuleActionConfiguration, MailFilterRuleMatcherConfiguration, RuleType, SmtpSecurity, SmtpSettingsDto } from "../../auto/pieroxy-mom";
+import { AccountBasicConfigDto, MailFilterRuleActionConfiguration, MailFilterRuleMatcherConfiguration, OAuthProvider, RuleType, SmtpSecurity, SmtpSettingsDto } from "../../auto/pieroxy-mom";
 import { AbstractPage } from "./AbstractPage";
 import { AccountPageHeader } from "../AccountPageHeader";
 import { Routing } from "../../utils/navigation/Routing";
@@ -91,7 +91,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
           m(TestImapConnectionButton, {
             accountName: this.accountName, host: session.workingConfig.host, port: session.workingConfig.port,
             connectTimeout: session.workingConfig.connectTimeout, readTimeout: session.workingConfig.readTimeout,
-            username: session.workingUsername, password: session.workingPassword,
+            username: session.workingUsername, password: session.workingPassword, oauthSignInId: session.workingOauthSignInId,
           })),
         renderImapSettingsSection(session),
       ]),
@@ -99,7 +99,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         sectionHeader("SMTP settings", () => Routing.goToAccountSmtpSettingsEdit(this.accountName),
           session.workingSmtp ? m(TestSmtpConnectionButton, {
             accountName: this.accountName, smtp: session.workingSmtp, password: session.workingSmtpPassword,
-            imapUsername: session.workingUsername, imapPassword: session.workingPassword,
+            imapUsername: session.workingUsername, imapPassword: session.workingPassword, imapOauthSignInId: session.workingOauthSignInId,
             connectTimeout: session.workingConfig.connectTimeout, readTimeout: session.workingConfig.readTimeout,
           }) : null),
         renderSmtpSettingsSection(session),
@@ -361,6 +361,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         decisionLogRetentionDays: session.workingConfig.decisionLogRetentionDays,
         username: session.workingUsername,
         password: session.workingPassword,
+        oauthSignInId: session.workingOauthSignInId,
         rules: session.rules.filter((pendingRule) => !pendingRule.deleted).map((pendingRule) => pendingRule.rule),
         shortcuts: session.shortcuts.filter((pendingShortcut) => !pendingShortcut.deleted).map((pendingShortcut) => pendingShortcut.shortcut),
         // The generated type doesn't know null means "no SMTP" (see UpdateAccountApiInput).
@@ -508,8 +509,14 @@ function renderImapSettingsSection(session: AccountEditSession): m.Children {
     configRow("Host", config.host, changed("host")),
     configRow("Port", String(config.port), changed("port")),
     configRow("Username", session.workingUsername, session.workingUsername !== session.baselineUsername),
-    configRow("Password", session.workingPassword !== "" ? "(will be changed)" : m("span.config-row-hint", "(unchanged)"), session.workingPassword !== ""),
+    configRow("Login", loginValue(session), session.workingPassword !== "" || session.workingOauthSignInId !== ""),
   ]);
+}
+
+function loginValue(session: AccountEditSession): m.Children {
+  if (session.workingOauthSignInId !== "") return "Microsoft sign-in (new)";
+  if (session.workingPassword !== "") return "Password (will be changed)";
+  return session.baselineOauthProvider === OAuthProvider.MICROSOFT ? "Microsoft sign-in" : "Password";
 }
 
 function renderSmtpSettingsSection(session: AccountEditSession): m.Children {

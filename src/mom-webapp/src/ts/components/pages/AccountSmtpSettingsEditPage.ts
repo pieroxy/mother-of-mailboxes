@@ -61,7 +61,7 @@ export class AccountSmtpSettingsEditPage extends AbstractPage<AccountSmtpSetting
       }),
       m(TestSmtpConnectionButton, {
         accountName: session.accountName, smtp: this.smtp, password: this.password,
-        imapUsername: session.workingUsername, imapPassword: session.workingPassword,
+        imapUsername: session.workingUsername, imapPassword: session.workingPassword, imapOauthSignInId: session.workingOauthSignInId,
         connectTimeout: session.workingConfig.connectTimeout, readTimeout: session.workingConfig.readTimeout,
       }),
       m(".edit-actions", [

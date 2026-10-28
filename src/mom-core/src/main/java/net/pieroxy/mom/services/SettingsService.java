@@ -185,7 +185,18 @@ public class SettingsService implements Service {
    *                {@code "mail account \"personal\""}).
    */
   public Credential resolveCredential(String key, String context) {
-    return CredentialsResolver.resolve(key, credentialsFile, context);
+    Credential credential = CredentialsResolver.resolve(key, credentialsFile, context);
+    if (credential.getOauth() != null) credential.getOauth().setOnRefreshTokenRotated(this::persistRotatedRefreshToken);
+    return credential;
+  }
+
+  /** Not fatal: the previous refresh token stays usable for a while, and the next rotation saves again. */
+  private synchronized void persistRotatedRefreshToken() {
+    try {
+      persistCredentialsFile();
+    } catch (UncheckedIOException e) {
+      LOGGER.log(Level.WARNING, "Could not save a renewed sign-in to " + credentialsFilePath, e.getCause());
+    }
   }
 
   /** The login used to send mail for this account: its own SMTP credential, or else its IMAP one. */
@@ -253,7 +264,7 @@ public class SettingsService implements Service {
    *
    * @throws IllegalArgumentException if a new SMTP login has a blank password; nothing has changed then.
    */
-  public synchronized void addAccountConfig(MailAccountConfiguration accountConfig, String username, String password,
+  public synchronized void addAccountConfig(MailAccountConfiguration accountConfig, Credential credential,
                                             SmtpConfiguration smtp, boolean smtpOwnCredentials,
                                             String smtpUsername, String smtpPassword) {
     if (smtp != null && smtpOwnCredentials && (smtpPassword == null || smtpPassword.isBlank())) {
@@ -265,9 +276,6 @@ public class SettingsService implements Service {
     for (int i = 2; credentials.containsKey(key); i++) {
       key = accountConfig.getDisplayName() + "-" + i;
     }
-    Credential credential = new Credential();
-    credential.setUsername(username);
-    credential.setPassword(password);
     credentials.put(key, credential);
     credentialsFile.setCredentials(credentials);
     accountConfig.setCredentials(key);

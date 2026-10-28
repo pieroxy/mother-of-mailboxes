@@ -1,7 +1,9 @@
 package net.pieroxy.mom.utils.mail;
 
+import net.pieroxy.mom.config.credentials.Credential;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 
+import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
@@ -23,6 +25,13 @@ public final class ConnectionFailures {
       if (cause instanceof SSLException) return "TLS handshake failed: " + cause.getMessage();
     }
     return e.getMessage() != null ? e.getMessage() : "Connection failed.";
+  }
+
+  /** {@code protocol}: IMAP or SMTP. */
+  public static String describeAuthenticationFailure(AuthenticationFailedException e, Credential credential, String protocol) {
+    if (e instanceof MailLogins.SignInExpiredException) return e.getMessage();
+    if (credential.getOauth() == null) return "Authentication failed — check the username and password.";
+    return "Authentication failed — check that the username is the mailbox's address, and that " + protocol + " is enabled for it.";
   }
 
   /** True if {@code e} comes from the network (unreachable host, DNS, timeout...), not from the server's answer (e.g. a bad login). */

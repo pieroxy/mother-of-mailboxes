@@ -33,7 +33,7 @@ public class SmtpMailSender implements MailSender {
   SmtpMailSender(MailAccountConfiguration account, SmtpConfiguration smtp, Credential credential, Clock clock) {
     this.smtp = smtp;
     this.credential = credential;
-    this.session = SmtpSessions.session(account, smtp);
+    this.session = SmtpSessions.session(account, smtp, credential);
     this.rateLimit = new SendRateLimit(MAX_SENDS_PER_HOUR, clock);
   }
 

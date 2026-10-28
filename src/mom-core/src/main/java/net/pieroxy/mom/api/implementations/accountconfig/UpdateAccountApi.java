@@ -6,6 +6,7 @@ import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
+import net.pieroxy.mom.config.credentials.OAuthGrant;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
@@ -56,15 +57,18 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
     RuleCatalog.validateSendingActions(input.getRules(), smtp != null);
     List<LearningShortcutConfiguration> shortcuts = input.getShortcuts() != null ? input.getShortcuts() : List.of();
     RuleLearner.validateShortcuts(shortcuts);
+    boolean signedIn = input.getOauthSignInId() != null && !input.getOauthSignInId().isBlank();
+    OAuthGrant oauth = signedIn ? serviceProvider.getOAuthSignInService().grant(input.getOauthSignInId()) : null;
 
     serviceProvider.getAccountService().updateAccount(input.getAccountName(), input.getHost(), input.getPort(), input.getRunEvery(),
         input.getConnectTimeout(), input.getReadTimeout(),
         blankToNull(input.getClassifierSpamFolderName()),
         input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
         input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),
-        input.isDiscoveryTreeDisabled(), input.getDecisionLogRetentionDays(), input.getUsername(), input.getPassword(), input.getRules(), shortcuts,
+        input.isDiscoveryTreeDisabled(), input.getDecisionLogRetentionDays(), input.getUsername(), input.getPassword(), oauth, input.getRules(), shortcuts,
         smtp, smtp != null && input.getSmtp().isOwnCredentials(),
         smtp != null ? input.getSmtp().getUsername() : null, input.getSmtpPassword());
+    if (signedIn) serviceProvider.getOAuthSignInService().forget(input.getOauthSignInId());
 
     return new UpdateAccountApiOutput();
   }
@@ -89,14 +93,24 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
   private boolean discoveryTreeDisabled;
   private int decisionLogRetentionDays;
   private String username;
-  /** Blank means "leave the current password unchanged" — see the class javadoc. */
+  /** Blank means "leave the current login unchanged"; otherwise replaces a Microsoft sign-in too. */
   private String password;
+  /** A completed Microsoft sign-in (see StartMicrosoftSignInApi), replacing the current login. Takes precedence over {@link #password}. */
+  private String oauthSignInId;
   private List<MailFilterRuleConfiguration> rules;
   private List<LearningShortcutConfiguration> shortcuts;
   /** Null: no SMTP. */
   private SmtpSettingsDto smtp;
   /** Blank means "leave the current SMTP password unchanged". */
   private String smtpPassword;
+
+  public String getOauthSignInId() {
+    return oauthSignInId;
+  }
+
+  public void setOauthSignInId(String oauthSignInId) {
+    this.oauthSignInId = oauthSignInId;
+  }
 
   public SmtpSettingsDto getSmtp() {
     return smtp;

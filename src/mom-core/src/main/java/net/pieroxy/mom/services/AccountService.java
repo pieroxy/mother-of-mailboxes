@@ -1,6 +1,7 @@
 package net.pieroxy.mom.services;
 
 import net.pieroxy.mom.config.credentials.Credential;
+import net.pieroxy.mom.config.credentials.OAuthGrant;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
@@ -171,7 +172,7 @@ public class AccountService implements Service {
    * @throws IllegalArgumentException if the displayName is not a valid file name (it names the
    *     account's on-disk files) or is already used by another account.
    */
-  public synchronized void createAccount(MailAccountConfiguration config, String username, String password,
+  public synchronized void createAccount(MailAccountConfiguration config, Credential credential,
                                         SmtpConfiguration smtp, boolean smtpOwnCredentials,
                                         String smtpUsername, String smtpPassword) {
     FileNameValidator.validate(config.getDisplayName(), "Account name");
@@ -179,7 +180,7 @@ public class AccountService implements Service {
     if (taken) {
       throw new IllegalArgumentException("An account named \"" + config.getDisplayName() + "\" already exists.");
     }
-    settingsService.addAccountConfig(config, username, password, smtp, smtpOwnCredentials, smtpUsername, smtpPassword);
+    settingsService.addAccountConfig(config, credential, smtp, smtpOwnCredentials, smtpUsername, smtpPassword);
     MailAccount account = newMailAccount(config);
     accounts.add(account);
     if (config.isActive()) account.start();
@@ -189,15 +190,15 @@ public class AccountService implements Service {
    * Applies every editable part of an account's configuration — Config fields, IMAP credentials,
    * SMTP settings (see {@link SettingsService#setSmtp}), rules and learning shortcuts — and
    * restarts it once. {@code displayName} isn't settable here
-   * (it names the account's on-disk files). A blank {@code password} leaves the current one
-   * unchanged.
+   * (it names the account's on-disk files). The IMAP login authenticates with {@code oauth} if
+   * not null, else with {@code password} if not blank; otherwise it stays as it is.
    */
   public synchronized void updateAccount(String accountName, String host, int port, int runEvery,
                                           int connectTimeout, int readTimeout,
                                           String classifierSpamFolderName, List<String> classifierExcludedFolders,
                                           int classifierCorpusRetentionDays, int classifierCorpusScanBatchSize,
                                           boolean discoveryTreeDisabled, int decisionLogRetentionDays,
-                                          String username, String password,
+                                          String username, String password, OAuthGrant oauth,
                                           List<MailFilterRuleConfiguration> rules,
                                           List<LearningShortcutConfiguration> shortcuts,
                                           SmtpConfiguration smtp, boolean smtpOwnCredentials,
@@ -221,8 +222,12 @@ public class AccountService implements Service {
 
     Credential credential = settingsService.resolveCredential(config.getCredentials(), "mail account \"" + accountName + "\"");
     credential.setUsername(username);
-    if (password != null && !password.isBlank()) {
+    if (oauth != null) {
+      credential.setOauth(oauth);
+      credential.setPassword(null);
+    } else if (password != null && !password.isBlank()) {
       credential.setPassword(password);
+      credential.setOauth(null);
     }
     settingsService.persistCredentialsFile();
 

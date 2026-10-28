@@ -9,6 +9,7 @@ import net.pieroxy.mom.config.general.Configuration;
 import net.pieroxy.mom.config.general.WebServerConfiguration;
 import net.pieroxy.mom.services.AccountService;
 import net.pieroxy.mom.services.ClientGuardService;
+import net.pieroxy.mom.services.OAuthSignInService;
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.services.SessionService;
 import net.pieroxy.mom.services.SettingsService;
@@ -66,6 +67,7 @@ public class LoginApiTest {
       @Override public SessionService getSessionService() { return sessionService; }
       @Override public WebServerService getWebServerService() { throw new UnsupportedOperationException(); }
       @Override public ClientGuardService getClientGuardService() { return guard; }
+      @Override public OAuthSignInService getOAuthSignInService() { throw new UnsupportedOperationException(); }
     });
   }
 

@@ -6,11 +6,14 @@ import net.pieroxy.mom.api.metadata.ApiMethod;
 import net.pieroxy.mom.api.metadata.AuthenticatedApiInput;
 import net.pieroxy.mom.api.metadata.Endpoint;
 import net.pieroxy.mom.api.metadata.TypeScriptType;
+import net.pieroxy.mom.config.credentials.OAuthGrant;
+import net.pieroxy.mom.config.credentials.OAuthProvider;
 import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
+import net.pieroxy.mom.utils.mail.oauth.MicrosoftIdentity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +44,11 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
         config.getDecisionLogRetentionDays());
 
     CredentialsInfoDto credentials = new CredentialsInfoDto(config.getCredentials(), account.getCredentialUsername());
+    OAuthGrant oauth = account.getCredential().getOauth();
+    if (oauth != null) {
+      credentials.setOauthProvider(oauth.getProvider());
+      if (!MicrosoftIdentity.MOM_CLIENT_ID.equals(oauth.getClientId())) credentials.setOauthClientId(oauth.getClientId());
+    }
 
     List<MailFilterRuleConfiguration> rules = config.getRules() != null ? config.getRules() : List.of();
     List<LearningShortcutConfiguration> shortcuts = config.getLearningShortcuts() != null ? config.getLearningShortcuts() : List.of();
@@ -300,6 +308,10 @@ class AccountBasicConfigDto {
 class CredentialsInfoDto {
   private String credentialsKey;
   private String username;
+  /** Null: a password login. */
+  private OAuthProvider oauthProvider;
+  /** Null with MOM's own app registration. */
+  private String oauthClientId;
 
   public CredentialsInfoDto() {
   }
@@ -323,5 +335,21 @@ class CredentialsInfoDto {
 
   public void setUsername(String username) {
     this.username = username;
+  }
+
+  public OAuthProvider getOauthProvider() {
+    return oauthProvider;
+  }
+
+  public void setOauthProvider(OAuthProvider oauthProvider) {
+    this.oauthProvider = oauthProvider;
+  }
+
+  public String getOauthClientId() {
+    return oauthClientId;
+  }
+
+  public void setOauthClientId(String oauthClientId) {
+    this.oauthClientId = oauthClientId;
   }
 }

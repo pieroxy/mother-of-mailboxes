@@ -2,6 +2,8 @@ package net.pieroxy.mom.services;
 
 import com.google.gson.Gson;
 import net.pieroxy.mom.config.credentials.Credential;
+import net.pieroxy.mom.config.credentials.OAuthProvider;
+import net.pieroxy.mom.config.credentials.OAuthGrant;
 import net.pieroxy.mom.config.credentials.CredentialsFile;
 import net.pieroxy.mom.config.credentials.PasswordHasher;
 import net.pieroxy.mom.config.general.Configuration;
@@ -14,6 +16,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -118,6 +121,13 @@ public class SettingsServiceTest {
     Credential c = new Credential();
     c.setUsername(username);
     c.setPasswordHash(PasswordHasher.hash("whatever"));
+    return c;
+  }
+
+  private static Credential login(String username, String password) {
+    Credential c = new Credential();
+    c.setUsername(username);
+    c.setPassword(password);
     return c;
   }
 
@@ -367,7 +377,7 @@ public class SettingsServiceTest {
     MailAccountConfiguration account = new MailAccountConfiguration();
     account.setDisplayName("work");
 
-    settingsService.addAccountConfig(account, "me@example.com", "secret", null, false, null, null);
+    settingsService.addAccountConfig(account, login("me@example.com", "secret"), null, false, null, null);
 
     assertEquals("an existing key must never be overwritten", "work-2", account.getCredentials());
     CredentialsFile reloadedCredentials = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
@@ -390,7 +400,7 @@ public class SettingsServiceTest {
     smtp.setFromAddress("me@example.com");
     smtp.setAliases(List.of("@example.org"));
 
-    settingsService.addAccountConfig(account, "me@example.com", "secret", smtp, true, "smtp-user", "smtp-secret");
+    settingsService.addAccountConfig(account, login("me@example.com", "secret"), smtp, true, "smtp-user", "smtp-secret");
 
     CredentialsFile reloadedCredentials = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
     assertEquals("smtp-user", reloadedCredentials.getCredentials().get("home-smtp").getUsername());
@@ -410,8 +420,46 @@ public class SettingsServiceTest {
     smtp.setFromAddress("me@example.com");
 
     assertThrows(IllegalArgumentException.class,
-        () -> settingsService.addAccountConfig(account, "me@example.com", "secret", smtp, true, "smtp-user", " "));
+        () -> settingsService.addAccountConfig(account, login("me@example.com", "secret"), smtp, true, "smtp-user", " "));
     assertTrue(settingsService.getConfiguration().getConfigurations() == null
         || settingsService.getConfiguration().getConfigurations().isEmpty());
+  }
+
+  @Test
+  public void anOAuthLoginKeepsItsRefreshTokenOnDiskButNotItsAccessToken() throws Exception {
+    File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
+    SettingsService settingsService = buildSettingsServiceWithAccounts(new HashMap<>(Map.of("web-cred", credential("admin"))),
+        List.of(), "web-cred", credentialsFilePath);
+    MailAccountConfiguration account = new MailAccountConfiguration();
+    account.setDisplayName("outlook");
+    Credential credential = new Credential();
+    credential.setUsername("me@outlook.com");
+    OAuthGrant grant = new OAuthGrant(OAuthProvider.MICROSOFT, "client-id", "refresh-1");
+    grant.setAccessToken("access-1", Long.MAX_VALUE);
+    credential.setOauth(grant);
+
+    settingsService.addAccountConfig(account, credential, null, false, null, null);
+
+    String saved = Files.readString(credentialsFilePath.toPath());
+    assertTrue(saved.contains("refresh-1"));
+    assertFalse(saved.contains("access-1"));
+    OAuthGrant reloaded = new Gson().fromJson(saved, CredentialsFile.class).getCredentials().get("outlook").getOauth();
+    assertEquals(OAuthProvider.MICROSOFT, reloaded.getProvider());
+    assertEquals("client-id", reloaded.getClientId());
+  }
+
+  @Test
+  public void aRotatedRefreshTokenIsSaved() throws Exception {
+    File credentialsFilePath = new File(tmp.getRoot(), "credentials.json");
+    Credential credential = new Credential();
+    credential.setUsername("me@outlook.com");
+    credential.setOauth(new OAuthGrant(OAuthProvider.MICROSOFT, "client-id", "refresh-1"));
+    SettingsService settingsService = buildSettingsServiceWithAccounts(
+        new HashMap<>(Map.of("web-cred", credential("admin"), "outlook", credential)), List.of("outlook"), "web-cred", credentialsFilePath);
+
+    settingsService.resolveCredential("outlook", "test").getOauth().setRefreshToken("refresh-2");
+
+    CredentialsFile reloaded = new Gson().fromJson(new FileReader(credentialsFilePath), CredentialsFile.class);
+    assertEquals("refresh-2", reloaded.getCredentials().get("outlook").getOauth().getRefreshToken());
   }
 }

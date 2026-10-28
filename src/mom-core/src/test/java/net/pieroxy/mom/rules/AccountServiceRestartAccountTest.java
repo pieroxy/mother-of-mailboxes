@@ -292,7 +292,7 @@ public class AccountServiceRestartAccountTest {
         setup.config.getConnectTimeout(), setup.config.getReadTimeout(),
         setup.config.getClassifierSpamFolderName(), setup.config.getClassifierExcludedFolders(),
         setup.config.getClassifierCorpusRetentionDays(), setup.config.getClassifierCorpusScanBatchSize(),
-        setup.config.isDiscoveryTreeDisabled(), setup.config.getDecisionLogRetentionDays(), username, password, rules, shortcuts, null, false, null, null);
+        setup.config.isDiscoveryTreeDisabled(), setup.config.getDecisionLogRetentionDays(), username, password, null, rules, shortcuts, null, false, null, null);
   }
 
   private static LearningShortcutConfiguration shortcut(String name, MatcherType matcherType, ActionType actionType, String actionKey) {
