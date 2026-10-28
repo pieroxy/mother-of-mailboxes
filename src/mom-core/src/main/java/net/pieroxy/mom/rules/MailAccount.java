@@ -36,6 +36,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -73,6 +74,8 @@ public class MailAccount implements Runnable {
   private final BackoffLoop backoffLoop;
   private final Thread thread;
   private LocalDate lastSkeletonEnsureDate;
+  // Set by requestCycle: the next cycle runs the classifier corpus scan even if it already ran today.
+  private final AtomicBoolean corpusScanRequested = new AtomicBoolean();
 
   // Live dashboard state (see AccountsApi): written only from this account's own thread, read
   // from Tomcat's request-handling threads — volatile/Atomic, not synchronized, is enough since
@@ -157,9 +160,10 @@ public class MailAccount implements Runnable {
     idleWatcher.interruptNow();
   }
 
-  /** Runs a cycle right away, or right after the one in progress. */
+  /** Runs a cycle right away, or right after the one in progress, including the classifier corpus scan. */
   public void requestCycle() {
     LOGGER.info("Account " + config.getDisplayName() + ": cycle requested by hand");
+    corpusScanRequested.set(true);
     idleWatcher.wakeUp();
   }
 
@@ -438,13 +442,15 @@ public class MailAccount implements Runnable {
    * on the cycle already in progress, over the same IMAP connection). As long as there's
    * backlog left to catch up on (scan() is capped, see {@link ClassifierCorpusScanner}), it
    * relaunches on the next cycle instead of waiting for the next day, to catch up on history
-   * over several quick cycles rather than one endless one. An error here never blocks normal
+   * over several quick cycles rather than one endless one. A cycle requested by hand scans
+   * regardless, so mail just filed is learned from right away. An error here never blocks normal
    * message processing, which just finished successfully right above.
    */
   private void scanClassifierCorpusIfDue(ImapMailbox mailbox) {
     LocalDate today = LocalDate.now();
     ClassifierScanState state = classifierScanStateStore.load();
-    if (today.toString().equals(state.getLastScanDate())) return;
+    boolean requested = corpusScanRequested.getAndSet(false);
+    if (!requested && today.toString().equals(state.getLastScanDate())) return;
 
     boolean caughtUpToday;
     try {

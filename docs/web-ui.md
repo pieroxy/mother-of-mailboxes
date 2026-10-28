@@ -68,7 +68,8 @@ settings.
 
 - **Status**: OK, running, paused, or in error with the last error message. **Pause Account** stops
   it without deleting anything.
-- **Cycles**: when the last one ran and the next one will. **Run now** starts one right away.
+- **Cycles**: when the last one ran and the next one will. **Run now** starts one right away, including the
+  classifiers' scan of every folder, otherwise done once a day.
 - **Activity**: messages processed and matched since the account started.
 - **Spam classifiers**: examples collected, and which classifiers are trained.
 - **Connection**: the IMAP and SMTP servers.

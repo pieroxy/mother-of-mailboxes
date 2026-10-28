@@ -73,7 +73,7 @@ was learned, or why nothing could be:
 
 - **They never match**: they need enough examples first — 50 spam and 50 legitimate messages for
   the subject and header classifiers, 150 of each for the body one. The account's page shows
-  where it stands. Models are retrained once a day.
+  where it stands. Models are retrained once a day, or right away with **Run now**.
 - **Not enough legitimate examples**: mail left in `INBOX` doesn't count. File or archive the
   mail you keep into folders.
 - **Too many false positives**: raise the threshold (`>0.99` rather than `>0.9`), or use two

@@ -17,7 +17,7 @@ When `classifierCorpusRetentionDays > 0`, MOM builds a labeled dataset per accou
 (if in the `classifierSpamFolderName` folder) or `HAM` (everything else).
 
 - The Spam folder is scanned every cycle, so spam you delete by hand is still captured first.
-  Every other folder is scanned once a day.
+  Every other folder is scanned once a day, and on every cycle started with **Run now**.
 - Only mail received in the last `classifierCorpusRetentionDays` days is collected, and older
   data is pruned once a day.
 
@@ -39,7 +39,7 @@ don't need this.
 
 ## Subject classifier training
 
-Once a day, after the full scan, MOM retrains a subject classifier on the collected corpus. It
+After each full scan, MOM retrains a subject classifier on the collected corpus. It
 needs **at least 50 examples of each class** (`SPAM` and `HAM`): until then, no model is written
 and the matching rules do nothing. The web UI shows each account's progress.
 
