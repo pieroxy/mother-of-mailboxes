@@ -15,7 +15,6 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -76,10 +75,6 @@ public class TestSendsTest {
 
     public String getFromAddress() {
       return "me@example.org";
-    }
-
-    public List<String> getAliases() {
-      return List.of();
     }
 
     public Session getSession() {

@@ -2,6 +2,7 @@ package net.pieroxy.mom.rules;
 
 import net.pieroxy.mom.utils.logging.StatsLog;
 import net.pieroxy.mom.utils.logging.DecisionLog;
+import net.pieroxy.mom.utils.mail.AccountAddresses;
 import net.pieroxy.mom.utils.mail.MailSender;
 
 import java.io.File;
@@ -16,15 +17,22 @@ import java.io.File;
  * {@code Rule#apply}, {@link StatsLog}) — also where {@link DecisionLog} writes its own
  * {@code decisions-yyyy-MM-dd.json} files, alongside {@code stats-yyyy-MM-dd.json} — and that
  * log's retention, in days (see {@link #decisionLogRetentionDays}) — and the account's
- * {@link MailSender} (null without SMTP settings), used by FORWARD/REDIRECT.
+ * {@link MailSender} (null without SMTP settings), used by FORWARD/REDIRECT/REPLY — and its
+ * {@link AccountAddresses}.
  */
 public record RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir,
-                           int decisionLogRetentionDays, MailSender mailSender) {
+                           int decisionLogRetentionDays, MailSender mailSender, AccountAddresses accountAddresses) {
   /** No account-specific info available — matches how things behaved before this existed. */
   public static final RuleContext EMPTY = new RuleContext(null, null, null, null, 0);
 
-  /** Without a {@link MailSender}. */
+  /** Without a {@link MailSender} nor addresses. */
   public RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir, int decisionLogRetentionDays) {
     this(subjectModelFile, headerModelFile, bodyModelFile, statsDir, decisionLogRetentionDays, null);
+  }
+
+  /** Without addresses. */
+  public RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir, int decisionLogRetentionDays,
+                     MailSender mailSender) {
+    this(subjectModelFile, headerModelFile, bodyModelFile, statsDir, decisionLogRetentionDays, mailSender, AccountAddresses.NONE);
   }
 }

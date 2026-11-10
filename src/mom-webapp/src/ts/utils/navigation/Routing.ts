@@ -44,6 +44,10 @@ export class Routing {
     m.route.set(Endpoints.ACCOUNT_IMAP_SETTINGS_EDIT, { accountName });
   }
 
+  static goToAccountAddressesEdit(accountName: string) {
+    m.route.set(Endpoints.ACCOUNT_ADDRESSES_EDIT, { accountName });
+  }
+
   static goToAccountSmtpSettingsEdit(accountName: string) {
     m.route.set(Endpoints.ACCOUNT_SMTP_SETTINGS_EDIT, { accountName });
   }

@@ -11,6 +11,7 @@ import net.pieroxy.mom.config.general.ReputationListConfig;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.rules.DefaultSpamRules;
 import net.pieroxy.mom.services.IServiceProvider;
+import net.pieroxy.mom.utils.mail.AccountAddresses;
 
 import java.util.List;
 import java.util.Set;
@@ -44,6 +45,7 @@ public class CreateAccountApi extends AbstractAuthenticatedEndpoint<CreateAccoun
       throw new IllegalArgumentException("Timeouts must not be negative.");
     }
 
+    List<String> addresses = AccountAddresses.normalize(input.getAddresses());
     SmtpConfiguration smtp = input.getSmtp() != null ? input.getSmtp().toConfiguration() : null;
 
     String spamFolder = spamFolderOrDefault(input.getClassifierSpamFolderName());
@@ -54,6 +56,7 @@ public class CreateAccountApi extends AbstractAuthenticatedEndpoint<CreateAccoun
     config.setRunEvery(input.getRunEvery());
     config.setConnectTimeout(input.getConnectTimeout());
     config.setReadTimeout(input.getReadTimeout());
+    config.setAddresses(addresses.isEmpty() ? null : addresses);
     config.setClassifierSpamFolderName(isBlank(input.getClassifierSpamFolderName()) ? null : spamFolder);
     config.setClassifierExcludedFolders(List.of());
     config.setRules(List.of());
@@ -121,6 +124,7 @@ class CreateAccountApiInput extends AuthenticatedApiInput {
   /** Only used with {@link #handleSpam}: receives the subject classifier's verdicts, excluded from the classifier corpus. */
   private String classifierFolderName;
   private int classifierCorpusRetentionDays;
+  private List<String> addresses;
   /** Absent: the account can't send mail. */
   private SmtpSettingsDto smtp;
   /** Only used with {@code smtp.ownCredentials}. */
@@ -132,6 +136,14 @@ class CreateAccountApiInput extends AuthenticatedApiInput {
 
   public void setOauthSignInId(String oauthSignInId) {
     this.oauthSignInId = oauthSignInId;
+  }
+
+  public List<String> getAddresses() {
+    return addresses;
+  }
+
+  public void setAddresses(List<String> addresses) {
+    this.addresses = addresses;
   }
 
   public SmtpSettingsDto getSmtp() {

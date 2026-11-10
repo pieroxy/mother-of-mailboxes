@@ -77,8 +77,6 @@ export class AccountSmtpSettingsEditPage extends AbstractPage<AccountSmtpSetting
     switch (field) {
       case "security": return baseline.security !== this.smtp.security ? "originally: " + SECURITY_LABELS[baseline.security] : null;
       case "port": return baseline.port !== this.smtp.port ? "originally: " + baseline.port : null;
-      case "aliases": return JSON.stringify(baseline.aliases) !== JSON.stringify(this.smtp.aliases)
-        ? "originally: " + (baseline.aliases.join(", ") || "none") : null;
       case "ownCredentials": return baseline.ownCredentials !== this.smtp.ownCredentials
         ? "originally: " + (baseline.ownCredentials ? "own SMTP login" : "IMAP login") : null;
       case "username": return baseline.ownCredentials && baseline.username !== this.smtp.username ? "originally: " + baseline.username : null;
@@ -97,7 +95,7 @@ export class AccountSmtpSettingsEditPage extends AbstractPage<AccountSmtpSetting
     accountEditSessions.load(this.accountName)
       .then((session) => {
         this.session = session;
-        this.smtp = session.workingSmtp ? { ...session.workingSmtp, aliases: [...session.workingSmtp.aliases] } : defaultSmtp(session.workingUsername);
+        this.smtp = session.workingSmtp ? { ...session.workingSmtp } : defaultSmtp(session.workingUsername);
         this.loading = false;
         m.redraw();
       })

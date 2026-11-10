@@ -6,15 +6,10 @@ import net.pieroxy.mom.config.general.SmtpSecurity;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 
 /**
  * An account's SMTP settings as the settings page shows and edits them. Never carries a password.
- * Strings and lists are never null, so the webapp can diff a loaded copy against an edited one.
+ * Strings are never null, so the webapp can diff a loaded copy against an edited one.
  */
 @TypeScriptType
 public class SmtpSettingsDto {
@@ -22,8 +17,6 @@ public class SmtpSettingsDto {
   private int port;
   private SmtpSecurity security;
   private String fromAddress = "";
-  /** See {@link SmtpConfiguration#getAliases}. */
-  private List<String> aliases = new ArrayList<>();
   /** False: the account's IMAP login is used. */
   private boolean ownCredentials;
   /** The SMTP login's username; empty unless {@link #ownCredentials}. */
@@ -77,17 +70,8 @@ public class SmtpSettingsDto {
     this.username = username;
   }
 
-  public List<String> getAliases() {
-    return aliases;
-  }
-
-  public void setAliases(List<String> aliases) {
-    this.aliases = aliases;
-  }
-
   /**
-   * Validated and trimmed, without credentials (see {@code SettingsService#setSmtp}). Aliases are
-   * also lower-cased and deduplicated; none gives a null list, so config.json stays without one.
+   * Validated and trimmed, without credentials (see {@code SettingsService#setSmtp}).
    *
    * @throws IllegalArgumentException on any invalid field.
    */
@@ -114,30 +98,6 @@ public class SmtpSettingsDto {
     smtp.setPort(port);
     smtp.setSecurity(security);
     smtp.setFromAddress(fromAddress.trim());
-    List<String> normalizedAliases = normalizeAliases(aliases);
-    smtp.setAliases(normalizedAliases.isEmpty() ? null : normalizedAliases);
     return smtp;
-  }
-
-  private static List<String> normalizeAliases(List<String> aliases) {
-    Set<String> normalized = new LinkedHashSet<>();
-    for (String alias : aliases != null ? aliases : List.<String>of()) {
-      String trimmed = alias != null ? alias.trim().toLowerCase(Locale.ROOT) : "";
-      if (trimmed.isEmpty()) continue;
-      if (trimmed.startsWith("@")) {
-        if (!trimmed.matches("@[^@\\s]+\\.[^@\\s]+")) {
-          throw new IllegalArgumentException("Alias \"" + alias + "\" is not a valid domain (expected @example.com).");
-        }
-      } else {
-        try {
-          if (!trimmed.contains("@")) throw new AddressException();
-          new InternetAddress(trimmed, true).validate();
-        } catch (AddressException e) {
-          throw new IllegalArgumentException("Alias \"" + alias + "\" is not a valid email address.");
-        }
-      }
-      normalized.add(trimmed);
-    }
-    return new ArrayList<>(normalized);
   }
 }

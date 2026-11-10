@@ -7,10 +7,11 @@ import { Routing } from "../../utils/navigation/Routing";
 import { TestImapConnectionButton } from "../TestImapConnectionButton";
 import { TestSmtpConnectionButton } from "../TestSmtpConnectionButton";
 import { SmtpSettingsForm, defaultSmtp, finalizeSmtp, validateSmtp } from "../SmtpSettingsForm";
+import { AccountAddressesForm, normalizeAddresses, validateAddresses } from "../AccountAddressesForm";
 import { MICROSOFT_IMAP_HOST, MICROSOFT_SMTP_HOST, MicrosoftSignIn } from "../MicrosoftSignIn";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 
-const STEPS = ["Name", "IMAP connection", "Sending mail", "Spam folder", "Spam handling", "Schedule", "Review"];
+const STEPS = ["Name", "IMAP connection", "Addresses", "Sending mail", "Spam folder", "Spam handling", "Schedule", "Review"];
 const FOLDER_DATALIST_ID = "account-create-folders";
 // Same subset of FileNameValidator's rules as can be checked without a round trip; the server
 // re-validates the name in full.
@@ -40,6 +41,7 @@ export class AccountCreatePage extends AbstractPage {
   private oauthSignInId = "";
   // The connection settings last tested successfully — any edit to them requires a new test.
   private testedConnection: string | undefined;
+  private addresses: string[] = [];
   private sendMail = false;
   private smtp: SmtpSettingsDto = defaultSmtp("");
   private smtpPassword = "";
@@ -90,10 +92,11 @@ export class AccountCreatePage extends AbstractPage {
     switch (this.step) {
       case 0: return this.renderNameStep();
       case 1: return this.renderConnectionStep();
-      case 2: return this.renderSmtpStep();
-      case 3: return this.renderSpamFolderStep();
-      case 4: return this.renderSpamHandlingStep();
-      case 5: return this.renderScheduleStep();
+      case 2: return this.renderAddressesStep();
+      case 3: return this.renderSmtpStep();
+      case 4: return this.renderSpamFolderStep();
+      case 5: return this.renderSpamHandlingStep();
+      case 6: return this.renderScheduleStep();
       default: return this.renderReviewStep();
     }
   }
@@ -158,6 +161,10 @@ export class AccountCreatePage extends AbstractPage {
       this.host = MICROSOFT_IMAP_HOST;
       this.port = 993;
     }
+  }
+
+  private renderAddressesStep(): m.Children {
+    return m(AccountAddressesForm, { addresses: this.addresses, onChange: (addresses) => (this.addresses = addresses) });
   }
 
   private renderSmtpStep(): m.Children {
@@ -265,9 +272,9 @@ export class AccountCreatePage extends AbstractPage {
         this.reviewRow("Server", this.host.trim() + ":" + this.port),
         this.reviewRow("Username", this.username.trim()),
         this.reviewRow("Login", this.microsoft ? "Microsoft sign-in" : "Password"),
+        this.reviewRow("Addresses", normalizeAddresses(this.addresses).join(", ") || "None"),
         this.reviewRow("Sending mail", this.sendMail
           ? this.smtp.host.trim() + ":" + this.smtp.port + ", from " + this.smtp.fromAddress.trim()
-            + (this.smtp.aliases.length > 0 ? " (aliases: " + this.smtp.aliases.join(", ") + ")" : "")
           : "No"),
         this.reviewRow("Spam folder", this.spamFolder.trim() || "Spam"),
         this.reviewRow("Spam handling", this.handleSpam
@@ -316,7 +323,7 @@ export class AccountCreatePage extends AbstractPage {
     return JSON.stringify([this.host.trim(), this.port, this.username.trim(), this.microsoft, this.microsoft ? this.oauthSignInId : this.password]);
   }
 
-  /** Includes the IMAP login, used without own SMTP credentials. Not the sender address and aliases: they don't affect the connection. */
+  /** Includes the IMAP login, used without own SMTP credentials. Not the sender address: it doesn't affect the connection. */
   private smtpKey(): string {
     return JSON.stringify([this.smtp.host.trim(), this.smtp.port, this.smtp.security, this.smtp.ownCredentials,
       this.smtp.username.trim(), this.smtpPassword, this.username.trim(), this.microsoft, this.microsoft ? this.oauthSignInId : this.password]);
@@ -343,20 +350,22 @@ export class AccountCreatePage extends AbstractPage {
         }
         if (this.testedConnection !== this.connectionKey()) return "Test the connection successfully before going further.";
         return undefined;
-      case 2: {
+      case 2:
+        return validateAddresses(this.addresses);
+      case 3: {
         if (!this.sendMail) return undefined;
         const error = validateSmtp(this.smtp, this.smtpPassword === "");
         if (error) return error;
         if (this.testedSmtp !== this.smtpKey()) return "Test the SMTP connection successfully before going further.";
         return undefined;
       }
-      case 4:
+      case 5:
         if (!this.handleSpam) return undefined;
         if (!this.classifierFolder.trim()) return "The classifier folder must not be blank.";
         if (this.classifierFolder.trim() === (this.spamFolder.trim() || "Spam")) return "The classifier folder must differ from the spam folder.";
         if (this.classifierCorpusRetentionDays <= 0) return "The classifier corpus retention must be a positive number of days.";
         return undefined;
-      case 5:
+      case 6:
         if (this.runEvery <= 0) return "\"Run every\" must be a positive number of seconds.";
         if (this.connectTimeout < 0 || this.readTimeout < 0) return "Timeouts must not be negative.";
         return undefined;
@@ -371,7 +380,10 @@ export class AccountCreatePage extends AbstractPage {
       this.error = validationError;
       return;
     }
-    if (this.step === 1) this.loadFolders();
+    if (this.step === 1) {
+      this.loadFolders();
+      if (this.addresses.length === 0 && this.username.includes("@")) this.addresses = [this.username.trim().toLowerCase()];
+    }
     if (this.step === STEPS.length - 2 && this.handleSpam) this.loadSpamRulesPreview();
     this.goTo(this.step + 1);
   }
@@ -421,6 +433,7 @@ export class AccountCreatePage extends AbstractPage {
       runEvery: this.runEvery,
       connectTimeout: this.connectTimeout,
       readTimeout: this.readTimeout,
+      addresses: normalizeAddresses(this.addresses),
       classifierSpamFolderName: this.spamFolder.trim(),
       handleSpam: this.handleSpam,
       classifierFolderName: this.classifierFolder.trim(),

@@ -12,6 +12,7 @@ import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.learning.RuleLearner;
 import net.pieroxy.mom.rules.RuleCatalog;
+import net.pieroxy.mom.utils.mail.AccountAddresses;
 
 import java.util.List;
 
@@ -52,6 +53,7 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
     if (input.getRules() == null) {
       throw new IllegalArgumentException("rules must not be null.");
     }
+    List<String> addresses = AccountAddresses.normalize(input.getAddresses());
     SmtpConfiguration smtp = input.getSmtp() != null ? input.getSmtp().toConfiguration() : null;
     RuleCatalog.validateRules(input.getRules());
     RuleCatalog.validateSendingActions(input.getRules(), smtp != null);
@@ -65,7 +67,7 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
         blankToNull(input.getClassifierSpamFolderName()),
         input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
         input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),
-        input.isDiscoveryTreeDisabled(), input.getDecisionLogRetentionDays(), input.getUsername(), input.getPassword(), oauth, input.getRules(), shortcuts,
+        input.isDiscoveryTreeDisabled(), input.getDecisionLogRetentionDays(), addresses.isEmpty() ? null : addresses, input.getUsername(), input.getPassword(), oauth, input.getRules(), shortcuts,
         smtp, smtp != null && input.getSmtp().isOwnCredentials(),
         smtp != null ? input.getSmtp().getUsername() : null, input.getSmtpPassword());
     if (signedIn) serviceProvider.getOAuthSignInService().forget(input.getOauthSignInId());
@@ -92,6 +94,7 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
   private int classifierCorpusScanBatchSize;
   private boolean discoveryTreeDisabled;
   private int decisionLogRetentionDays;
+  private List<String> addresses;
   private String username;
   /** Blank means "leave the current login unchanged"; otherwise replaces a Microsoft sign-in too. */
   private String password;
@@ -103,6 +106,14 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
   private SmtpSettingsDto smtp;
   /** Blank means "leave the current SMTP password unchanged". */
   private String smtpPassword;
+
+  public List<String> getAddresses() {
+    return addresses;
+  }
+
+  public void setAddresses(List<String> addresses) {
+    this.addresses = addresses;
+  }
 
   public String getOauthSignInId() {
     return oauthSignInId;

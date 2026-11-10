@@ -16,6 +16,7 @@ import net.pieroxy.mom.learning.RuleLearner;
 import net.pieroxy.mom.rules.actions.ActionType;
 import net.pieroxy.mom.utils.FileNameValidator;
 import net.pieroxy.mom.utils.logging.DecisionLog;
+import net.pieroxy.mom.utils.mail.AccountAddresses;
 import net.pieroxy.mom.utils.mail.ImapIdleWatcher;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.utils.mail.ImapMailboxConnection;
@@ -121,7 +122,7 @@ public class MailAccount implements Runnable {
     // they're built without context by MatcherType.getImplementation() — see RuleContext.
     RuleContext ruleContext = new RuleContext(classifierCorpusStore.getModelFile(), classifierCorpusStore.getHeaderModelFile(),
         classifierCorpusStore.getBodyModelFile(), new File(new File(dataFolder, "logs"), config.getDisplayName()),
-        config.getDecisionLogRetentionDays(), mailSender);
+        config.getDecisionLogRetentionDays(), mailSender, AccountAddresses.of(config));
     this.ruleCatalog = new RuleCatalog(config.getRules(), learnedRulesStore, ruleContext);
     this.subjectClassifierTrainer = new SubjectClassifierTrainer(classifierCorpusStore);
     this.headerClassifierTrainer = new HeaderClassifierTrainer(classifierCorpusStore);

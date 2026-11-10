@@ -77,8 +77,22 @@ public class MailAccountConfiguration {
    */
   private int decisionLogRetentionDays;
 
+  /**
+   * The addresses delivered to this mailbox: {@code name@domain}, or {@code @domain} for every
+   * address of a domain. Absent: none. See {@link net.pieroxy.mom.utils.mail.AccountAddresses}.
+   */
+  private List<String> addresses;
+
   /** Absent: the account can't send mail. */
   private SmtpConfiguration smtp;
+
+  public List<String> getAddresses() {
+    return addresses;
+  }
+
+  public void setAddresses(List<String> addresses) {
+    this.addresses = addresses;
+  }
 
   public SmtpConfiguration getSmtp() {
     return smtp;

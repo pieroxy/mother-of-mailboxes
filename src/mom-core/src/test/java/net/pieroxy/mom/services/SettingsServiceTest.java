@@ -398,7 +398,6 @@ public class SettingsServiceTest {
     SmtpConfiguration smtp = new SmtpConfiguration();
     smtp.setHost("smtp.example.com");
     smtp.setFromAddress("me@example.com");
-    smtp.setAliases(List.of("@example.org"));
 
     settingsService.addAccountConfig(account, login("me@example.com", "secret"), smtp, true, "smtp-user", "smtp-secret");
 
@@ -407,7 +406,6 @@ public class SettingsServiceTest {
     Configuration reloadedConfig = new Gson().fromJson(new FileReader(new File(tmp.getRoot(), "config.json")), Configuration.class);
     SmtpConfiguration savedSmtp = reloadedConfig.getConfigurations().get(0).getSmtp();
     assertEquals("home-smtp", savedSmtp.getCredentials());
-    assertEquals(List.of("@example.org"), savedSmtp.getAliases());
   }
 
   @Test

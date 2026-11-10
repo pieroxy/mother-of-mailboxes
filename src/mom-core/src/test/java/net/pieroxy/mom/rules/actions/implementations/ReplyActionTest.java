@@ -4,6 +4,7 @@ import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.rules.RuleContext;
 import net.pieroxy.mom.rules.actions.Action;
 import net.pieroxy.mom.rules.actions.ActionType;
+import net.pieroxy.mom.utils.mail.AccountAddresses;
 import net.pieroxy.mom.utils.mail.RecordingMailSender;
 import org.junit.Test;
 
@@ -29,7 +30,8 @@ public class ReplyActionTest {
       + "Message-ID: <original@example.org>\r\n";
   private static final String BODY = "\r\nOriginal body\r\n";
 
-  private final RecordingMailSender sender = new RecordingMailSender("me@example.com", List.of("contact@example.com", "@example.net"));
+  private final RecordingMailSender sender = new RecordingMailSender("me@example.com");
+  private final AccountAddresses addresses = new AccountAddresses(List.of("contact@example.com", "@example.net"));
   private final Session session = Session.getInstance(new Properties());
 
   private Action action(String subject, String body) {
@@ -37,7 +39,7 @@ public class ReplyActionTest {
     config.setType(ActionType.REPLY);
     config.setKey(subject);
     config.setBody(body);
-    return Action.build(config, new RuleContext(null, null, null, null, 0, sender));
+    return Action.build(config, new RuleContext(null, null, null, null, 0, sender, addresses));
   }
 
   private Action action() {
@@ -150,7 +152,7 @@ public class ReplyActionTest {
   }
 
   @Test
-  public void repliesWhenAnAliasIsInToOrCc() throws Exception {
+  public void repliesWhenAnAccountAddressIsInToOrCc() throws Exception {
     assertTrue(action().run(message(HEADERS.replace("To: me@example.com", "To: Contact@Example.com"))));
     assertTrue(action().run(message(HEADERS.replace("To: me@example.com", "To: anyone@example.net"))));
     assertTrue(action().run(message(HEADERS.replace("To: me@example.com", "To: list@example.org\r\nCc: me@example.com"))));
@@ -160,14 +162,14 @@ public class ReplyActionTest {
   @Test
   public void skipsMessagesNotAddressedToTheAccount() throws Exception {
     assertFalse(action().run(message(HEADERS.replace("To: me@example.com", "To: list@example.org"))));
-    assertFalse("a domain alias doesn't cover its subdomains",
+    assertFalse("a domain doesn't cover its subdomains",
         action().run(message(HEADERS.replace("To: me@example.com", "To: me@sub.example.net"))));
     assertFalse(action().run(message(HEADERS.replace("To: me@example.com\r\n", ""))));
     assertTrue(sender.sent.isEmpty());
   }
 
   @Test
-  public void skipsMessagesFromAnAlias() throws Exception {
+  public void skipsMessagesFromAnAccountAddress() throws Exception {
     assertFalse(action().run(message(HEADERS.replace("alice@example.org", "contact@example.com"))));
     assertFalse(action().run(message(HEADERS.replace("alice@example.org", "someone@example.net"))));
     assertTrue(sender.sent.isEmpty());

@@ -4,6 +4,7 @@ import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.rules.RuleContext;
 import net.pieroxy.mom.rules.actions.Action;
 import net.pieroxy.mom.utils.MailTools;
+import net.pieroxy.mom.utils.mail.AccountAddresses;
 import net.pieroxy.mom.utils.mail.MailSender;
 
 import javax.mail.Address;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
  * without one, through the account's SMTP settings. Subject: {@code key}, or {@code Re: <original
  * subject>} when blank. Skips (returns false) what must never get an automatic reply (RFC 3834):
  * automated messages, mailing lists, bounces, no-reply senders, the account's own messages, and
- * messages none of the account's addresses (sender address and aliases) is in To or Cc of. Its
+ * messages none of the account's addresses (see {@link AccountAddresses}) is in To or Cc of. Its
  * replies carry {@code Auto-Submitted: auto-replied}, so other responders skip them in turn.
  */
 public class ReplyAction extends Action {
@@ -33,11 +34,13 @@ public class ReplyAction extends Action {
   private static final Set<String> NO_REPLY_PREFIXES = Set.of("noreply", "donotreply", "mailerdaemon", "postmaster");
 
   private MailSender sender;
+  private AccountAddresses accountAddresses;
   private String body;
 
   @Override
   protected void bindContext(RuleContext context) {
     sender = context.mailSender();
+    accountAddresses = context.accountAddresses();
   }
 
   @Override
@@ -106,7 +109,7 @@ public class ReplyAction extends Action {
     boolean addressedToAccount = addressesOf(message.getRecipients(Message.RecipientType.TO)).stream().anyMatch(this::isOwnAddress)
         || addressesOf(message.getRecipients(Message.RecipientType.CC)).stream().anyMatch(this::isOwnAddress);
     if (!addressedToAccount) {
-      return "none of the account's addresses is in To or Cc (list or Bcc; an alias missing from the account's SMTP settings?)";
+      return "none of the account's addresses is in To or Cc (list or Bcc; an address missing from the account's addresses?)";
     }
     String localPart = recipientAddress.contains("@") ? recipientAddress.substring(0, recipientAddress.lastIndexOf('@')) : recipientAddress;
     String compactLocalPart = localPart.replaceAll("[._-]", "");
@@ -142,14 +145,9 @@ public class ReplyAction extends Action {
     return subject.regionMatches(true, 0, "Re:", 0, 3) ? subject : "Re: " + subject;
   }
 
-  /** {@code address} (lower-cased) is the sender address, an alias, or at an aliased {@code @domain}. */
+  /** {@code address} (lower-cased) is the sender address or one of the account's addresses. */
   private boolean isOwnAddress(String address) {
-    if (address.equals(sender.getFromAddress().toLowerCase(Locale.ROOT))) return true;
-    for (String alias : sender.getAliases()) {
-      String lowerAlias = alias.toLowerCase(Locale.ROOT);
-      if (lowerAlias.startsWith("@") ? address.endsWith(lowerAlias) : address.equals(lowerAlias)) return true;
-    }
-    return false;
+    return address.equals(sender.getFromAddress().toLowerCase(Locale.ROOT)) || accountAddresses.contains(address);
   }
 
   /** Lower-cased. */

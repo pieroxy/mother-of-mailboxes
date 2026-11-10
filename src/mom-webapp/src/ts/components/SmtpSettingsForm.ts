@@ -1,6 +1,5 @@
 import m from "mithril";
 import { SmtpSecurity, SmtpSettingsDto } from "../auto/pieroxy-mom";
-import { TokenListEditor } from "./TokenListEditor";
 
 const DEFAULT_PORTS: Record<SmtpSecurity, number> = { [SmtpSecurity.TLS]: 465, [SmtpSecurity.STARTTLS]: 587 };
 export const SECURITY_LABELS: Record<SmtpSecurity, string> = {
@@ -8,7 +7,6 @@ export const SECURITY_LABELS: Record<SmtpSecurity, string> = {
   [SmtpSecurity.STARTTLS]: "STARTTLS (usually port 587)",
 };
 const EMAIL = /^[^@\s]+@[^@\s]+$/;
-const DOMAIN_ALIAS = /^@[^@\s]+\.[^@\s]+$/;
 
 export function defaultSmtp(imapUsername: string): SmtpSettingsDto {
   return {
@@ -16,7 +14,6 @@ export function defaultSmtp(imapUsername: string): SmtpSettingsDto {
     port: DEFAULT_PORTS[SmtpSecurity.STARTTLS],
     security: SmtpSecurity.STARTTLS,
     fromAddress: imapUsername.includes("@") ? imapUsername : "",
-    aliases: [],
     ownCredentials: false,
     username: "",
   };
@@ -27,8 +24,6 @@ export function validateSmtp(smtp: SmtpSettingsDto, passwordMissing: boolean): s
   if (!smtp.host.trim()) return "Host must not be blank.";
   if (smtp.port <= 0 || smtp.port > 65535) return "Port must be between 1 and 65535.";
   if (!EMAIL.test(smtp.fromAddress.trim())) return "The sender address must be a valid email address.";
-  const invalidAlias = smtp.aliases.find((alias) => !EMAIL.test(alias.trim()) && !DOMAIN_ALIAS.test(alias.trim()));
-  if (invalidAlias !== undefined) return "\"" + invalidAlias + "\" is neither an email address nor a domain (@example.com).";
   if (smtp.ownCredentials) {
     if (!smtp.username.trim()) return "SMTP username must not be blank.";
     if (passwordMissing) return "The SMTP password must not be blank.";
@@ -36,13 +31,12 @@ export function validateSmtp(smtp: SmtpSettingsDto, passwordMissing: boolean): s
   return undefined;
 }
 
-/** Trimmed, aliases lower-cased and deduplicated as the server stores them, and no username without own credentials. */
+/** Trimmed, and no username without own credentials. */
 export function finalizeSmtp(smtp: SmtpSettingsDto): SmtpSettingsDto {
   return {
     ...smtp,
     host: smtp.host.trim(),
     fromAddress: smtp.fromAddress.trim(),
-    aliases: [...new Set(smtp.aliases.map((alias) => alias.trim().toLowerCase()).filter((alias) => alias))],
     username: smtp.ownCredentials ? smtp.username : "",
   };
 }
@@ -81,11 +75,6 @@ export class SmtpSettingsForm implements m.ClassComponent<SmtpSettingsFormAttrs>
         type: "email", value: smtp.fromAddress,
         oninput: (e: Event) => (smtp.fromAddress = (e.target as HTMLInputElement).value),
       }), "The From address of the mail MOM sends for this account."),
-      field("Aliases", hint("aliases"), m(TokenListEditor, {
-        tokens: smtp.aliases,
-        onChange: (aliases) => (smtp.aliases = aliases),
-        placeholder: "alias@example.com or @example.com",
-      }), "Other addresses delivered to this mailbox. Automatic replies only answer mail sent to the sender address or one of these."),
       field("Login", hint("ownCredentials"), m("label.checkbox-field", [
         m("input", {
           type: "checkbox", checked: !smtp.ownCredentials,

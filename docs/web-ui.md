@@ -38,15 +38,17 @@ The wizard asks for:
 1. **Name**: shown everywhere, and used to name the account's files.
 2. **IMAP connection**: server, port, username and password, or a Microsoft sign-in (see
    below), with a button to test them.
-3. **Sending mail** (optional): the [SMTP settings](configuration.md#smtp-settings), needed to
+3. **Addresses**: the addresses delivered to this mailbox, starting with the IMAP username when
+   it's an address.
+4. **Sending mail** (optional): the [SMTP settings](configuration.md#smtp-settings), needed to
    forward, redirect or reply. Also tested before going further.
-4. **Spam folder**: where spam goes, created if missing. Everything outside it (and `INBOX`) is
+5. **Spam folder**: where spam goes, created if missing. Everything outside it (and `INBOX`) is
    treated as legitimate mail by the classifiers.
-5. **Spam handling**: whether to create the recommended spam rules (see the
+6. **Spam handling**: whether to create the recommended spam rules (see the
    [starter configuration](configuration.md#starter-configuration)), and the folder for the
    subject classifier's verdicts.
-6. **Schedule**: how often the account runs, and its connection timeouts.
-7. **Review**: everything above, and the rules that will be created.
+7. **Schedule**: how often the account runs, and its connection timeouts.
+8. **Review**: everything above, and the rules that will be created.
 
 Nothing is saved before **Create account**.
 
@@ -79,7 +81,7 @@ From there, and from the icons at the top of each account page: **Settings**, **
 
 ## Account settings
 
-- **General**, **IMAP settings**, **SMTP settings**: the account's configuration. The gear icon
+- **General**, **IMAP settings**, **Addresses**, **SMTP settings**: the account's configuration. The gear icon
   edits a section; IMAP and SMTP have a button to test the connection.
 - **Rules**: in evaluation order (see [Rules](rules.md)). Each one can be moved up or down,
   edited, or deleted; **Add rule** adds one at the end. The "Learned rules run here" entry sets

@@ -15,7 +15,6 @@ import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.rules.MailAccount;
 import net.pieroxy.mom.utils.mail.oauth.MicrosoftIdentity;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,7 +40,7 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
     AccountBasicConfigDto basicConfig = new AccountBasicConfigDto(config.getDisplayName(), config.getHost(), config.getPort(),
         config.getRunEvery(), config.getConnectTimeout(), config.getReadTimeout(), config.getClassifierSpamFolderName(), config.getClassifierExcludedFolders(),
         config.getClassifierCorpusRetentionDays(), config.getClassifierCorpusScanBatchSize(), config.isDiscoveryTreeDisabled(),
-        config.getDecisionLogRetentionDays());
+        config.getDecisionLogRetentionDays(), config.getAddresses());
 
     CredentialsInfoDto credentials = new CredentialsInfoDto(config.getCredentials(), account.getCredentialUsername());
     OAuthGrant oauth = account.getCredential().getOauth();
@@ -66,7 +65,6 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
     dto.setPort(smtp.getPort());
     dto.setSecurity(smtp.getSecurity());
     dto.setFromAddress(smtp.getFromAddress() != null ? smtp.getFromAddress() : "");
-    dto.setAliases(smtp.getAliases() != null ? new ArrayList<>(smtp.getAliases()) : new ArrayList<>());
     dto.setOwnCredentials(smtp.getCredentials() != null);
     if (smtp.getCredentials() != null) {
       dto.setUsername(serviceProvider.getSettingsService().resolveSmtpCredential(config).getUsername());
@@ -179,6 +177,8 @@ class AccountBasicConfigDto {
   private int classifierCorpusScanBatchSize;
   private boolean discoveryTreeDisabled;
   private int decisionLogRetentionDays;
+  /** See {@link MailAccountConfiguration#getAddresses}. */
+  private List<String> addresses;
 
   public AccountBasicConfigDto() {
   }
@@ -187,7 +187,7 @@ class AccountBasicConfigDto {
                                 String classifierSpamFolderName,
                                 List<String> classifierExcludedFolders, int classifierCorpusRetentionDays,
                                 int classifierCorpusScanBatchSize, boolean discoveryTreeDisabled,
-                                int decisionLogRetentionDays) {
+                                int decisionLogRetentionDays, List<String> addresses) {
     this.displayName = displayName;
     this.host = host;
     this.port = port;
@@ -204,6 +204,15 @@ class AccountBasicConfigDto {
     this.classifierCorpusScanBatchSize = classifierCorpusScanBatchSize;
     this.discoveryTreeDisabled = discoveryTreeDisabled;
     this.decisionLogRetentionDays = decisionLogRetentionDays;
+    this.addresses = addresses != null ? addresses : List.of();
+  }
+
+  public List<String> getAddresses() {
+    return addresses;
+  }
+
+  public void setAddresses(List<String> addresses) {
+    this.addresses = addresses;
   }
 
   public String getDisplayName() {

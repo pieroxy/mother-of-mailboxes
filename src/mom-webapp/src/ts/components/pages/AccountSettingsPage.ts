@@ -41,9 +41,9 @@ interface AccountSettingsPageAttrs {
 }
 
 /**
- * One account's whole configuration, in sections: General, IMAP settings, SMTP settings, Rules,
- * Shortcuts, Learned Rules. Nothing here calls the backend directly — every edit (General/IMAP/SMTP
- * settings fields, rule reorder/
+ * One account's whole configuration, in sections: General, IMAP settings, Addresses, SMTP settings,
+ * Rules, Shortcuts, Learned Rules. Nothing here calls the backend directly — every edit (General/IMAP/
+ * Addresses/SMTP settings fields, rule reorder/
  * delete/edit/add) is staged locally in an AccountEditSession (see AccountEditSession.ts) and
  * shown highlighted (see the CSS's $value-changed) until "Save Changes" flushes the whole batch
  * in one call (UpdateAccountApi) and restarts the account once; "Discard Changes" just throws the
@@ -94,6 +94,10 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
             username: session.workingUsername, password: session.workingPassword, oauthSignInId: session.workingOauthSignInId,
           })),
         renderImapSettingsSection(session),
+      ]),
+      m(".page-card", { key: "addresses" }, [
+        sectionHeader("Addresses", () => Routing.goToAccountAddressesEdit(this.accountName)),
+        m(".config-grid", configRow("Addresses", renderTokenList(session.workingConfig.addresses), isConfigFieldChanged(session, "addresses"))),
       ]),
       m(".page-card", { key: "smtp-settings" }, [
         sectionHeader("SMTP settings", () => Routing.goToAccountSmtpSettingsEdit(this.accountName),
@@ -359,6 +363,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         classifierCorpusScanBatchSize: session.workingConfig.classifierCorpusScanBatchSize,
         discoveryTreeDisabled: session.workingConfig.discoveryTreeDisabled,
         decisionLogRetentionDays: session.workingConfig.decisionLogRetentionDays,
+        addresses: session.workingConfig.addresses,
         username: session.workingUsername,
         password: session.workingPassword,
         oauthSignInId: session.workingOauthSignInId,
@@ -531,7 +536,6 @@ function renderSmtpSettingsSection(session: AccountEditSession): m.Children {
     configRow("Port", String(smtp.port), changed("port")),
     configRow("Security", smtp.security === SmtpSecurity.TLS ? "TLS" : "STARTTLS", changed("security")),
     configRow("Sender address", smtp.fromAddress, changed("fromAddress")),
-    configRow("Aliases", renderTokenList(smtp.aliases), changed("aliases")),
     configRow("Login", smtp.ownCredentials ? smtp.username : m("span.config-row-hint", "Same as the IMAP login"),
       changed("ownCredentials") || changed("username")),
     smtp.ownCredentials

@@ -11,6 +11,7 @@ import { AccountSettingsPage } from "./components/pages/AccountSettingsPage";
 import { AccountGeneralEditPage } from "./components/pages/AccountGeneralEditPage";
 import { AccountImapSettingsEditPage } from "./components/pages/AccountImapSettingsEditPage";
 import { AccountSmtpSettingsEditPage } from "./components/pages/AccountSmtpSettingsEditPage";
+import { AccountAddressesEditPage } from "./components/pages/AccountAddressesEditPage";
 import { RuleEditPage } from "./components/pages/RuleEditPage";
 import { ShortcutEditPage } from "./components/pages/ShortcutEditPage";
 import { GeneralSettingsPage } from "./components/pages/GeneralSettingsPage";
@@ -40,6 +41,7 @@ const routes: m.RouteDefs = {
   [Endpoints.ACCOUNT_SETTINGS]: new AuthenticatedPageResolver(AccountSettingsPage),
   [Endpoints.ACCOUNT_GENERAL_EDIT]: new AuthenticatedPageResolver(AccountGeneralEditPage),
   [Endpoints.ACCOUNT_IMAP_SETTINGS_EDIT]: new AuthenticatedPageResolver(AccountImapSettingsEditPage),
+  [Endpoints.ACCOUNT_ADDRESSES_EDIT]: new AuthenticatedPageResolver(AccountAddressesEditPage),
   [Endpoints.ACCOUNT_SMTP_SETTINGS_EDIT]: new AuthenticatedPageResolver(AccountSmtpSettingsEditPage),
   [Endpoints.RULE_EDIT]: new AuthenticatedPageResolver(RuleEditPage),
   [Endpoints.SHORTCUT_EDIT]: new AuthenticatedPageResolver(ShortcutEditPage),
