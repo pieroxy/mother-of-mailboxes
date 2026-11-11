@@ -200,7 +200,7 @@ public class RuleLearner {
     String subject = MailTools.describeSubjectSafely(example);
     String from = MailTools.describeFromSafely(example);
     try {
-      Matcher matcher = matcherType.getImplementation();
+      Matcher matcher = Matcher.forLearning(matcherType, context);
       String matcherKey = matcher.extractKeyFromExample(example);
 
       MailFilterRuleMatcherConfiguration matcherConfig = new MailFilterRuleMatcherConfiguration();

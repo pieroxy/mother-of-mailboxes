@@ -14,6 +14,7 @@ import { AddCard } from "../AddCard";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 import { defaultActionName } from "../../utils/actionNames";
 import { TokenListEditor } from "../TokenListEditor";
+import { envelopeHeadersLabel } from "../AccountAddressesForm";
 import { TestImapConnectionButton } from "../TestImapConnectionButton";
 import { TestSmtpConnectionButton } from "../TestSmtpConnectionButton";
 import { Dialogs } from "../../utils/Dialogs";
@@ -97,7 +98,10 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
       ]),
       m(".page-card", { key: "addresses" }, [
         sectionHeader("Addresses", () => Routing.goToAccountAddressesEdit(this.accountName)),
-        m(".config-grid", configRow("Addresses", renderTokenList(session.workingConfig.addresses), isConfigFieldChanged(session, "addresses"))),
+        m(".config-grid", [
+          configRow("Addresses", renderTokenList(session.workingConfig.addresses), isConfigFieldChanged(session, "addresses")),
+          configRow("Envelope headers", envelopeHeadersLabel(session.workingConfig.envelopeHeaders), isConfigFieldChanged(session, "envelopeHeaders")),
+        ]),
       ]),
       m(".page-card", { key: "smtp-settings" }, [
         sectionHeader("SMTP settings", () => Routing.goToAccountSmtpSettingsEdit(this.accountName),
@@ -364,6 +368,7 @@ export class AccountSettingsPage extends AbstractPage<AccountSettingsPageAttrs> 
         discoveryTreeDisabled: session.workingConfig.discoveryTreeDisabled,
         decisionLogRetentionDays: session.workingConfig.decisionLogRetentionDays,
         addresses: session.workingConfig.addresses,
+        envelopeHeaders: session.workingConfig.envelopeHeaders,
         username: session.workingUsername,
         password: session.workingPassword,
         oauthSignInId: session.workingOauthSignInId,

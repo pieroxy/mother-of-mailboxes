@@ -122,7 +122,8 @@ public class MailAccount implements Runnable {
     // they're built without context by MatcherType.getImplementation() — see RuleContext.
     RuleContext ruleContext = new RuleContext(classifierCorpusStore.getModelFile(), classifierCorpusStore.getHeaderModelFile(),
         classifierCorpusStore.getBodyModelFile(), new File(new File(dataFolder, "logs"), config.getDisplayName()),
-        config.getDecisionLogRetentionDays(), mailSender, AccountAddresses.of(config));
+        config.getDecisionLogRetentionDays(), mailSender, AccountAddresses.of(config),
+        config.getEnvelopeHeaders() != null ? config.getEnvelopeHeaders() : List.of());
     this.ruleCatalog = new RuleCatalog(config.getRules(), learnedRulesStore, ruleContext);
     this.subjectClassifierTrainer = new SubjectClassifierTrainer(classifierCorpusStore);
     this.headerClassifierTrainer = new HeaderClassifierTrainer(classifierCorpusStore);

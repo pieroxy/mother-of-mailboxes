@@ -7,7 +7,15 @@ import { Routing } from "../../utils/navigation/Routing";
 import { TestImapConnectionButton } from "../TestImapConnectionButton";
 import { TestSmtpConnectionButton } from "../TestSmtpConnectionButton";
 import { SmtpSettingsForm, defaultSmtp, finalizeSmtp, validateSmtp } from "../SmtpSettingsForm";
-import { AccountAddressesForm, normalizeAddresses, validateAddresses } from "../AccountAddressesForm";
+import {
+  AccountAddressesForm,
+  RECOMMENDED_ENVELOPE_HEADERS,
+  envelopeHeadersLabel,
+  normalizeAddresses,
+  normalizeEnvelopeHeaders,
+  validateAddresses,
+  validateEnvelopeHeaders,
+} from "../AccountAddressesForm";
 import { MICROSOFT_IMAP_HOST, MICROSOFT_SMTP_HOST, MicrosoftSignIn } from "../MicrosoftSignIn";
 import { renderActionNode, renderMatcherNode } from "../RuleTree";
 
@@ -42,6 +50,7 @@ export class AccountCreatePage extends AbstractPage {
   // The connection settings last tested successfully — any edit to them requires a new test.
   private testedConnection: string | undefined;
   private addresses: string[] = [];
+  private envelopeHeaders: string[] = [...RECOMMENDED_ENVELOPE_HEADERS];
   private sendMail = false;
   private smtp: SmtpSettingsDto = defaultSmtp("");
   private smtpPassword = "";
@@ -164,7 +173,12 @@ export class AccountCreatePage extends AbstractPage {
   }
 
   private renderAddressesStep(): m.Children {
-    return m(AccountAddressesForm, { addresses: this.addresses, onChange: (addresses) => (this.addresses = addresses) });
+    return m(AccountAddressesForm, {
+      addresses: this.addresses,
+      onAddressesChange: (addresses) => (this.addresses = addresses),
+      envelopeHeaders: this.envelopeHeaders,
+      onEnvelopeHeadersChange: (headers) => (this.envelopeHeaders = headers),
+    });
   }
 
   private renderSmtpStep(): m.Children {
@@ -273,6 +287,7 @@ export class AccountCreatePage extends AbstractPage {
         this.reviewRow("Username", this.username.trim()),
         this.reviewRow("Login", this.microsoft ? "Microsoft sign-in" : "Password"),
         this.reviewRow("Addresses", normalizeAddresses(this.addresses).join(", ") || "None"),
+        this.reviewRow("Envelope headers", envelopeHeadersLabel(normalizeEnvelopeHeaders(this.envelopeHeaders))),
         this.reviewRow("Sending mail", this.sendMail
           ? this.smtp.host.trim() + ":" + this.smtp.port + ", from " + this.smtp.fromAddress.trim()
           : "No"),
@@ -351,7 +366,7 @@ export class AccountCreatePage extends AbstractPage {
         if (this.testedConnection !== this.connectionKey()) return "Test the connection successfully before going further.";
         return undefined;
       case 2:
-        return validateAddresses(this.addresses);
+        return validateAddresses(this.addresses) ?? validateEnvelopeHeaders(this.envelopeHeaders);
       case 3: {
         if (!this.sendMail) return undefined;
         const error = validateSmtp(this.smtp, this.smtpPassword === "");
@@ -434,6 +449,7 @@ export class AccountCreatePage extends AbstractPage {
       connectTimeout: this.connectTimeout,
       readTimeout: this.readTimeout,
       addresses: normalizeAddresses(this.addresses),
+      envelopeHeaders: normalizeEnvelopeHeaders(this.envelopeHeaders),
       classifierSpamFolderName: this.spamFolder.trim(),
       handleSpam: this.handleSpam,
       classifierFolderName: this.classifierFolder.trim(),

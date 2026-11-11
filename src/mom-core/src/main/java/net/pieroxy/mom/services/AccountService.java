@@ -198,7 +198,7 @@ public class AccountService implements Service {
                                           String classifierSpamFolderName, List<String> classifierExcludedFolders,
                                           int classifierCorpusRetentionDays, int classifierCorpusScanBatchSize,
                                           boolean discoveryTreeDisabled, int decisionLogRetentionDays,
-                                          List<String> addresses, String username, String password, OAuthGrant oauth,
+                                          List<String> addresses, List<String> envelopeHeaders, String username, String password, OAuthGrant oauth,
                                           List<MailFilterRuleConfiguration> rules,
                                           List<LearningShortcutConfiguration> shortcuts,
                                           SmtpConfiguration smtp, boolean smtpOwnCredentials,
@@ -218,6 +218,7 @@ public class AccountService implements Service {
     config.setDiscoveryTreeDisabled(discoveryTreeDisabled);
     config.setDecisionLogRetentionDays(decisionLogRetentionDays);
     config.setAddresses(addresses);
+    config.setEnvelopeHeaders(envelopeHeaders);
     config.setRules(rules);
     config.setLearningShortcuts(shortcuts);
 

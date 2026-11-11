@@ -40,7 +40,7 @@ public class AccountConfigApi extends AbstractAuthenticatedEndpoint<AccountConfi
     AccountBasicConfigDto basicConfig = new AccountBasicConfigDto(config.getDisplayName(), config.getHost(), config.getPort(),
         config.getRunEvery(), config.getConnectTimeout(), config.getReadTimeout(), config.getClassifierSpamFolderName(), config.getClassifierExcludedFolders(),
         config.getClassifierCorpusRetentionDays(), config.getClassifierCorpusScanBatchSize(), config.isDiscoveryTreeDisabled(),
-        config.getDecisionLogRetentionDays(), config.getAddresses());
+        config.getDecisionLogRetentionDays(), config.getAddresses(), config.getEnvelopeHeaders());
 
     CredentialsInfoDto credentials = new CredentialsInfoDto(config.getCredentials(), account.getCredentialUsername());
     OAuthGrant oauth = account.getCredential().getOauth();
@@ -179,6 +179,8 @@ class AccountBasicConfigDto {
   private int decisionLogRetentionDays;
   /** See {@link MailAccountConfiguration#getAddresses}. */
   private List<String> addresses;
+  /** See {@link MailAccountConfiguration#getEnvelopeHeaders}. */
+  private List<String> envelopeHeaders;
 
   public AccountBasicConfigDto() {
   }
@@ -187,7 +189,7 @@ class AccountBasicConfigDto {
                                 String classifierSpamFolderName,
                                 List<String> classifierExcludedFolders, int classifierCorpusRetentionDays,
                                 int classifierCorpusScanBatchSize, boolean discoveryTreeDisabled,
-                                int decisionLogRetentionDays, List<String> addresses) {
+                                int decisionLogRetentionDays, List<String> addresses, List<String> envelopeHeaders) {
     this.displayName = displayName;
     this.host = host;
     this.port = port;
@@ -205,6 +207,15 @@ class AccountBasicConfigDto {
     this.discoveryTreeDisabled = discoveryTreeDisabled;
     this.decisionLogRetentionDays = decisionLogRetentionDays;
     this.addresses = addresses != null ? addresses : List.of();
+    this.envelopeHeaders = envelopeHeaders != null ? envelopeHeaders : List.of();
+  }
+
+  public List<String> getEnvelopeHeaders() {
+    return envelopeHeaders;
+  }
+
+  public void setEnvelopeHeaders(List<String> envelopeHeaders) {
+    this.envelopeHeaders = envelopeHeaders;
   }
 
   public List<String> getAddresses() {

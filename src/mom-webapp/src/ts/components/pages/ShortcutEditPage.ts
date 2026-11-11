@@ -24,12 +24,14 @@ interface ShortcutMatcherTypeOption {
 
 // A shortcut's matcher only ever carries a type — its key is extracted from each example dropped
 // into the folder, same as the discovery tree (see LearningShortcutConfiguration/RuleLearner) —
-// so only the four "learnable" leaf matcher types are offered, and there's no value field at all.
+// so only the "learnable" leaf matcher types are offered, and there's no value field at all.
 const SHORTCUT_MATCHER_TYPE_OPTIONS: ShortcutMatcherTypeOption[] = [
   { value: MatcherType.FROM_EQUALS, label: "From (full header) equals" },
   { value: MatcherType.FROM_ADDRESS_EQUALS, label: "From address equals" },
   { value: MatcherType.FROM_DOMAIN_EQUALS, label: "From domain equals" },
   { value: MatcherType.SUBJECT_STARTS_WITH, label: "Subject starts with" },
+  { value: MatcherType.RECIPIENT_ADDRESS_EQUALS, label: "Recipient address equals" },
+  { value: MatcherType.RECIPIENT_DOMAIN_EQUALS, label: "Recipient domain equals" },
 ];
 
 interface ShortcutActionTypeOption {

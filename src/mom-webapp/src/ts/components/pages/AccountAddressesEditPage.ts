@@ -1,18 +1,26 @@
 import m from "mithril";
 import { AbstractPage } from "./AbstractPage";
 import { Routing } from "../../utils/navigation/Routing";
-import { AccountAddressesForm, normalizeAddresses, validateAddresses } from "../AccountAddressesForm";
+import {
+  AccountAddressesForm,
+  envelopeHeadersLabel,
+  normalizeAddresses,
+  normalizeEnvelopeHeaders,
+  validateAddresses,
+  validateEnvelopeHeaders,
+} from "../AccountAddressesForm";
 import { AccountEditSession, accountEditSessions, isConfigFieldChanged } from "../../utils/AccountEditSession";
 
 interface AccountAddressesEditPageAttrs {
   accountName: string;
 }
 
-/** Edits the account's addresses. Same staging as AccountGeneralEditPage: "OK" only writes into the AccountEditSession. */
+/** Edits the account's addresses and envelope headers. Same staging as AccountGeneralEditPage: "OK" only writes into the AccountEditSession. */
 export class AccountAddressesEditPage extends AbstractPage<AccountAddressesEditPageAttrs> {
   private accountName = "";
   private session: AccountEditSession | undefined;
   private addresses: string[] = [];
+  private envelopeHeaders: string[] = [];
   private loading = true;
   private error: string | undefined;
 
@@ -40,9 +48,13 @@ export class AccountAddressesEditPage extends AbstractPage<AccountAddressesEditP
     return m(".page-card.edit-form", [
       m(AccountAddressesForm, {
         addresses: this.addresses,
-        onChange: (addresses) => (this.addresses = addresses),
-        originalHint: isConfigFieldChanged(session, "addresses")
+        onAddressesChange: (addresses) => (this.addresses = addresses),
+        envelopeHeaders: this.envelopeHeaders,
+        onEnvelopeHeadersChange: (headers) => (this.envelopeHeaders = headers),
+        addressesOriginalHint: isConfigFieldChanged(session, "addresses")
           ? "originally: " + (session.baselineConfig.addresses.join(", ") || "none") : null,
+        envelopeHeadersOriginalHint: isConfigFieldChanged(session, "envelopeHeaders")
+          ? "originally: " + envelopeHeadersLabel(session.baselineConfig.envelopeHeaders) : null,
       }),
       m(".edit-actions", [
         m("button.ok-button", { onclick: () => this.apply() }, "OK"),
@@ -62,6 +74,7 @@ export class AccountAddressesEditPage extends AbstractPage<AccountAddressesEditP
       .then((session) => {
         this.session = session;
         this.addresses = [...session.workingConfig.addresses];
+        this.envelopeHeaders = [...session.workingConfig.envelopeHeaders];
         this.loading = false;
         m.redraw();
       })
@@ -73,13 +86,17 @@ export class AccountAddressesEditPage extends AbstractPage<AccountAddressesEditP
   }
 
   private apply() {
-    const validationError = validateAddresses(this.addresses);
+    const validationError = validateAddresses(this.addresses) ?? validateEnvelopeHeaders(this.envelopeHeaders);
     if (validationError) {
       this.error = validationError;
       return;
     }
     const session = this.session!;
-    session.workingConfig = { ...session.workingConfig, addresses: normalizeAddresses(this.addresses) };
+    session.workingConfig = {
+      ...session.workingConfig,
+      addresses: normalizeAddresses(this.addresses),
+      envelopeHeaders: normalizeEnvelopeHeaders(this.envelopeHeaders),
+    };
     Routing.goToAccountSettings(this.accountName);
   }
 }

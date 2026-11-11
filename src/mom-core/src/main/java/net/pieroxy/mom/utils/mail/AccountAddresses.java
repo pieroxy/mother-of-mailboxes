@@ -37,6 +37,10 @@ public final class AccountAddresses {
     return new AccountAddresses(entries);
   }
 
+  public boolean isEmpty() {
+    return addresses.isEmpty() && domains.isEmpty();
+  }
+
   public boolean contains(String address) {
     if (address == null) return false;
     String lower = address.toLowerCase(Locale.ROOT);

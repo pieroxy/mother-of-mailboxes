@@ -13,6 +13,7 @@ import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.learning.RuleLearner;
 import net.pieroxy.mom.rules.RuleCatalog;
 import net.pieroxy.mom.utils.mail.AccountAddresses;
+import net.pieroxy.mom.utils.mail.EnvelopeHeaders;
 
 import java.util.List;
 
@@ -54,6 +55,7 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
       throw new IllegalArgumentException("rules must not be null.");
     }
     List<String> addresses = AccountAddresses.normalize(input.getAddresses());
+    List<String> envelopeHeaders = EnvelopeHeaders.normalize(input.getEnvelopeHeaders());
     SmtpConfiguration smtp = input.getSmtp() != null ? input.getSmtp().toConfiguration() : null;
     RuleCatalog.validateRules(input.getRules());
     RuleCatalog.validateSendingActions(input.getRules(), smtp != null);
@@ -67,7 +69,8 @@ public class UpdateAccountApi extends AbstractAuthenticatedEndpoint<UpdateAccoun
         blankToNull(input.getClassifierSpamFolderName()),
         input.getClassifierExcludedFolders() != null ? input.getClassifierExcludedFolders() : List.of(),
         input.getClassifierCorpusRetentionDays(), input.getClassifierCorpusScanBatchSize(),
-        input.isDiscoveryTreeDisabled(), input.getDecisionLogRetentionDays(), addresses.isEmpty() ? null : addresses, input.getUsername(), input.getPassword(), oauth, input.getRules(), shortcuts,
+        input.isDiscoveryTreeDisabled(), input.getDecisionLogRetentionDays(), addresses.isEmpty() ? null : addresses,
+        envelopeHeaders.isEmpty() ? null : envelopeHeaders, input.getUsername(), input.getPassword(), oauth, input.getRules(), shortcuts,
         smtp, smtp != null && input.getSmtp().isOwnCredentials(),
         smtp != null ? input.getSmtp().getUsername() : null, input.getSmtpPassword());
     if (signedIn) serviceProvider.getOAuthSignInService().forget(input.getOauthSignInId());
@@ -95,6 +98,7 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
   private boolean discoveryTreeDisabled;
   private int decisionLogRetentionDays;
   private List<String> addresses;
+  private List<String> envelopeHeaders;
   private String username;
   /** Blank means "leave the current login unchanged"; otherwise replaces a Microsoft sign-in too. */
   private String password;
@@ -113,6 +117,14 @@ class UpdateAccountApiInput extends AuthenticatedApiInput {
 
   public void setAddresses(List<String> addresses) {
     this.addresses = addresses;
+  }
+
+  public List<String> getEnvelopeHeaders() {
+    return envelopeHeaders;
+  }
+
+  public void setEnvelopeHeaders(List<String> envelopeHeaders) {
+    this.envelopeHeaders = envelopeHeaders;
   }
 
   public String getOauthSignInId() {

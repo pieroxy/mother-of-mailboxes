@@ -12,6 +12,7 @@ import net.pieroxy.mom.config.general.SmtpConfiguration;
 import net.pieroxy.mom.rules.DefaultSpamRules;
 import net.pieroxy.mom.services.IServiceProvider;
 import net.pieroxy.mom.utils.mail.AccountAddresses;
+import net.pieroxy.mom.utils.mail.EnvelopeHeaders;
 
 import java.util.List;
 import java.util.Set;
@@ -46,6 +47,7 @@ public class CreateAccountApi extends AbstractAuthenticatedEndpoint<CreateAccoun
     }
 
     List<String> addresses = AccountAddresses.normalize(input.getAddresses());
+    List<String> envelopeHeaders = EnvelopeHeaders.normalize(input.getEnvelopeHeaders());
     SmtpConfiguration smtp = input.getSmtp() != null ? input.getSmtp().toConfiguration() : null;
 
     String spamFolder = spamFolderOrDefault(input.getClassifierSpamFolderName());
@@ -57,6 +59,7 @@ public class CreateAccountApi extends AbstractAuthenticatedEndpoint<CreateAccoun
     config.setConnectTimeout(input.getConnectTimeout());
     config.setReadTimeout(input.getReadTimeout());
     config.setAddresses(addresses.isEmpty() ? null : addresses);
+    config.setEnvelopeHeaders(envelopeHeaders.isEmpty() ? null : envelopeHeaders);
     config.setClassifierSpamFolderName(isBlank(input.getClassifierSpamFolderName()) ? null : spamFolder);
     config.setClassifierExcludedFolders(List.of());
     config.setRules(List.of());
@@ -125,6 +128,7 @@ class CreateAccountApiInput extends AuthenticatedApiInput {
   private String classifierFolderName;
   private int classifierCorpusRetentionDays;
   private List<String> addresses;
+  private List<String> envelopeHeaders;
   /** Absent: the account can't send mail. */
   private SmtpSettingsDto smtp;
   /** Only used with {@code smtp.ownCredentials}. */
@@ -144,6 +148,14 @@ class CreateAccountApiInput extends AuthenticatedApiInput {
 
   public void setAddresses(List<String> addresses) {
     this.addresses = addresses;
+  }
+
+  public List<String> getEnvelopeHeaders() {
+    return envelopeHeaders;
+  }
+
+  public void setEnvelopeHeaders(List<String> envelopeHeaders) {
+    this.envelopeHeaders = envelopeHeaders;
   }
 
   public SmtpSettingsDto getSmtp() {

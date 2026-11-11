@@ -6,6 +6,7 @@ import net.pieroxy.mom.utils.mail.AccountAddresses;
 import net.pieroxy.mom.utils.mail.MailSender;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * Whatever a matcher or action might need to know about the account it's being built for, at
@@ -18,10 +19,11 @@ import java.io.File;
  * {@code decisions-yyyy-MM-dd.json} files, alongside {@code stats-yyyy-MM-dd.json} — and that
  * log's retention, in days (see {@link #decisionLogRetentionDays}) — and the account's
  * {@link MailSender} (null without SMTP settings), used by FORWARD/REDIRECT/REPLY — and its
- * {@link AccountAddresses}.
+ * {@link AccountAddresses} and envelope headers (see {@code MailAccountConfiguration#getEnvelopeHeaders}).
  */
 public record RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir,
-                           int decisionLogRetentionDays, MailSender mailSender, AccountAddresses accountAddresses) {
+                           int decisionLogRetentionDays, MailSender mailSender, AccountAddresses accountAddresses,
+                           List<String> envelopeHeaders) {
   /** No account-specific info available — matches how things behaved before this existed. */
   public static final RuleContext EMPTY = new RuleContext(null, null, null, null, 0);
 
@@ -34,5 +36,11 @@ public record RuleContext(File subjectModelFile, File headerModelFile, File body
   public RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir, int decisionLogRetentionDays,
                      MailSender mailSender) {
     this(subjectModelFile, headerModelFile, bodyModelFile, statsDir, decisionLogRetentionDays, mailSender, AccountAddresses.NONE);
+  }
+
+  /** Without envelope headers. */
+  public RuleContext(File subjectModelFile, File headerModelFile, File bodyModelFile, File statsDir, int decisionLogRetentionDays,
+                     MailSender mailSender, AccountAddresses accountAddresses) {
+    this(subjectModelFile, headerModelFile, bodyModelFile, statsDir, decisionLogRetentionDays, mailSender, accountAddresses, List.of());
   }
 }

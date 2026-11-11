@@ -19,6 +19,8 @@ the message, since a sender can forge those.
 | [`FROM_DOMAIN_EQUALS`](matchers/from-domain-equals.md) | Match the sender's domain only. |
 | [`FROM_ADDRESS_REGEXP`](matchers/from-address-regexp.md) | Match the sender's email address against a regular expression. |
 | [`SUBJECT_STARTS_WITH`](matchers/subject-starts-with.md) | Match a prefix of the `Subject:` header. |
+| [`RECIPIENT_ADDRESS_EQUALS`](matchers/recipient-address-equals.md) | Match a recipient's address, from `To`, `Cc` or the account's envelope headers. |
+| [`RECIPIENT_DOMAIN_EQUALS`](matchers/recipient-domain-equals.md) | Match a recipient's domain only. |
 | [`SPF_RESULT_EQUALS`](matchers/spf-result-equals.md) | Match a live-verified SPF result. |
 | [`DKIM_RESULT_EQUALS`](matchers/dkim-result-equals.md) | Match a live-verified DKIM result. |
 | [`DMARC_RESULT_EQUALS`](matchers/dmarc-result-equals.md) | Match a live-evaluated DMARC result (SPF/DKIM domain alignment). |

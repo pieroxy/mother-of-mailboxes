@@ -1,7 +1,6 @@
 # Roadmap
 
 * More matchers:
-  * Recipient-based: TO_EQUALS/CC_EQUALS/recipient-domain matching
   * Subject: CONTAINS, MATCHES (regex)
   * Generic headers: HEADER_EQUALS/HEADER_CONTAINS(name, value)
   * Body: BODY_CONTAINS, BODY_MATCHES

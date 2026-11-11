@@ -83,6 +83,12 @@ public class MailAccountConfiguration {
    */
   private List<String> addresses;
 
+  /**
+   * Headers in which the account's mail server records the address a message was delivered to
+   * (e.g. {@code Delivered-To}), read as recipients by the RECIPIENT_* matchers. Absent: none.
+   */
+  private List<String> envelopeHeaders;
+
   /** Absent: the account can't send mail. */
   private SmtpConfiguration smtp;
 
@@ -92,6 +98,14 @@ public class MailAccountConfiguration {
 
   public void setAddresses(List<String> addresses) {
     this.addresses = addresses;
+  }
+
+  public List<String> getEnvelopeHeaders() {
+    return envelopeHeaders;
+  }
+
+  public void setEnvelopeHeaders(List<String> envelopeHeaders) {
+    this.envelopeHeaders = envelopeHeaders;
   }
 
   public SmtpConfiguration getSmtp() {

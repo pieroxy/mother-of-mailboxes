@@ -45,6 +45,13 @@ public abstract class Matcher {
     return matcher;
   }
 
+  /** A matcher only meant for {@link #extractKeyFromExample}: bound to {@code context}, without config. */
+  public static Matcher forLearning(MatcherType type, RuleContext context) {
+    Matcher matcher = type.getImplementation();
+    matcher.bindContext(context);
+    return matcher;
+  }
+
   public abstract MatchResult matches(Message message) throws MessagingException;
 
   /**

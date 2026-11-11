@@ -39,7 +39,8 @@ The wizard asks for:
 2. **IMAP connection**: server, port, username and password, or a Microsoft sign-in (see
    below), with a button to test them.
 3. **Addresses**: the addresses delivered to this mailbox, starting with the IMAP username when
-   it's an address.
+   it's an address, and the [envelope headers](configuration.md#account-fields): none, the
+   recommended ones, or your own list.
 4. **Sending mail** (optional): the [SMTP settings](configuration.md#smtp-settings), needed to
    forward, redirect or reply. Also tested before going further.
 5. **Spam folder**: where spam goes, created if missing. Everything outside it (and `INBOX`) is
