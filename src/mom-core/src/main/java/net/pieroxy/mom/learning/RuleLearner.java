@@ -4,6 +4,7 @@ import net.pieroxy.mom.config.general.LearningShortcutConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleActionConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleConfiguration;
 import net.pieroxy.mom.config.general.MailFilterRuleMatcherConfiguration;
+import net.pieroxy.mom.rules.ManualReprocessor;
 import net.pieroxy.mom.rules.RuleContext;
 import net.pieroxy.mom.utils.mail.ImapMailbox;
 import net.pieroxy.mom.rules.actions.Action;
@@ -134,7 +135,7 @@ public class RuleLearner {
   }
 
   private static boolean isReservedName(String name) {
-    if (name.equals(DONE_FOLDER)) return true;
+    if (name.equals(DONE_FOLDER) || name.equals(ManualReprocessor.TO_PROCESS_FOLDER)) return true;
     for (MatcherType matcherType : MatcherType.learnableValues()) {
       if (name.equals(matcherType.name())) return true;
     }

@@ -57,7 +57,7 @@ be used side by side.
 - The `action` is fully set in the config, `key` included.
 - The `matcher` only takes a `type`: its key comes from each example, so a `key` or `keys` there
   is refused.
-- A shortcut's name must be unique, and can't be `Done` or a matcher type name.
+- A shortcut's name must be unique, and can't be `Done`, `ToProcess` or a matcher type name.
 
 Most mail clients let you subscribe to just the shortcut folders. Some (notably Apple Mail, on
 iOS and macOS) show every folder anyway: for those, set `discoveryTreeDisabled` on the account

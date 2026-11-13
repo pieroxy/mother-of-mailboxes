@@ -77,6 +77,11 @@ public class RuleLearnerShortcutValidationTest extends AbstractRuleLearnerTest {
   }
 
   @Test
+  public void rejectsANameCollidingWithTheToProcessFolder() throws Exception {
+    expectRejected(shortcut("ToProcess", MatcherType.FROM_DOMAIN_EQUALS, ActionType.MOVE_TO, "Spam"));
+  }
+
+  @Test
   public void rejectsAnUnlearnableMatcherType() throws Exception {
     expectRejected(shortcut("Shortcut", MatcherType.SPF_RESULT_EQUALS, ActionType.MOVE_TO, "Spam"));
   }

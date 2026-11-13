@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 public class ManualReprocessor {
   private final static Logger LOGGER = Logger.getLogger(ManualReprocessor.class.getName());
   private final static String ROOT_FOLDER = "mom-rules";
-  private final static String TO_PROCESS_FOLDER = "ToProcess";
+  public final static String TO_PROCESS_FOLDER = "ToProcess";
   private final static String DONE_FOLDER = "Done";
 
   private final ImapMailbox mailbox;

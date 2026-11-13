@@ -48,9 +48,9 @@ const SHORTCUT_ACTION_TYPE_OPTIONS: ShortcutActionTypeOption[] = [
   { value: ActionType.NOOP, label: "Do nothing (stop processing, log only)", keyLabel: "Log message", isFolderName: false },
 ];
 
-// Mirrors RuleLearner.isReservedName: "Done" plus every learnable matcher type's own name, since
-// those are the discovery tree's top-level folder names a shortcut folder must not collide with.
-const RESERVED_SHORTCUT_NAMES = new Set<string>(["Done", ...SHORTCUT_MATCHER_TYPE_OPTIONS.map((o) => o.value as string)]);
+// Mirrors RuleLearner.isReservedName: "Done", "ToProcess" and every learnable matcher type's own name,
+// since those are the mom-rules/ folder names a shortcut folder must not collide with.
+const RESERVED_SHORTCUT_NAMES = new Set<string>(["Done", "ToProcess", ...SHORTCUT_MATCHER_TYPE_OPTIONS.map((o) => o.value as string)]);
 
 const FOLDER_DATALIST_ID = "shortcut-destination-folder-options";
 
