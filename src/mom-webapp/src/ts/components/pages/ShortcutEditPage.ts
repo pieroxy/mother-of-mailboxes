@@ -32,6 +32,7 @@ const SHORTCUT_MATCHER_TYPE_OPTIONS: ShortcutMatcherTypeOption[] = [
   { value: MatcherType.SUBJECT_STARTS_WITH, label: "Subject starts with" },
   { value: MatcherType.RECIPIENT_ADDRESS_EQUALS, label: "Recipient address equals" },
   { value: MatcherType.RECIPIENT_DOMAIN_EQUALS, label: "Recipient domain equals" },
+  { value: MatcherType.LIST_ID_EQUALS, label: "List-Id equals" },
 ];
 
 interface ShortcutActionTypeOption {

@@ -21,6 +21,7 @@ the message, since a sender can forge those.
 | [`SUBJECT_STARTS_WITH`](matchers/subject-starts-with.md) | Match a prefix of the `Subject:` header. |
 | [`RECIPIENT_ADDRESS_EQUALS`](matchers/recipient-address-equals.md) | Match a recipient's address, from `To`, `Cc` or the account's envelope headers. |
 | [`RECIPIENT_DOMAIN_EQUALS`](matchers/recipient-domain-equals.md) | Match a recipient's domain only. |
+| [`LIST_ID_EQUALS`](matchers/list-id-equals.md) | Match the mailing list identifier of the `List-Id` header. |
 | [`SPF_RESULT_EQUALS`](matchers/spf-result-equals.md) | Match a live-verified SPF result. |
 | [`DKIM_RESULT_EQUALS`](matchers/dkim-result-equals.md) | Match a live-verified DKIM result. |
 | [`DMARC_RESULT_EQUALS`](matchers/dmarc-result-equals.md) | Match a live-evaluated DMARC result (SPF/DKIM domain alignment). |

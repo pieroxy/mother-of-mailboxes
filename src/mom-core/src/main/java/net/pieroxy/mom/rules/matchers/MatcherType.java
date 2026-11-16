@@ -15,6 +15,7 @@ import net.pieroxy.mom.rules.matchers.implementations.FromExactMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.FromValidityMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.HeaderClassifierMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.IpReputationMatcher;
+import net.pieroxy.mom.rules.matchers.implementations.ListIdMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.LookalikeTextMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.NotMatcher;
 import net.pieroxy.mom.rules.matchers.implementations.OrMatcher;
@@ -40,6 +41,7 @@ public enum MatcherType {
   SUBJECT_STARTS_WITH(SubjectStartsWithMatcher::new, true),
   RECIPIENT_ADDRESS_EQUALS(RecipientAddressMatcher::new, true),
   RECIPIENT_DOMAIN_EQUALS(RecipientDomainMatcher::new, true),
+  LIST_ID_EQUALS(ListIdMatcher::new, true),
   // Not learnable: the possible key (pass/fail/softfail/...) is a fixed, already-documented
   // set, not a specific value to discover from the example. And unlike FROM_*, the learned
   // rule wouldn't be specific to the deposited example: it would apply globally to any message

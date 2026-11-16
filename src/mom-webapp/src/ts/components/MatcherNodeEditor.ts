@@ -49,6 +49,7 @@ const LEAF_MATCHER_TYPE_OPTIONS: LeafMatcherTypeOption[] = [
   { value: MatcherType.SUBJECT_STARTS_WITH, label: "Subject starts with", fields: "keys" },
   { value: MatcherType.RECIPIENT_ADDRESS_EQUALS, label: "Recipient address equals", fields: "keys" },
   { value: MatcherType.RECIPIENT_DOMAIN_EQUALS, label: "Recipient domain equals", fields: "keys" },
+  { value: MatcherType.LIST_ID_EQUALS, label: "List-Id equals", fields: "keys" },
   { value: MatcherType.SPF_RESULT_EQUALS, label: "SPF result equals", fields: "keys", options: SPF_RESULT_OPTIONS },
   { value: MatcherType.DKIM_RESULT_EQUALS, label: "DKIM result equals", fields: "keys", options: DKIM_RESULT_OPTIONS },
   { value: MatcherType.DMARC_RESULT_EQUALS, label: "DMARC result equals", fields: "keys", options: DMARC_RESULT_OPTIONS },

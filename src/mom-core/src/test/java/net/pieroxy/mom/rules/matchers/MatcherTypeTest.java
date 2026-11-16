@@ -15,6 +15,11 @@ public class MatcherTypeTest {
     assertTrue(MatcherType.learnableValues().contains(MatcherType.SUBJECT_STARTS_WITH));
   }
 
+  @Test
+  public void listIdIsLearnable() {
+    assertTrue(MatcherType.learnableValues().contains(MatcherType.LIST_ID_EQUALS));
+  }
+
   /**
    * Not learnable: unlike a literal address or domain, there's no sensible way to generalize a
    * regular expression from one example message.
