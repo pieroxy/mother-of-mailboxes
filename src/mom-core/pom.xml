@@ -133,9 +133,9 @@
                   <arg value="--count"/>
                   <arg value="HEAD"/>
                 </exec>
-                <echo file="src/main/resources/MVN_VER">${project.version}</echo>
-                <echo file="src/main/resources/GIT_REV">${GIT_REV}</echo>
-                <echo file="src/main/resources/GIT_DEPTH">${GIT_DEPTH}</echo>
+                <echo file="${project.build.outputDirectory}/MVN_VER">${project.version}</echo>
+                <echo file="${project.build.outputDirectory}/GIT_REV">${GIT_REV}</echo>
+                <echo file="${project.build.outputDirectory}/GIT_DEPTH">${GIT_DEPTH}</echo>
               </target>
             </configuration>
             <goals>
