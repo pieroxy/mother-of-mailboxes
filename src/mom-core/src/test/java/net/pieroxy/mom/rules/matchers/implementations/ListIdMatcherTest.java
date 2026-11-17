@@ -45,6 +45,15 @@ public class ListIdMatcherTest {
   }
 
   @Test
+  public void parsesKeysLikeTheHeader() throws Exception {
+    MimeMessage message = message("List-Id: \"Dev discussions\" <dev.lists.example.org>\r\n");
+
+    assertTrue(matcher("<dev.lists.example.org>").matches(message).matched());
+    assertTrue(matcher("\"Dev discussions\" <Dev.Lists.example.org>").matches(message).matched());
+    assertFalse(matcher("<users.lists.example.org>").matches(message).matched());
+  }
+
+  @Test
   public void matchesAFoldedHeader() throws Exception {
     assertTrue(matcher("dev.lists.example.org")
         .matches(message("List-Id: \"A rather long display name\"\r\n <dev.lists.example.org>\r\n")).matched());

@@ -9,7 +9,7 @@ Matches when the mailing list identifier of the `List-Id` header equals the conf
 
 | Field | Required | Description |
 |---|---|---|
-| `key` | one of `key`/`keys` | List identifier to match, e.g. `"dev.lists.example.org"`. |
+| `key` | one of `key`/`keys` | List identifier to match, e.g. `"dev.lists.example.org"`. Brackets and display name are accepted and ignored, so the header value can be pasted as is. |
 | `keys` | one of `key`/`keys` | Set of list identifiers, any of which matches. Takes priority over `key` if both are set. |
 | `logLevel` | no | See [Logging](../logs.md#application-log). |
 

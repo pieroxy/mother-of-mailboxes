@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.UnaryOperator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -142,14 +143,21 @@ public abstract class Matcher {
    * O(number of keys) per message.
    */
   protected void initLookupSet(boolean caseInsensitive) {
+    initLookupSet(caseInsensitive, UnaryOperator.identity());
+  }
+
+  /**
+   * Like {@link #initLookupSet(boolean)}, with each key first passed through {@code normalizer}
+   * (keys it maps to null are dropped). The config itself is left untouched.
+   */
+  protected void initLookupSet(boolean caseInsensitive, UnaryOperator<String> normalizer) {
     Set<String> keys = config.getKeys() != null ? config.getKeys()
         : (config.getKey() != null ? Set.of(config.getKey()) : Set.of());
-    if (!caseInsensitive) {
-      lookupSet = keys;
-      return;
-    }
     Set<String> normalized = new HashSet<>(keys.size());
-    for (String key : keys) normalized.add(key.toLowerCase());
+    for (String key : keys) {
+      String value = normalizer.apply(key);
+      if (value != null) normalized.add(caseInsensitive ? value.toLowerCase() : value);
+    }
     lookupSet = normalized;
   }
 

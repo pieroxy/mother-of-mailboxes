@@ -13,13 +13,13 @@ import java.util.Optional;
  * Matches the mailing list identifier of the {@code List-Id} header (RFC 2919), case-insensitively:
  * the part between angle brackets, so that the list's display name can change freely, or the
  * whole trimmed value when there are no brackets. Only the topmost occurrence is read: it is the
- * list that delivered the message.
+ * list that delivered the message. Keys are parsed the same way, so a pasted header value works.
  */
 public class ListIdMatcher extends Matcher {
   @Override
   public void setConfig(MailFilterRuleMatcherConfiguration config) {
     super.setConfig(config);
-    initLookupSet(true);
+    initLookupSet(true, ListIdMatcher::listIdOf);
   }
 
   @Override
