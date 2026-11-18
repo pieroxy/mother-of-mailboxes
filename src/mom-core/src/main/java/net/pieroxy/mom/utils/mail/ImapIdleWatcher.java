@@ -57,6 +57,8 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
   // Once a server proves it doesn't support IDLE, that's a static property of the server: no
   // point reconnecting to re-ask on every single wait for the rest of the process's lifetime.
   private volatile boolean idleUnsupported;
+  // Set by MailAccount after each cycle; cleared by the first connection that logs it, so it's logged once per failed cycle.
+  private volatile boolean lastCycleFailed;
   // Set for as long as idleForOneSlice() is actually blocked in idle() — read from another
   // thread by interruptNow(), so it can close this specific connection out from under it.
   private volatile Store activeStore;
@@ -113,8 +115,9 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
           if (sleepUnlessWoken(Math.min(networkProbeMs, deadline - System.currentTimeMillis()))) return;
           continue;
         }
-        LOGGER.log(Level.FINE, "IDLE watcher [" + config.getDisplayName() + "]: wait failed ("
-            + e.getMessage() + "), falling back to a plain wait for the rest of this cycle.", e);
+        LOGGER.info("IDLE watcher [" + config.getDisplayName() + "]: wait failed (" + e.getClass().getSimpleName()
+            + ": " + e.getMessage() + "), falling back to a plain wait for the rest of this cycle.");
+        LOGGER.log(Level.FINE, "IDLE watcher [" + config.getDisplayName() + "]: wait failure details", e);
         sleepUnlessWoken(deadline - System.currentTimeMillis());
         return;
       }
@@ -124,6 +127,11 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
       }
       // Otherwise just this slice's timeout, no new mail: loop again if budget remains.
     }
+  }
+
+  /** Whether the cycle that just ran failed: if so, the next successful connection is logged, telling whether the server accepts logins during the backoff. */
+  public void setLastCycleFailed(boolean failed) {
+    lastCycleFailed = failed;
   }
 
   /**
@@ -182,6 +190,10 @@ public class ImapIdleWatcher implements BackoffLoop.Waiter {
       // setting it, so either that close or this check catches it.
       synchronized (wakeLock) {
         if (wakeRequested) return false;
+      }
+      if (lastCycleFailed) {
+        lastCycleFailed = false;
+        LOGGER.info("IDLE watcher [" + config.getDisplayName() + "]: connected fine after the failed cycle.");
       }
       if (returnOnceConnected) {
         LOGGER.info("IDLE watcher [" + config.getDisplayName() + "]: server reachable again, running a cycle now.");

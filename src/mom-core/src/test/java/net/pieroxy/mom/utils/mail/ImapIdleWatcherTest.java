@@ -1,6 +1,7 @@
 package net.pieroxy.mom.utils.mail;
 
 import net.pieroxy.mom.config.general.MailAccountConfiguration;
+import net.pieroxy.mom.utils.LogCapture;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,6 +15,8 @@ import java.net.ConnectException;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -141,6 +144,37 @@ public class ImapIdleWatcherTest {
 
     assertEquals(1, attempts.get());
     assertTrue("await() must wait out its budget (elapsed=" + elapsed + "ms)", elapsed >= 900);
+  }
+
+  @Test
+  public void aFailedWaitIsLoggedAtInfo() throws Exception {
+    MailAccountConfiguration config = fixture.accountConfig("idle-test");
+    ImapIdleWatcher watcher = new ImapIdleWatcher(config, fixture.accountCredential(), (c, credential) -> {
+      throw new AuthenticationFailedException("Invalid credentials");
+    }, 100);
+
+    try (LogCapture logs = new LogCapture(Logger.getLogger(ImapIdleWatcher.class.getName()))) {
+      watcher.await(100);
+      assertEquals(1, logs.getRecords().stream()
+          .filter(r -> r.getLevel() == Level.INFO && r.getMessage().contains("AuthenticationFailedException: Invalid credentials"))
+          .count());
+    }
+  }
+
+  @Test
+  public void theFirstConnectionAfterAFailedCycleIsLoggedOnce() throws Exception {
+    MailAccountConfiguration config = fixture.accountConfig("idle-test");
+    ImapIdleWatcher watcher = new ImapIdleWatcher(config, fixture.accountCredential(), (c, credential) -> fixture.connectStore());
+
+    try (LogCapture logs = new LogCapture(Logger.getLogger(ImapIdleWatcher.class.getName()))) {
+      watcher.await(200);
+      assertEquals("nothing to log after a successful cycle", 0, logs.count("connected fine after the failed cycle"));
+
+      watcher.setLastCycleFailed(true);
+      watcher.await(200);
+      watcher.await(200);
+      assertEquals(1, logs.count("connected fine after the failed cycle"));
+    }
   }
 
   @Test

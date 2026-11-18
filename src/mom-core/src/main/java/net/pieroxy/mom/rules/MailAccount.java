@@ -34,6 +34,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
@@ -89,6 +92,9 @@ public class MailAccount implements Runnable {
   private volatile String lastErrorMessage;
   private volatile Instant lastErrorTimestamp;
   private volatile Instant lastCycleCompletedTimestamp;
+  // Current run of failed cycles, for the log line once one succeeds again. Only touched by this account's thread.
+  private int consecutiveFailures;
+  private Instant firstFailureTimestamp;
 
   /** @param smtpCredential the login for {@code config}'s SMTP settings; unused without. */
   public MailAccount(MailAccountConfiguration config, Credential credential, Credential smtpCredential, String dataFolder) {
@@ -350,16 +356,26 @@ public class MailAccount implements Runnable {
    * while a cycle runs, OK right after one finishes cleanly (i.e. back to idling/IDLE-waiting),
    * KO if it threw. Kept separate from {@link #processMessages} itself rather than folded into
    * {@link BackoffLoop}, which deliberately stays unaware of what the task it runs represents.
+   * Also logs the end of a run of failed cycles, and tells the IDLE watcher whether this one
+   * failed. Package-private for tests.
    */
-  private void processMessagesTracked() throws Exception {
+  void processMessagesTracked() throws Exception {
     status = AccountStatus.PROCESSING;
     try {
       processMessages();
       status = AccountStatus.OK;
+      if (consecutiveFailures > 0) {
+        LOGGER.info("Account " + config.getDisplayName() + ": recovered after " + consecutiveFailures
+            + " failed cycle(s), first failure at " + LocalDateTime.ofInstant(firstFailureTimestamp, ZoneId.systemDefault()).truncatedTo(ChronoUnit.SECONDS));
+        consecutiveFailures = 0;
+      }
+      idleWatcher.setLastCycleFailed(false);
     } catch (Exception e) {
       status = AccountStatus.KO;
       lastErrorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
       lastErrorTimestamp = Instant.now();
+      if (consecutiveFailures++ == 0) firstFailureTimestamp = lastErrorTimestamp;
+      idleWatcher.setLastCycleFailed(true);
       throw e;
     } finally {
       // BackoffLoop recomputes its own delay for the next wait right after this method returns
